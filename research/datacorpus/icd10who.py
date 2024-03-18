@@ -4,8 +4,6 @@ import pandas as pd
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-load_dotenv()
-client = MongoClient(os.getenv('MONGO_URL'))
 icd10_alphabet_path1 = "icd10who2019alpha_edvtxt_teil1_20180824.txt"
 icd10_alphabet_path2 = "icd10who2019alpha_edvtxt_teil2_20180824.txt"
 icd10_metadata_path = "icd10who2019syst_kodes.txt"
@@ -26,15 +24,17 @@ def parse_icd10who_alphabet(path, filter_special_classes=False):
         header=None,
         names=columns,
         sep="|",
-        usecols=["code", "asterisk_code", "code2", "title"]
+        usecols=["code", "asterisk_code", "code2", "title"],
     )
 
-    data = data[data['code'].notnull()]
+    data = data[data["code"].notnull()]
     if filter_special_classes:
-        filter_condition = ~data['code'].str.contains('[+*]', na=False)
+        filter_condition = ~data["code"].str.contains("[+*]", na=False)
         data = data[filter_condition]
 
-    return data.groupby('code').agg(lambda x: list(x.dropna())).reset_index()
+    print("Parsed data from", path, "with", len(data), "rows.")
+
+    return data.groupby("code").agg(lambda x: list(x.dropna())).reset_index()
 
 
 def parse_icd10who_metadata():
@@ -69,21 +69,26 @@ def parse_icd10who_metadata():
         header=None,
         names=columns,
         sep=";",
-        usecols=["class_title", "code_without_dash_star"]
+        usecols=["class_title", "code_without_dash_star"],
     )
-    data = data[data['code_without_dash_star'].notnull()]
+    data = data[data["code_without_dash_star"].notnull()]
+
+    print("Parsed data from", icd10_metadata_path, "with", len(data), "rows.")
 
     return data
 
 
 def upload_to_mongodb(dataframe):
+    load_dotenv()
+    client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
     db.drop_collection("icd10who")
     collection = db.get_collection("icd10who")
     collection.insert_many(dataframe.to_dict(orient="records"))
+    print("Uploaded", len(dataframe), "rows to MongoDB.")
 
 
-pd.set_option('display.max_columns', None)
+pd.set_option("display.max_columns", None)
 # parse both alphabet files
 alphabet1 = parse_icd10who_alphabet(icd10_alphabet_path1)
 alphabet2 = parse_icd10who_alphabet(icd10_alphabet_path2)
@@ -91,12 +96,12 @@ output = pd.concat([alphabet1, alphabet2])
 
 # parse metadata file
 metadata = parse_icd10who_metadata()
-metadata = metadata[~metadata['code_without_dash_star'].str.contains("\.")]
+metadata = metadata[~metadata["code_without_dash_star"].str.contains("\.")]
 metadata = metadata.rename(columns={"code_without_dash_star": "code"})
 metadata = metadata.rename(columns={"class_title": "title"})
-metadata['asterisk_code'] = [[] for _ in range(len(metadata))]
-metadata['code2'] = [[] for _ in range(len(metadata))]
-metadata['title'] = metadata['title'].apply(lambda x: [x])
+metadata["asterisk_code"] = [[] for _ in range(len(metadata))]
+metadata["code2"] = [[] for _ in range(len(metadata))]
+metadata["title"] = metadata["title"].apply(lambda x: [x])
 
 # combine and upload
 output = pd.concat([output, metadata])
