@@ -6,11 +6,12 @@ from pymongo import MongoClient
 
 load_dotenv()
 client = MongoClient(os.getenv('MONGO_URL'))
-icd10_alphabet_path = "icd10who2019alpha_edvtxt_teil1_20180824.txt"
+icd10_alphabet_path1 = "icd10who2019alpha_edvtxt_teil1_20180824.txt"
+icd10_alphabet_path2 = "icd10who2019alpha_edvtxt_teil2_20180824.txt"
 icd10_metadata_path = "icd10who2019syst_kodes.txt"
 
 
-def parse_icd10who_alphabet():
+def parse_icd10who_alphabet(path, filter_special_classes=False):
     columns = [
         "coding_type",
         "dimdi_id",
@@ -21,15 +22,19 @@ def parse_icd10who_alphabet():
         "title",
     ]
     data = pd.read_csv(
-        icd10_alphabet_path,
+        path,
         header=None,
         names=columns,
-        sep="|"
+        sep="|",
+        usecols=["code", "asterisk_code", "code2", "title"]
     )
+
     data = data[data['code'].notnull()]
-    filter_condition = ~data['code'].str.contains('[+*]', na=False)
-    data = data[filter_condition]
-    return data.groupby("code")['title'].apply(list).reset_index()
+    if filter_special_classes:
+        filter_condition = ~data['code'].str.contains('[+*]', na=False)
+        data = data[filter_condition]
+
+    return data.groupby('code').agg(lambda x: list(x.dropna())).reset_index()
 
 
 def parse_icd10who_metadata():
@@ -64,15 +69,36 @@ def parse_icd10who_metadata():
         header=None,
         names=columns,
         sep=";",
+        usecols=["class_title", "code_without_dash_star"]
     )
+    data = data[data['code_without_dash_star'].notnull()]
+
     return data
 
 
-def upload_to_mongodb():
-    data = parse_icd10who_alphabet()
+def upload_to_mongodb(dataframe):
     db = client.get_database("main")
+    db.drop_collection("icd10who")
     collection = db.get_collection("icd10who")
-    collection.insert_many(data.to_dict(orient="records"))
+    collection.insert_many(dataframe.to_dict(orient="records"))
 
 
-print(parse_icd10who_alphabet())
+pd.set_option('display.max_columns', None)
+# parse both alphabet files
+alphabet1 = parse_icd10who_alphabet(icd10_alphabet_path1)
+alphabet2 = parse_icd10who_alphabet(icd10_alphabet_path2)
+output = pd.concat([alphabet1, alphabet2])
+
+# parse metadata file
+metadata = parse_icd10who_metadata()
+metadata = metadata[~metadata['code_without_dash_star'].str.contains("\.")]
+metadata = metadata.rename(columns={"code_without_dash_star": "code"})
+metadata = metadata.rename(columns={"class_title": "title"})
+metadata['asterisk_code'] = [[] for _ in range(len(metadata))]
+metadata['code2'] = [[] for _ in range(len(metadata))]
+metadata['title'] = metadata['title'].apply(lambda x: [x])
+
+# combine and upload
+output = pd.concat([output, metadata])
+output = output.sort_values(by="code")
+upload_to_mongodb(output)
