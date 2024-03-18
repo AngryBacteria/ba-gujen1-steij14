@@ -4,6 +4,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
+from research.logger import logger
+
 icd10_alphabet_path1 = "icd10who2019alpha_edvtxt_teil1_20180824.txt"
 icd10_alphabet_path2 = "icd10who2019alpha_edvtxt_teil2_20180824.txt"
 icd10_metadata_path = "icd10who2019syst_kodes.txt"
@@ -32,7 +34,7 @@ def parse_icd10who_alphabet(path, filter_special_classes=False):
         filter_condition = ~data["code"].str.contains("[+*]", na=False)
         data = data[filter_condition]
 
-    print("Parsed data from", path, "with", len(data), "rows.")
+    logger.debug("Parsed data from", path, "with", len(data), "rows.")
 
     return data.groupby("code").agg(lambda x: list(x.dropna())).reset_index()
 
@@ -73,7 +75,7 @@ def parse_icd10who_metadata():
     )
     data = data[data["code_without_dash_star"].notnull()]
 
-    print("Parsed data from", icd10_metadata_path, "with", len(data), "rows.")
+    logger.debug("Parsed data from", icd10_metadata_path, "with", len(data), "rows.")
 
     return data
 
@@ -85,7 +87,8 @@ def upload_to_mongodb(dataframe):
     db.drop_collection("icd10who")
     collection = db.get_collection("icd10who")
     collection.insert_many(dataframe.to_dict(orient="records"))
-    print("Uploaded", len(dataframe), "rows to MongoDB.")
+    logger.debug("Uploaded", len(dataframe), "rows to MongoDB.")
+    client.close()
 
 
 pd.set_option("display.max_columns", None)
