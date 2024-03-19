@@ -1,8 +1,9 @@
+import csv
 import os
 
 import requests
 import re
-from bs4 import BeautifulSoup, ResultSet
+from bs4 import BeautifulSoup, ResultSet, Tag, NavigableString
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
@@ -18,13 +19,13 @@ ignore_list = [
 ]
 
 
-# WIKI API
+# WIKI PHP API
 def get_category_members(category):
-    """Get all members of a wikipedia category."""
+    """Get all members of a wikipedia category, including their page IDs."""
     S = requests.Session()
     URL = f"https://de.wikipedia.org/w/api.php"
 
-    titles = []
+    members = set()  # Storing tuples of (title, pageid)
     last_continue = {}
 
     while True:
@@ -43,49 +44,59 @@ def get_category_members(category):
         data = response.json()
 
         for item in data["query"]["categorymembers"]:
-            titles.append(item["title"])
+            members.add((item["title"], item["pageid"]))  # Add a tuple to the set
         if "continue" not in data:
             break
         else:
             last_continue = data["continue"]
 
-    return titles
+    return members
 
 
-def get_articles_in_category(category, lang="de"):
-    """Get all articles in a wikipedia category. This includes subcategories."""
+def get_articles_in_category(category):
+    """Get all articles in a wikipedia category, including subcategories. Each article is represented
+    by a tuple containing the title and page ID."""
+
     articles = set()
     members = get_category_members(category)
 
-    for member in members:
-        if member in ignore_list:
+    for title, pageid in members:
+        if title in ignore_list:
             continue
-        if member.startswith("Kategorie:"):
-            logger.debug(f"Parsing subcategory: {member}")
-            subcategory = member.split("Kategorie:")[1]
-            articles.update(get_articles_in_category(subcategory, lang))
+        if title.startswith("Kategorie:"):
+            logger.debug(f"Parsing subcategory: {title}")
+            subcategory = title.split("Kategorie:")[1]
+            articles.update(get_articles_in_category(subcategory))
         else:
-            articles.add(member)
+            articles.add((title, pageid))  # Add a tuple to the set
 
     return articles
 
 
-def get_all_article_names(category_name, save_to_file=False):
+def save_articles_by_category(category_name):
     output = get_articles_in_category(category_name)
     logger.debug(f"{len(output)} Articles found for the category: {category_name}")
 
-    if save_to_file:
-        content = "\n".join(output)
-        file_path = "wikipedia_articles.txt"
-        logger.debug(f"Saving articles into {file_path}")
-        with open(file_path, "w", encoding="utf-8") as file:
-            file.write(content)
+    file_path = f"wikipedia_article_titles_{category_name}.txt"
+    logger.debug(f"Saving articles into: {file_path}")
+    with open(file_path, mode="w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file, delimiter="|")
+        writer.writerow(["Title", "Page ID"])
+        for article in output:
+            writer.writerow(article)
 
     return output
 
 
 # WEB SCRAPING
-def get_disease_info_from_article(name: str):
+def clean_wikipedia_string(text: str):
+    text = text.strip()
+    pattern = r"\[.*\]"
+    text = re.sub(pattern, "", text)
+    return text
+
+
+def get_disease_info_from_article(name: str, full_text: bool = False):
     """Get the data for a disease from a wikipedia article. Return None if no data is found."""
     link = f"https://de.wikipedia.org/wiki/{name}"
     response = requests.get(link)
@@ -94,21 +105,58 @@ def get_disease_info_from_article(name: str):
     # get icd10 codes from the infobox
     icd10_infos = soup.find_all("div", class_="float-right")
     if icd10_infos is None or len(icd10_infos) == 0:
-        logger.debug(f"No ICD-10 codes found for: {name}")
+        logger.warning(f"No ICD-10 codes found for: {name}")
         return None
     codes = parse_icd10_table(icd10_infos)
     if codes is None or len(codes) == 0:
-        logger.debug(f"No ICD-10 codes found for: {name}")
+        logger.warning(f"No ICD-10 codes found for: {name}")
         return None
 
-    # get the disease text
-    disease_text = soup.find("div", class_="mw-parser-output").find("p").text
-    if disease_text is None:
-        logger.debug(f"No disease text found for: {name}")
+    # get the introduction text
+    content_div = soup.find("div", class_="mw-content-ltr mw-parser-output")
+    introduction_text = get_introduction_text(content_div)
+    if introduction_text == "":
+        logger.warning(f"No introduction text found for: {name}")
         return None
+
+    if full_text:
+        full_text = get_all_text(content_div)
+    else:
+        full_text = None
 
     logger.debug(f"Found ICD-10 {codes} codes for: {name}")
-    return {"icd10": codes, "text": disease_text, "link": link, "name": name}
+    return {
+        "icd10": codes,
+        "link": link,
+        "name": name,
+        "text": clean_wikipedia_string(introduction_text),
+        "full_text": clean_wikipedia_string(full_text),
+    }
+
+
+def get_introduction_text(content_div: BeautifulSoup | NavigableString | None):
+    introduction_text = ""
+    for sibling in content_div.find("p").find_next_siblings():
+        if isinstance(sibling, Tag):
+            # If the sibling is a <p> tag, append its text to the introduction_text variable
+            if sibling.name == "p":
+                introduction_text += sibling.text + "\n"
+            # If the sibling is an <h2> tag, break the loop as we've reached the end of the introduction
+            elif sibling.name == "h2":
+                break
+
+    return introduction_text
+
+
+def get_all_text(content_div: BeautifulSoup | NavigableString | None):
+    text = ""
+    for sibling in content_div.find("p").find_next_siblings():
+        if isinstance(sibling, Tag):
+            # If the sibling is a <p> tag, append its text to the introduction_text variable
+            if sibling.name == "p":
+                text += sibling.text + "\n"
+
+    return text
 
 
 def parse_icd10_table(icd10_infos: ResultSet):

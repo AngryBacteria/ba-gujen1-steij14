@@ -1,34 +1,33 @@
 import logging
+from colorama import init, Fore, Style
 
+init(autoreset=True)  # Initialize colorama
 
-def set_log_level(level_name):
-    """
-    Change the debug level for the logger and its handlers.
-    level_name (str): The level name as a string, e.g., 'DEBUG', 'INFO', etc.
-    """
-    level = getattr(logging, level_name.upper(), None)
-    if not isinstance(level, int):
-        raise ValueError(f"Invalid log level: {level_name}")
+class CustomFormatter(logging.Formatter):
+    grey = Fore.WHITE
+    yellow = Fore.YELLOW
+    red = Fore.RED
+    bold_red = Style.BRIGHT + Fore.RED
+    reset = Style.RESET_ALL
+    format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
 
-    # Set the logger level
-    logger.setLevel(level)
+    FORMATS = {
+        logging.DEBUG: grey + format + reset,
+        logging.INFO: grey + format + reset,
+        logging.WARNING: yellow + format + reset,
+        logging.ERROR: red + format + reset,
+        logging.CRITICAL: bold_red + format + reset
+    }
 
-    # Set the level for all handlers of the logger
-    for handler in logger.handlers:
-        handler.setLevel(level)
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
 
-
-# Create a logger object
-logger = logging.getLogger("global_logger")
-logger.setLevel(logging.DEBUG)  # Set logging level
-
-# Create a console handler
+logger = logging.getLogger("MAIN")
+logger.setLevel(logging.DEBUG)
+# create console handler with a higher log level
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
-
-# Create a formatter
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-ch.setFormatter(formatter)
-
-# Add the handler to the logger
+ch.setFormatter(CustomFormatter())
 logger.addHandler(ch)
