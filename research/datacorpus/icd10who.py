@@ -12,6 +12,7 @@ icd10_metadata_path = "icd10who2019syst_kodes.txt"
 
 
 def parse_icd10who_alphabet(path, filter_special_classes=False):
+    """Parse the ICD-10-WHO alphabet files and return a dataframe"""
     columns = [
         "coding_type",
         "dimdi_id",
@@ -40,6 +41,7 @@ def parse_icd10who_alphabet(path, filter_special_classes=False):
 
 
 def parse_icd10who_metadata():
+    """Parse the ICD-10-WHO metadata file and return a dataframe"""
     columns = [
         "classification_level",
         "position_in_tree",
@@ -81,6 +83,7 @@ def parse_icd10who_metadata():
 
 
 def upload_to_mongodb(dataframe):
+    """Upload a dataframe to the MongoDB database."""
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
@@ -91,22 +94,27 @@ def upload_to_mongodb(dataframe):
     client.close()
 
 
-pd.set_option("display.max_columns", None)
-# parse both alphabet files
-alphabet1 = parse_icd10who_alphabet(icd10_alphabet_path1)
-alphabet2 = parse_icd10who_alphabet(icd10_alphabet_path2)
-output = pd.concat([alphabet1, alphabet2])
+def main():
+    """Main function to parse and upload the ICD-10-WHO data.
+    The alphabet and metadata files are combined. The reason is the alphabet has no class entries.
+    The alphabet file has many synonyms for the same code, which are combined into lists.
+    """
+    pd.set_option("display.max_columns", None)
+    # parse both alphabet files
+    alphabet1 = parse_icd10who_alphabet(icd10_alphabet_path1)
+    alphabet2 = parse_icd10who_alphabet(icd10_alphabet_path2)
+    output = pd.concat([alphabet1, alphabet2])
 
-# parse metadata file
-metadata = parse_icd10who_metadata()
-metadata = metadata[~metadata["code_without_dash_star"].str.contains("\.")]
-metadata = metadata.rename(columns={"code_without_dash_star": "code"})
-metadata = metadata.rename(columns={"class_title": "title"})
-metadata["asterisk_code"] = [[] for _ in range(len(metadata))]
-metadata["code2"] = [[] for _ in range(len(metadata))]
-metadata["title"] = metadata["title"].apply(lambda x: [x])
+    # parse metadata file
+    metadata = parse_icd10who_metadata()
+    metadata = metadata[~metadata["code_without_dash_star"].str.contains("\.")]
+    metadata = metadata.rename(columns={"code_without_dash_star": "code"})
+    metadata = metadata.rename(columns={"class_title": "title"})
+    metadata["asterisk_code"] = [[] for _ in range(len(metadata))]
+    metadata["code2"] = [[] for _ in range(len(metadata))]
+    metadata["title"] = metadata["title"].apply(lambda x: [x])
 
-# combine and upload
-output = pd.concat([output, metadata])
-output = output.sort_values(by="code")
-upload_to_mongodb(output)
+    # combine and upload
+    output = pd.concat([output, metadata])
+    output = output.sort_values(by="code")
+    upload_to_mongodb(output)
