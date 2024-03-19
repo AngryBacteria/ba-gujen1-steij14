@@ -35,7 +35,7 @@ def parse_icd10who_alphabet(path, filter_special_classes=False):
         filter_condition = ~data["code"].str.contains("[+*]", na=False)
         data = data[filter_condition]
 
-    logger.debug("Parsed data from", path, "with", len(data), "rows.")
+    logger.debug(f"Parsed data from {path} with {len(data)} rows.")
 
     return data.groupby("code").agg(lambda x: list(x.dropna())).reset_index()
 
@@ -77,7 +77,7 @@ def parse_icd10who_metadata():
     )
     data = data[data["code_without_dash_star"].notnull()]
 
-    logger.debug("Parsed data from", icd10_metadata_path, "with", len(data), "rows.")
+    logger.debug(f"Parsed data from {icd10_metadata_path} with {len(data)} rows.")
 
     return data
 
@@ -90,16 +90,36 @@ def upload_to_mongodb(dataframe):
     db.drop_collection("icd10who")
     collection = db.get_collection("icd10who")
     collection.insert_many(dataframe.to_dict(orient="records"))
-    logger.debug("Uploaded", len(dataframe), "rows to MongoDB.")
+    logger.debug(f"Uploaded {len(dataframe)} rows to MongoDB.")
     client.close()
 
 
-def main():
-    """Main function to parse and upload the ICD-10-WHO data.
-    The alphabet and metadata files are combined. The reason is the alphabet has no class entries.
-    The alphabet file has many synonyms for the same code, which are combined into lists.
+def merge_fields(group):
     """
+    Custom function to merge fields within a group of rows having the same 'code'.
+    """
+
+    # Example of merging lists for 'asterisk_code' and 'code2', and concatenating titles
+    asterisk_codes = sum(group['asterisk_code'], [])
+    unique_asterisk_codes = list(set(asterisk_codes))
+
+    codes2 = sum(group['code2'], [])
+    unique_code2 = list(set(codes2))
+
+    titles = sum(group['title'], [])
+    unique_titles = list(set(titles))
+
+    merged_row = {
+        'asterisk_code': unique_asterisk_codes,
+        'code2': unique_code2,
+        'title': unique_titles
+    }
+    return pd.Series(merged_row)
+
+
+def main():
     pd.set_option("display.max_columns", None)
+
     # parse both alphabet files
     alphabet1 = parse_icd10who_alphabet(icd10_alphabet_path1)
     alphabet2 = parse_icd10who_alphabet(icd10_alphabet_path2)
@@ -107,14 +127,17 @@ def main():
 
     # parse metadata file
     metadata = parse_icd10who_metadata()
-    metadata = metadata[~metadata["code_without_dash_star"].str.contains("\.")]
-    metadata = metadata.rename(columns={"code_without_dash_star": "code"})
-    metadata = metadata.rename(columns={"class_title": "title"})
+    metadata = metadata.rename(columns={"code_without_dash_star": "code", "class_title": "title"})
     metadata["asterisk_code"] = [[] for _ in range(len(metadata))]
     metadata["code2"] = [[] for _ in range(len(metadata))]
     metadata["title"] = metadata["title"].apply(lambda x: [x])
 
-    # combine and upload
+    # Combine alphabet and metadata
     output = pd.concat([output, metadata])
-    output = output.sort_values(by="code")
-    upload_to_mongodb(output)
+    # Merge rows with the same 'code'
+    merged_output = output.groupby('code').apply(merge_fields, include_groups=False).reset_index()
+    # Upload to MongoDB
+    upload_to_mongodb(merged_output)
+
+
+main()

@@ -1,12 +1,10 @@
 import csv
 import os
-
 import requests
 import re
 from bs4 import BeautifulSoup, ResultSet, Tag, NavigableString
 from dotenv import load_dotenv
 from pymongo import MongoClient
-
 from research.logger import logger
 
 ignore_list = [
@@ -28,9 +26,8 @@ general_medicine_list = [
 
 # WIKI PHP API
 def get_category_members_ids(category):
-    """Get all members of a wikipedia category, including their page IDs.
+    """Get all ids/titles of all members for a wikipedia category, including their page IDs.
     Category shoul be the name of the category without the "Kategorie:" prefix."""
-    URL = f"https://de.wikipedia.org/w/api.php"
 
     members = set()
     last_continue = {}
@@ -46,9 +43,9 @@ def get_category_members_ids(category):
             **last_continue,
         }
 
-        response = requests.get(url=URL, params=params)
+        response = requests.get(url="https://de.wikipedia.org/w/api.php", params=params)
         if not response.ok:
-            logger.error(f'Request failed with status code ({response.url}) for url: {response.url}')
+            logger.error(f'Request failed with status code ({response.status_code}) for url: {response.url}')
             continue
 
         logger.debug(response.url)
@@ -65,9 +62,9 @@ def get_category_members_ids(category):
 
 
 def get_article_ids_of_category(category):
-    """Get all articles in a wikipedia category, including subcategories. Each article is represented
+    """Get all article ids/titles in a wikipedia category, including subcategories. Each article is represented
     by a tuple containing the title and page ID.
-    Category shoul be the name of the category without the "Kategorie:" prefix."""
+    Category should be the name of the category without the "Kategorie:" prefix."""
 
     articles = set()
     members = get_category_members_ids(category)
@@ -85,19 +82,20 @@ def get_article_ids_of_category(category):
     return articles
 
 
-# TODO: get views data (and add to db)
-# https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews
-# https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/de.wikipedia/all-access/all-agents/Albert_Einstein/monthly/2015100100/2024030100
 def get_articles_views(name: str):
-    response = requests.get(
-        f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/de.wikipedia/all-access/all-agents/{name.replace(' ', '_')}/monthly/2015100100/2015103100")
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+    url = f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/de.wikipedia/all-access/all-agents/{name.replace(' ', '_')}/monthly/2015100100/2024030100"
+    response = requests.get(url, headers=headers)
     if not response.ok:
-        logger.error(f'Request failed with status code ({response.url}) for url: {response.url}')
+        logger.error(f'Request failed with status code ({response.status_code}) for url: {response.url}')
         return None
     else:
-        logger.debug(response.url)
+        output = 0
         data = response.json()
-        print(data)
+        for entry in data["items"]:
+            output += entry["views"]
+        return output
 
 
 def save_article_ids_by_category(category_name):
@@ -149,7 +147,7 @@ def get_disease_info_from_article(
     link = f"https://de.wikipedia.org/wiki/{name.replace(' ', '_')}"
     response = requests.get(link)
     if not response.ok:
-        logger.error(f'Request failed with status code ({response.url}) for url: {response.url}')
+        logger.error(f'Request failed with status code ({response.status_code}) for url: {response.url}')
         return None
 
     soup = BeautifulSoup(response.content, "html.parser")
