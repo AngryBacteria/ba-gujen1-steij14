@@ -111,7 +111,6 @@ def save_article_ids_by_category(category_name):
     The file will be named 'wikipedia_article_titles_{category_name}.txt'.
     The data is saved as a CSV in the format: Title|Page ID"""
     output = get_article_ids_of_category(category_name)
-    logger.debug(f"{len(output)} Articles found for the category: {category_name}")
 
     file_path = f"wikipedia_article_titles_{category_name}.txt"
     with open(file_path, mode="w", newline="", encoding="utf-8") as file:
@@ -120,7 +119,7 @@ def save_article_ids_by_category(category_name):
         for article in output:
             writer.writerow(article)
 
-    logger.debug(f"Saved {len(output)} articles into: {file_path}")
+    logger.debug(f"Saved {len(output)} articles from the {category_name} category into: {file_path}")
     return output
 
 
@@ -271,7 +270,7 @@ def add_views_to_db(overwrite=False):
                 collection.update_one({"name": title}, {"$set": {"views": views}})
                 logger.debug(f"Updated Article ({title}) with {views} views.")
         except Exception as e:
-            logger.error(f"Error for when getting views info: {e}")
+            logger.error(f"Error for when getting views for article: {e}")
     client.close()
 
 

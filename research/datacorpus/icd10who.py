@@ -1,21 +1,21 @@
 import os
-from urllib.parse import quote
 
 import pandas as pd
-import requests
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from pymongo import MongoClient
+import xml.etree.ElementTree as et
 
 from research.logger import logger
 
 icd10_alphabet_path1 = "icd10who2019alpha_edvtxt_teil1_20180824.txt"
 icd10_alphabet_path2 = "icd10who2019alpha_edvtxt_teil2_20180824.txt"
 icd10_metadata_path = "icd10who2019syst_kodes.txt"
+icd10_xml = "icd10who2019syst_claml_20180824.xml"
+load_dotenv()
 
 
-# Official CSV-Files
-def parse_icd10who_alphabet(path, filter_special_classes=False):
+# Official CSV-Files. I recommend you use the XML-File instead.
+def parse_icd10who_alphabet(path):
     """Parse the ICD-10-WHO alphabet files and return a dataframe"""
     columns = [
         "coding_type",
@@ -35,9 +35,6 @@ def parse_icd10who_alphabet(path, filter_special_classes=False):
     )
 
     data = data[data["code"].notnull()]
-    if filter_special_classes:
-        filter_condition = ~data["code"].str.contains("[+*]", na=False)
-        data = data[filter_condition]
 
     logger.debug(f"Parsed data from {path} with {len(data)} rows.")
 
@@ -108,54 +105,7 @@ def merge_fields(group):
     return pd.Series(merged_row)
 
 
-# WEBSCRAPING
-def get_bund_text(code: str):
-    """Get the text for an ICD10 code from gesund.bund.de"""
-    encoded_code = quote(code.replace(".", "-"))
-    link = f"https://gesund.bund.de/icd-code-suche/{encoded_code}"
-    response = requests.get(link)
-    if not response.ok:
-        logger.error(
-            f"Request failed with status code ({response.status_code}) for url: {response.url}"
-        )
-        return None
-
-    soup = BeautifulSoup(response.content, "html.parser")
-    article = soup.find("article")
-    if article is None:
-        logger.warning(f"No article found for: {code}")
-        return None
-
-    target_div = article.find("div", {"data-text-key": code})
-    if target_div is None:
-        logger.warning("Article text not found")
-        return None
-
-    return target_div.text.strip()
-
-
-def update_db_with_bund_texts(overwrite=False):
-    """Update the MongoDB database with the text from gesund.bund.de"""
-    load_dotenv()
-    client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("main")
-    collection = db.get_collection("icd10who")
-
-    for doc in collection.find():
-        try:
-            code = doc["code"]
-            if "bund_text" in doc and not overwrite:
-                continue
-            text = get_bund_text(code)
-            if text is not None:
-                collection.update_one({"code": code}, {"$set": {"bund_text": text}})
-                logger.debug(f"Updated {code} with text from bund.de")
-        except Exception as e:
-            logger.error(f"Error for {doc['code']}: {e}")
-    client.close()
-
-
-def create_icd10_db(add_bund_text=False):
+def create_icd10_db_from_csv():
     # parse both alphabet files
     alphabet1 = parse_icd10who_alphabet(icd10_alphabet_path1)
     alphabet2 = parse_icd10who_alphabet(icd10_alphabet_path2)
@@ -177,7 +127,6 @@ def create_icd10_db(add_bund_text=False):
     )
 
     # Upload to MongoDB
-    load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
     db.drop_collection("icd10who")
@@ -186,7 +135,25 @@ def create_icd10_db(add_bund_text=False):
     logger.debug(f"Uploaded {len(merged_output)} rows to MongoDB.")
     client.close()
 
-    # Update with bund.de text
-    if add_bund_text:
-        update_db_with_bund_texts()
-        logger.debug("Updated with bund.de text")
+
+# XML-File
+tree = et.parse("icd10who2019syst_claml_20180824.xml")
+root = tree.getroot()
+
+for class_element in root.findall(".//Class"):
+
+    code = class_element.attrib.get('code', None)
+    if code is None:
+        raise ValueError("No code found")
+
+    usage = class_element.attrib.get('usage', None)
+    if usage == 'dagger':
+        code = code + "+"
+    if usage == 'aster':
+        code = code + "*"
+
+    preferred_label = class_element.find(".//Rubric[@kind='preferred']/Label")
+    if preferred_label is None:
+        raise ValueError("No preferred label found")
+
+    print(code, preferred_label.text)
