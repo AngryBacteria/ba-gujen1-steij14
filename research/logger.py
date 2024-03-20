@@ -3,6 +3,8 @@ from colorama import init, Fore, Style
 
 init(autoreset=True)  # Initialize colorama
 
+
+# Custom format with colors for the console
 class CustomFormatter(logging.Formatter):
     grey = Fore.WHITE
     yellow = Fore.YELLOW
@@ -24,10 +26,20 @@ class CustomFormatter(logging.Formatter):
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
 
+
 logger = logging.getLogger("MAIN")
 logger.setLevel(logging.DEBUG)
-# create console handler with a higher log level
+
+# console handler
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(CustomFormatter())
 logger.addHandler(ch)
+
+# file handler
+fh = logging.FileHandler('main.log')
+fh.setLevel(logging.DEBUG)
+log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+formatter = logging.Formatter(log_format)
+fh.setFormatter(formatter)
+logger.addHandler(fh)

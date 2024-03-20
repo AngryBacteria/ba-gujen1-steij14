@@ -1,5 +1,7 @@
 import csv
 import os
+from urllib.parse import quote_plus
+
 import requests
 import re
 from bs4 import BeautifulSoup, ResultSet, Tag, NavigableString
@@ -13,15 +15,14 @@ ignore_list = [
     "Krankheitsbild in der Tiermedizin",
     "Krankheitsbild in der Wehrmedizin",
     "Kategorie:Krankheitsbild in der Tiermedizin",
+    "Kategorie:Hypovitaminose",
 ]
 
 disease_list = [
     "Kategorie:Krankheit",
 ]
 
-general_medicine_list = [
-    "Kategorie:Medizinische_Fachsprache"
-]
+general_medicine_list = ["Kategorie:Medizinische_Fachsprache"]
 
 
 # WIKI PHP API
@@ -32,12 +33,13 @@ def get_category_members_ids(category):
     members = set()
     last_continue = {}
 
+    encoded_category = quote_plus(category.replace(" ", "_"))
     while True:
         params = {
             "action": "query",
             "format": "json",
             "list": "categorymembers",
-            "cmtitle": f"Kategorie:{category}",
+            "cmtitle": f"Kategorie:{encoded_category}",
             "cmtype": "page|subcat",
             "cmlimit": 500,
             **last_continue,
@@ -45,10 +47,12 @@ def get_category_members_ids(category):
 
         response = requests.get(url="https://de.wikipedia.org/w/api.php", params=params)
         if not response.ok:
-            logger.error(f'Request failed with status code ({response.status_code}) for url: {response.url}')
+            logger.error(
+                f"Request failed with status code ({response.status_code}) for url: {response.url}"
+            )
             continue
 
-        logger.debug(response.url)
+        logger.debug(f"Getting category members from: {response.url}")
         data = response.json()
 
         for item in data["query"]["categorymembers"]:
@@ -77,18 +81,22 @@ def get_article_ids_of_category(category):
             subcategory = title.split("Kategorie:")[1]
             articles.update(get_article_ids_of_category(subcategory))
         else:
-            articles.add((title, pageid))  # Add a tuple to the set
+            articles.add((title, pageid))
 
     return articles
 
 
 def get_articles_views(name: str):
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
-    url = f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/de.wikipedia/all-access/all-agents/{name.replace(' ', '_')}/monthly/2015100100/2024030100"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+    }
+    encoded_name = quote_plus(name.replace(" ", "_"))
+    url = f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/de.wikipedia/all-access/all-agents/{encoded_name}/monthly/2015100100/2024030100"
     response = requests.get(url, headers=headers)
     if not response.ok:
-        logger.error(f'Request failed with status code ({response.status_code}) for url: {response.url}')
+        logger.error(
+            f"Request failed with status code ({response.status_code}) for url: {response.url}"
+        )
         return None
     else:
         output = 0
@@ -106,13 +114,13 @@ def save_article_ids_by_category(category_name):
     logger.debug(f"{len(output)} Articles found for the category: {category_name}")
 
     file_path = f"wikipedia_article_titles_{category_name}.txt"
-    logger.debug(f"Saving articles into: {file_path}")
     with open(file_path, mode="w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file, delimiter="|")
         writer.writerow(["Title", "Page ID"])
         for article in output:
             writer.writerow(article)
 
+    logger.debug(f"Saved {len(output)} articles into: {file_path}")
     return output
 
 
@@ -125,6 +133,7 @@ def read_article_ids_from_file(category_name):
         next(reader)
         for row in reader:
             articles.add((row[0], row[1]))
+    logger.debug(f"Read {len(articles)} articles from: {file_path}")
     return articles
 
 
@@ -137,21 +146,26 @@ def clean_wikipedia_string(text: str):
     return text
 
 
+# TODO: is there a way to handle "redirection" cases such as https://de.wikipedia.org/wiki/Ariboflavinose
 def get_disease_info_from_article(
-        name: str, pageid: str = "", get_full_text: bool = False
+    name: str, pageid: str = "", get_full_text: bool = False
 ):
     """Get the data for a disease from a wikipedia article by its name. Returns None if no data is found.
     The data includes the ICD-10 codes, the introduction text and the link to the article.
     If the get_full_text is set to True, the full text of the article is also returned.
     """
-    link = f"https://de.wikipedia.org/wiki/{name.replace(' ', '_')}"
+    encoded_name = quote_plus(name.replace(" ", "_"))
+    link = f"https://de.wikipedia.org/wiki/{encoded_name}"
     response = requests.get(link)
     if not response.ok:
-        logger.error(f'Request failed with status code ({response.status_code}) for url: {response.url}')
+        logger.error(
+            f"Request failed with status code ({response.status_code}) for url: {response.url}"
+        )
         return None
 
-    soup = BeautifulSoup(response.content, "html.parser")
+    print(response.history)
 
+    soup = BeautifulSoup(response.content, "html.parser")
     # get icd10 codes from the infobox
     icd10_infos = soup.find_all("div", class_="float-right")
     if icd10_infos is None or len(icd10_infos) == 0:
@@ -185,7 +199,7 @@ def get_disease_info_from_article(
 
 
 def get_introduction_text(
-        content_div: BeautifulSoup | Tag | NavigableString | None,
+    content_div: BeautifulSoup | Tag | NavigableString | None,
 ) -> str:
     """Get the introduction text of a wikipedia article from the content div."""
     introduction_text = ""
@@ -241,22 +255,46 @@ def parse_icd10_table(icd10_infos: ResultSet):
     return output
 
 
-def upload_articles_by_category(category: str):
-    """Upload the articles of a category to a MongoDB database."""
+def add_views_to_db(overwrite=False):
+    """Add the views of the articles to the articles already present in the MongoDB database."""
+    load_dotenv()
+    client = MongoClient(os.getenv("MONGO_URL"))
+    db = client.get_database("main")
+    collection = db.get_collection("wikipedia_icd10")
+    for doc in collection.find():
+        try:
+            if "views" in doc and not overwrite:
+                continue
+            title = doc["name"]
+            views = get_articles_views(title)
+            if views is not None:
+                collection.update_one({"name": title}, {"$set": {"views": views}})
+                logger.debug(f"Updated Article ({title}) with {views} views.")
+        except Exception as e:
+            logger.error(f"Error for when getting views info: {e}")
+    client.close()
+
+
+def build_wikipedia_icd10_db(file_exists=True, get_full_text=True, add_views=False):
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
     db.drop_collection("wikipedia_icd10")
     collection = db.get_collection("wikipedia_icd10")
 
-    articles = read_article_ids_from_file(category)
+    if not file_exists:
+        save_article_ids_by_category("Krankheit")
+    articles = read_article_ids_from_file("Krankheit")
+
     for title, _id in articles:
         try:
-            data = get_disease_info_from_article(title, _id, True)
+            data = get_disease_info_from_article(title, _id, get_full_text)
             if data is not None:
                 collection.insert_one(data)
                 logger.debug(f"Uploaded {title}({_id}) to MongoDB.")
         except Exception as e:
-            logger.error(f"Failed to process {title}({_id}): {e}")
-
+            logger.error(f"Failed to upload {title}({_id}): {e}")
     client.close()
+
+    if add_views:
+        add_views_to_db()
