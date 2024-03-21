@@ -137,23 +137,61 @@ def create_icd10_db_from_csv():
 
 
 # XML-File
-tree = et.parse("icd10who2019syst_claml_20180824.xml")
-root = tree.getroot()
+def parse_xml_icd10():
+    tree = et.parse(icd10_xml)
+    root = tree.getroot()
 
-for class_element in root.findall(".//Class"):
+    # find all icd10 classes
+    icd10_entries = []
+    for class_element in root.findall(".//Class"):
+        # pre-checks
+        kind = class_element.attrib.get('kind', None)
+        if kind != 'category':
+            continue
+        code = class_element.attrib.get('code', None)
+        if code is None:
+            logger.error("No code info found")
+            continue
 
-    code = class_element.attrib.get('code', None)
-    if code is None:
-        raise ValueError("No code found")
+        # parse code
+        usage = class_element.attrib.get('usage', None)
+        if usage == 'dagger':
+            code = code + "+"
+        if usage == 'aster':
+            code = code + "*"
 
-    usage = class_element.attrib.get('usage', None)
-    if usage == 'dagger':
-        code = code + "+"
-    if usage == 'aster':
-        code = code + "*"
+        # parse labels
+        # TODO: handle "Nicht belegte Schlüsselnummer"
+        preferred_label = class_element.find(".//Rubric[@kind='preferred']/Label")
+        if preferred_label is None:
+            logger.error(f"No preferred label found for class {code}")
+            continue
 
-    preferred_label = class_element.find(".//Rubric[@kind='preferred']/Label")
-    if preferred_label is None:
-        raise ValueError("No preferred label found")
+        # parse metadata
+        rare_disease_element = class_element.find(".//Meta[@name='RareDisease']")
+        sex_code_element = class_element.find(".//Meta[@name='SexCode']")
+        sex_reject_element = class_element.find(".//Meta[@name='SexReject']")
+        age_low_element = class_element.find(".//Meta[@name='AgeLow']")
+        age_high_element = class_element.find(".//Meta[@name='AgeHigh']")
 
-    print(code, preferred_label.text)
+        rare_disease = rare_disease_element.get('value', None)
+        sex_code = sex_code_element.get('value', None)
+        sex_reject = sex_reject_element.get('value', None)
+        age_low = age_low_element.get('value', None)
+        age_high = age_high_element.get('value', None)
+
+        icd10_entries.append({
+            "code": code,
+            "title": preferred_label.text,
+            "rare_disease": rare_disease,
+            "sex_code": sex_code,
+            "sex_reject": sex_reject,
+            "age_low": age_low,
+            "age_high": age_high
+        })
+
+    for entry in icd10_entries:
+        print(entry)
+
+
+parse_xml_icd10()
