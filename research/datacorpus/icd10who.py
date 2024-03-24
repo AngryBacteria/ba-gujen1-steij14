@@ -10,7 +10,7 @@ from research.logger import logger
 icd10_alphabet_path1 = "icd10who2019alpha_edvtxt_teil1_20180824.txt"
 icd10_alphabet_path2 = "icd10who2019alpha_edvtxt_teil2_20180824.txt"
 icd10_metadata_path = "icd10who2019syst_kodes.txt"
-icd10_xml = "icd10who2019syst_claml_20180824.xml"
+icd10_xml_path = "icd10who2019syst_claml_20180824.xml"
 load_dotenv()
 
 
@@ -130,68 +130,197 @@ def create_icd10_db_from_csv():
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
     db.drop_collection("icd10who")
-    collection = db.get_collection("icd10who")
-    collection.insert_many(merged_output.to_dict(orient="records"))
+    icd10who_collection = db.get_collection("icd10who")
+    icd10who_collection.insert_many(merged_output.to_dict(orient="records"))
     logger.debug(f"Uploaded {len(merged_output)} rows to MongoDB.")
     client.close()
 
 
 # XML-File
-def parse_xml_icd10():
-    tree = et.parse(icd10_xml)
+def parse_xml_icd10_categories(add_alphabet=False):
+    tree = et.parse(icd10_xml_path)
     root = tree.getroot()
 
-    # find all icd10 classes
-    icd10_entries = []
-    for class_element in root.findall(".//Class"):
+    # find all icd10 codes
+    icd10_categories = []
+    for category_element in root.findall(".//Class"):
         # pre-checks
-        kind = class_element.attrib.get('kind', None)
-        if kind != 'category':
+        kind = category_element.attrib.get("kind", None)
+        if kind != "category":
             continue
-        code = class_element.attrib.get('code', None)
+        code = category_element.attrib.get("code", None)
         if code is None:
-            logger.error("No code info found")
+            logger.error("No code found for category")
             continue
 
         # parse code
-        usage = class_element.attrib.get('usage', None)
-        if usage == 'dagger':
-            code = code + "+"
-        if usage == 'aster':
+        usage = category_element.attrib.get("usage", None)
+        if usage == "dagger":
+            code = code + "†"
+        if usage == "aster":
             code = code + "*"
 
         # parse labels
-        # TODO: handle "Nicht belegte Schlüsselnummer"
-        preferred_label = class_element.find(".//Rubric[@kind='preferred']/Label")
-        if preferred_label is None:
-            logger.error(f"No preferred label found for class {code}")
+        preferred_label = category_element.find(".//Rubric[@kind='preferred']/Label")
+        if "Nicht belegte Schlüsselnummer" in preferred_label.text:
+            continue
+        if preferred_label is None or preferred_label.text is None:
+            logger.error(f"No preferred label found for category: {code}")
+            continue
+
+        # parse block
+        block_element = category_element.find(".//SuperClass")
+        block_code = block_element.get("code", None)
+        if block_code is None:
+            logger.error(f"No block code found for category: {code}")
             continue
 
         # parse metadata
-        rare_disease_element = class_element.find(".//Meta[@name='RareDisease']")
-        sex_code_element = class_element.find(".//Meta[@name='SexCode']")
-        sex_reject_element = class_element.find(".//Meta[@name='SexReject']")
-        age_low_element = class_element.find(".//Meta[@name='AgeLow']")
-        age_high_element = class_element.find(".//Meta[@name='AgeHigh']")
+        rare_disease_element = category_element.find(".//Meta[@name='RareDisease']")
+        sex_code_element = category_element.find(".//Meta[@name='SexCode']")
+        sex_reject_element = category_element.find(".//Meta[@name='SexReject']")
+        age_low_element = category_element.find(".//Meta[@name='AgeLow']")
+        age_high_element = category_element.find(".//Meta[@name='AgeHigh']")
+        rare_disease = rare_disease_element.get("value", None)
+        sex_code = sex_code_element.get("value", None)
+        sex_reject = sex_reject_element.get("value", None)
+        age_low = age_low_element.get("value", None)
+        age_high = age_high_element.get("value", None)
 
-        rare_disease = rare_disease_element.get('value', None)
-        sex_code = sex_code_element.get('value', None)
-        sex_reject = sex_reject_element.get('value', None)
-        age_low = age_low_element.get('value', None)
-        age_high = age_high_element.get('value', None)
+        # append to list
+        icd10_categories.append(
+            {
+                "code": code,
+                "block_code": block_code,
+                "title": preferred_label.text,
+                "synonyms": [],
+                "type": "category",
+                "rare_disease": rare_disease,
+                "sex_code": sex_code,
+                "sex_reject": sex_reject,
+                "age_low": age_low,
+                "age_high": age_high,
+            }
+        )
 
-        icd10_entries.append({
-            "code": code,
-            "title": preferred_label.text,
-            "rare_disease": rare_disease,
-            "sex_code": sex_code,
-            "sex_reject": sex_reject,
-            "age_low": age_low,
-            "age_high": age_high
-        })
+    # add synonyms from the alphabet file
+    if add_alphabet:
+        alphabet1 = parse_icd10who_alphabet(icd10_alphabet_path1)
+        alphabet2 = parse_icd10who_alphabet(icd10_alphabet_path2)
+        alphabet_codes = pd.concat([alphabet1, alphabet2])
+        for category in icd10_categories:
+            code = category["code"]
+            alphabet_entries = alphabet_codes[alphabet_codes["code"] == code]
+            if len(alphabet_entries) == 1:
+                alphabet_entry = alphabet_entries.iloc[0]
+                titles = alphabet_entry["title"]
+                category_title = category["title"]
+                synonyms = [title for title in titles if title != category_title]
+                category["synonyms"] = synonyms
 
-    for entry in icd10_entries:
-        print(entry)
+    logger.debug(
+        f"Parsed category data from {icd10_xml_path} with {len(icd10_categories)} rows."
+    )
+    return icd10_categories
 
 
-parse_xml_icd10()
+def parse_xml_icd10_blocks():
+    tree = et.parse(icd10_xml_path)
+    root = tree.getroot()
+
+    # find all icd10 blocks
+    icd10_blocks = []
+    for block_element in root.findall(".//Class"):
+        # pre-checks
+        kind = block_element.attrib.get("kind", None)
+        if kind != "block":
+            continue
+        code = block_element.attrib.get("code", None)
+        if code is None:
+            logger.error("No code found for block")
+            continue
+
+        # parse labels
+        preferred_label = block_element.find(".//Rubric[@kind='preferred']/Label")
+        if "Nicht belegte Schlüsselnummer" in preferred_label.text:
+            continue
+        if preferred_label is None or preferred_label.text is None:
+            logger.error(f"No preferred label found for block: {code}")
+            continue
+
+        # parse superclass chapter
+        chapter_element = block_element.find(".//SuperClass")
+        chapter_code = chapter_element.get("code", None)
+        if chapter_code is None:
+            logger.error(f"No chapter code found for block: {code}")
+            continue
+
+        # append to list
+        icd10_blocks.append(
+            {
+                "code": code,
+                "chapter_code": chapter_code,
+                "title": preferred_label.text,
+                "type": "block",
+            }
+        )
+
+    logger.debug(
+        f"Parsed block data from {icd10_xml_path} with {len(icd10_blocks)} rows."
+    )
+    return icd10_blocks
+
+
+def parse_xml_icd10_chapters():
+    tree = et.parse(icd10_xml_path)
+    root = tree.getroot()
+
+    # find all icd10 codes
+    icd10_chapters = []
+    for chapter_element in root.findall(".//Class"):
+        # pre-checks
+        kind = chapter_element.attrib.get("kind", None)
+        if kind != "chapter":
+            continue
+        code = chapter_element.attrib.get("code", None)
+        if code is None:
+            logger.error("No code for chapter found")
+            continue
+
+        # parse labels
+        preferred_label = chapter_element.find(".//Rubric[@kind='preferred']/Label")
+        if "Nicht belegte Schlüsselnummer" in preferred_label.text:
+            continue
+        if preferred_label is None or preferred_label.text is None:
+            logger.error(f"No preferred label found for chapter {code}")
+            continue
+
+        # append to list
+        icd10_chapters.append(
+            {"code": code, "title": preferred_label.text, "type": "chapter"}
+        )
+
+    logger.debug(
+        f"Parsed chapter data from {icd10_xml_path} with {len(icd10_chapters)} rows."
+    )
+    return icd10_chapters
+
+
+def create_icd10_db_from_xml(add_alphabet=False):
+    # parse xml files and combine
+    categories = parse_xml_icd10_categories(add_alphabet)
+    blocks = parse_xml_icd10_blocks()
+    chapters = parse_xml_icd10_chapters()
+    merged_output = categories + blocks + chapters
+
+    # sort by code
+    merged_output = sorted(merged_output, key=lambda x: x["code"])
+
+    # Upload to MongoDB
+    client = MongoClient(os.getenv("MONGO_URL"))
+    db = client.get_database("main")
+    db.drop_collection("icd10who")
+    icd10who_collection = db.get_collection("icd10who")
+    icd10who_collection.insert_many(merged_output)
+    logger.debug(f"Uploaded {len(merged_output)} rows to MongoDB.")
+    client.close()

@@ -43,7 +43,7 @@ def upload_bund_texts():
     icd10who = db.get_collection("icd10who")
     gesundbund = db.get_collection("gesundbund")
 
-    for doc in icd10who.find():
+    for doc in icd10who.find({"type": "category"}):
         try:
             code = doc["code"]
             text = get_bund_text(code)

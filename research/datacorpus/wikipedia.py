@@ -119,7 +119,9 @@ def save_article_ids_by_category(category_name):
         for article in output:
             writer.writerow(article)
 
-    logger.debug(f"Saved {len(output)} articles from the {category_name} category into: {file_path}")
+    logger.debug(
+        f"Saved {len(output)} articles from the {category_name} category into: {file_path}"
+    )
     return output
 
 
@@ -259,15 +261,17 @@ def add_views_to_db(overwrite=False):
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
-    collection = db.get_collection("wikipedia_icd10")
-    for doc in collection.find():
+    wikipedia_icd10_collection = db.get_collection("wikipedia_icd10")
+    for doc in wikipedia_icd10_collection.find():
         try:
             if "views" in doc and not overwrite:
                 continue
             title = doc["name"]
             views = get_articles_views(title)
             if views is not None:
-                collection.update_one({"name": title}, {"$set": {"views": views}})
+                wikipedia_icd10_collection.update_one(
+                    {"name": title}, {"$set": {"views": views}}
+                )
                 logger.debug(f"Updated Article ({title}) with {views} views.")
         except Exception as e:
             logger.error(f"Error for when getting views for article: {e}")
@@ -279,7 +283,7 @@ def build_wikipedia_icd10_db(file_exists=True, get_full_text=True, add_views=Fal
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
     db.drop_collection("wikipedia_icd10")
-    collection = db.get_collection("wikipedia_icd10")
+    wikipedia_icd10_collection = db.get_collection("wikipedia_icd10")
 
     if not file_exists:
         save_article_ids_by_category("Krankheit")
@@ -289,7 +293,7 @@ def build_wikipedia_icd10_db(file_exists=True, get_full_text=True, add_views=Fal
         try:
             data = get_disease_info_from_article(title, _id, get_full_text)
             if data is not None:
-                collection.insert_one(data)
+                wikipedia_icd10_collection.insert_one(data)
                 logger.debug(f"Uploaded {title}({_id}) to MongoDB.")
         except Exception as e:
             logger.error(f"Failed to upload {title}({_id}): {e}")
