@@ -86,12 +86,12 @@ def get_article_ids_of_category(category):
     return articles
 
 
-def get_articles_views(name: str):
+def get_articles_views(title: str):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
     }
-    encoded_name = quote_plus(name.replace(" ", "_"))
-    url = f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/de.wikipedia/all-access/all-agents/{encoded_name}/monthly/2015100100/2024030100"
+    encoded_title = quote_plus(title.replace(" ", "_"))
+    url = f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/de.wikipedia/all-access/all-agents/{encoded_title}/monthly/2015100100/2024030100"
     response = requests.get(url, headers=headers)
     if not response.ok:
         logger.error(
@@ -142,21 +142,23 @@ def read_article_ids_from_file(category_name):
 def clean_wikipedia_string(text: str):
     """Clean a string from wikipedia by removing references and other unwanted elements."""
     text = text.strip()
-    pattern = r"\[.*\]"
+    pattern = r"\[.*?\]"
     text = re.sub(pattern, "", text)
     return text
 
 
 # TODO: is there a way to handle "redirection" cases such as https://de.wikipedia.org/wiki/Ariboflavinose
 def get_disease_info_from_article(
-    name: str, pageid: str = "", get_full_text: bool = False
+    title: str, pageid: str = "", get_full_text: bool = False
 ):
-    """Get the data for a disease from a wikipedia article by its name. Returns None if no data is found.
+    """Get the data for a disease from a wikipedia article by its title. Returns None if no data is found.
     The data includes the ICD-10 codes, the introduction text and the link to the article.
     If the get_full_text is set to True, the full text of the article is also returned.
     """
-    encoded_name = quote_plus(name.replace(" ", "_"))
-    link = f"https://de.wikipedia.org/wiki/{encoded_name}"
+    encoded_title = quote_plus(title.replace(" ", "_"))
+    link = (
+        f"https://de.wikipedia.org/api/rest_v1/page/html/{encoded_title}?redirect=false"
+    )
     response = requests.get(link)
     if not response.ok:
         logger.error(
@@ -164,24 +166,22 @@ def get_disease_info_from_article(
         )
         return None
 
-    print(response.history)
-
     soup = BeautifulSoup(response.content, "html.parser")
     # get icd10 codes from the infobox
     icd10_infos = soup.find_all("div", class_="float-right")
     if icd10_infos is None or len(icd10_infos) == 0:
-        logger.warning(f"No ICD-10 codes found for: {name}")
+        logger.warning(f"No ICD-10 codes found for: {title}")
         return None
     codes = parse_icd10_table(icd10_infos)
     if codes is None or len(codes) == 0:
-        logger.warning(f"No ICD-10 codes found for: {name}")
+        logger.warning(f"No ICD-10 codes found for: {title}")
         return None
 
     # get the introduction text
-    content_div = soup.find("div", class_="mw-content-ltr mw-parser-output")
+    content_div = soup.find("body", class_=["mw-content-ltr", "mw-parser-output"])
     introduction_text = get_introduction_text(content_div)
     if introduction_text == "":
-        logger.warning(f"No introduction text found for: {name}")
+        logger.warning(f"No introduction text found for: {title}")
         return None
 
     if get_full_text:
@@ -189,10 +189,10 @@ def get_disease_info_from_article(
     else:
         full_text = ""
 
-    logger.debug(f"Found ICD-10 {codes} codes for: {name}")
+    logger.debug(f"Found ICD-10 {codes} codes for: {title}")
     return {
         "icd10": codes,
-        "name": name,
+        "title": title,
         "text": clean_wikipedia_string(introduction_text),
         "full_text": clean_wikipedia_string(full_text),
         "pageid": pageid,
@@ -204,12 +204,11 @@ def get_introduction_text(
 ) -> str:
     """Get the introduction text of a wikipedia article from the content div."""
     introduction_text = ""
-    for child in content_div.descendants:
-        if isinstance(child, Tag):
-            if child.name == "p":
-                introduction_text += child.text + "\n"
-            elif child.name == "h2":
-                break
+    sections = content_div.find_all(name="section")
+    section = sections[0]
+    for child in section.children:
+        if child.name == "p":
+            introduction_text += child.text + "\n"
 
     return introduction_text
 
@@ -217,12 +216,51 @@ def get_introduction_text(
 def get_all_text(content_div: BeautifulSoup | Tag | NavigableString | None) -> str:
     """Get all text of a wikipedia article from the content div."""
     text = ""
-    for child in content_div.descendants:
-        if isinstance(child, Tag):
+    sections = content_div.find_all(name="section")
+    stop_processing = False
+    for section in sections:
+        if stop_processing:
+            break
+
+        for child in section.children:
+            if child.name == "h2":
+                if child.text.strip() in [
+                    "Weblinks",
+                    "Literatur",
+                    "Einzelnachweise",
+                    "Siehe auch",
+                    "Referenzen",
+                    "Externe Links",
+                    "Quellen",
+                    "Weitere Informationen",
+                    "Zusätzliche Informationen",
+                    "Ähnliche Artikel",
+                    "Anmerkungen",
+                    "Audio",
+                ]:
+                    stop_processing = True
+                    break
+                else:
+                    text = text + "\n" + child.text + "\n"
+            if child.name == "h3":
+                text = text + "\n" + child.text + "\n"
             if child.name == "p":
                 text += child.text + "\n"
+            if child.name == "ul":
+                # todo!!
+                text += process_ul(child)
 
     return text
+
+
+def process_ul(ul_element: BeautifulSoup | Tag) -> str:
+    """Recursively process a <ul> element and its children <li> elements to extract text."""
+    list_text = ""
+    for li in ul_element.find_all("li", recursive=False):
+        list_text += "- " + li.text.strip() + "\n"
+        for nested_ul in li.find_all("ul", recursive=False):
+            list_text += process_ul(nested_ul)
+    return list_text
 
 
 # TODO: also parse the following pattern: T20.- bis T32
@@ -266,11 +304,11 @@ def add_views_to_db(overwrite=False):
         try:
             if "views" in doc and not overwrite:
                 continue
-            title = doc["name"]
+            title = doc["title"]
             views = get_articles_views(title)
             if views is not None:
                 wikipedia_icd10_collection.update_one(
-                    {"name": title}, {"$set": {"views": views}}
+                    {"title": title}, {"$set": {"views": views}}
                 )
                 logger.debug(f"Updated Article ({title}) with {views} views.")
         except Exception as e:
@@ -301,3 +339,7 @@ def build_wikipedia_icd10_db(file_exists=True, get_full_text=True, add_views=Fal
 
     if add_views:
         add_views_to_db()
+
+
+info = get_disease_info_from_article("Kopfschmerz", get_full_text=True)
+print(info["full_text"])
