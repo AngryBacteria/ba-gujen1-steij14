@@ -356,7 +356,6 @@ def build_wikipedia_icd10_db(
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
-    db.drop_collection("wikipedia")
     wikipedia_collection = db.get_collection("wikipedia")
 
     if not file_exists:
@@ -377,3 +376,6 @@ def build_wikipedia_icd10_db(
         except Exception as e:
             logger.error(f"Failed to upload {title}({_id}): {e}")
     client.close()
+
+
+build_wikipedia_icd10_db("Krankheit", file_exists=True, get_full_text=True)

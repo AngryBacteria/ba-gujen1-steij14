@@ -36,14 +36,14 @@ def get_bund_text(code: str):
     return target_div.text.strip()
 
 
-def upload_bund_texts():
+def build_bund_db():
     """Update the MongoDB database with the text from gesund.bund.de"""
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
-    icd10who = db.get_collection("icd10who")
+    icd10gm = db.get_collection("icd10gm")
     gesundbund = db.get_collection("gesundbund")
 
-    for doc in icd10who.find({"type": "category"}):
+    for doc in icd10gm.find({"type": "category"}):
         try:
             code = doc["code"]
             text = get_bund_text(code)
@@ -53,3 +53,6 @@ def upload_bund_texts():
         except Exception as e:
             logger.error(f"Error for {doc['code']}: {e}")
     client.close()
+
+
+build_bund_db()
