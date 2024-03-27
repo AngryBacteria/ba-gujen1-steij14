@@ -26,8 +26,7 @@ def get_category_members_ids(category):
 
     members = set()
     last_continue = {}
-
-    encoded_category = quote_plus(category.replace(" ", "_"))
+    encoded_category = category.replace(" ", "_")
     while True:
         params = {
             "action": "query",
@@ -50,7 +49,7 @@ def get_category_members_ids(category):
         data = response.json()
 
         for item in data["query"]["categorymembers"]:
-            members.add((item["title"], item["pageid"]))  # Add a tuple to the set
+            members.add((item["title"], item["pageid"]))
         if "continue" not in data:
             break
         else:
@@ -142,8 +141,11 @@ def clean_wikipedia_string(text: str):
 
 
 def get_wikipedia_article_data(
-    title: str, get_full_text: bool = True, get_icd10: bool = False
+        title: str, get_full_text: bool = True, get_icd10: bool = False
 ):
+    """Get the data of a wikipedia article by title.
+    If get_full_text is set to True, the full text of the article is returned.
+    If get_icd10 is set to True, the ICD-10 codes are also returned."""
     # make request
     encoded_title = quote_plus(title.replace(" ", "_"))
     link = (
@@ -207,7 +209,7 @@ def get_wikipedia_article_data(
 
 
 def get_all_text(
-    content_div: BeautifulSoup | Tag | NavigableString | None, full_text: bool
+        content_div: BeautifulSoup | Tag | NavigableString | None, full_text: bool
 ) -> str:
     """Get text for a wikipedia article from the content div.
     If full_text is set to True, the full text of the article is returned.
@@ -224,11 +226,11 @@ def get_all_text(
 
         for child in section.children:
             if (
-                child.name == "h2"
-                or child.name == "h3"
-                or child.name == "h4"
-                or child.name == "h5"
-                or child.name == "h6"
+                    child.name == "h2"
+                    or child.name == "h3"
+                    or child.name == "h4"
+                    or child.name == "h5"
+                    or child.name == "h6"
             ):
                 if child.text.strip() in [
                     "Weblinks",
@@ -252,6 +254,8 @@ def get_all_text(
                 text += child.text + "\n"
             if child.name == "ul":
                 text += process_ul(child)
+            if child.name == "ol":
+                text += process_ol(child)
             if child.name == "dl":
                 text += process_ul(child)
             if child.name == "dl":
@@ -346,8 +350,9 @@ def add_views_to_db(overwrite=False):
 
 
 def build_wikipedia_icd10_db(
-    category="Krankheit", file_exists=True, get_full_text=True
+        category="Krankheit", file_exists=True, get_full_text=True
 ):
+    """Build a MongoDB collection with the articles from a wikipedia category."""
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
@@ -364,6 +369,7 @@ def build_wikipedia_icd10_db(
             if existing_article is None:
                 data = get_wikipedia_article_data(title, get_full_text, True)
                 if data is not None:
+                    data["category"] = category
                     wikipedia_collection.insert_one(data)
                     logger.debug(f"Uploaded {title}({_id}) to MongoDB.")
             else:
