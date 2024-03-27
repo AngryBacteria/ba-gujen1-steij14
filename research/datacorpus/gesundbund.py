@@ -36,6 +36,7 @@ def get_bund_text(code: str):
     return target_div.text.strip()
 
 
+# TODO: check if doc exists first
 def build_bund_db():
     """Update the MongoDB database with the text from gesund.bund.de"""
     client = MongoClient(os.getenv("MONGO_URL"))

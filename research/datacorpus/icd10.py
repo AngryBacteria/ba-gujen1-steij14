@@ -236,6 +236,7 @@ def parse_xml_icd10_chapters(icd10gm=False):
     return icd10_chapters
 
 
+# TODO: icd10gm : parse subcategory, for example M08.4 --> M08.43
 def create_icd10_db_from_xml(icd10gm=False, add_alphabet=False):
     # parse xml files and combine
     categories = parse_xml_icd10_categories(add_alphabet)
