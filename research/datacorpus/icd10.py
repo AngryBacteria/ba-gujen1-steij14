@@ -256,7 +256,3 @@ def create_icd10_db_from_xml(icd10gm=False, add_alphabet=False):
 
     logger.debug(f"Uploaded {len(merged_output)} rows to MongoDB.")
     client.close()
-
-
-create_icd10_db_from_xml(icd10gm=True, add_alphabet=True)
-create_icd10_db_from_xml(icd10gm=False, add_alphabet=True)

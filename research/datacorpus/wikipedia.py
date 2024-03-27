@@ -18,12 +18,6 @@ ignore_list = [
     "Kategorie:Hypovitaminose",
 ]
 
-disease_list = [
-    "Kategorie:Krankheit",
-]
-
-general_medicine_list = ["Kategorie:Medizinische_Fachsprache"]
-
 
 # WIKI PHP API
 def get_category_members_ids(category):
@@ -147,83 +141,95 @@ def clean_wikipedia_string(text: str):
     return text
 
 
-# TODO: is there a way to handle "redirection" cases such as https://de.wikipedia.org/wiki/Ariboflavinose
-def get_disease_info_from_article(
-    title: str, pageid: str = "", get_full_text: bool = False
+def get_wikipedia_article_data(
+    title: str, get_full_text: bool = True, get_icd10: bool = False
 ):
-    """Get the data for a disease from a wikipedia article by its title. Returns None if no data is found.
-    The data includes the ICD-10 codes, the introduction text and the link to the article.
-    If the get_full_text is set to True, the full text of the article is also returned.
-    """
+    # make request
     encoded_title = quote_plus(title.replace(" ", "_"))
     link = (
         f"https://de.wikipedia.org/api/rest_v1/page/html/{encoded_title}?redirect=false"
     )
-    response = requests.get(link)
+    response = requests.get(link, allow_redirects=False)
     if not response.ok:
         logger.error(
             f"Request failed with status code ({response.status_code}) for url: {response.url}"
         )
         return None
 
+    # get content div
     soup = BeautifulSoup(response.content, "html.parser")
-    # get icd10 codes from the infobox
-    icd10_infos = soup.find_all("div", class_="float-right")
-    if icd10_infos is None or len(icd10_infos) == 0:
-        logger.warning(f"No ICD-10 codes found for: {title}")
-        return None
-    codes = parse_icd10_table(icd10_infos)
-    if codes is None or len(codes) == 0:
-        logger.warning(f"No ICD-10 codes found for: {title}")
+    content_div = soup.find("body", class_=["mw-content-ltr", "mw-parser-output"])
+    if content_div is None:
+        logger.warning(f"No content div found for: {title}")
         return None
 
     # get the introduction text
-    content_div = soup.find("body", class_=["mw-content-ltr", "mw-parser-output"])
-    introduction_text = get_introduction_text(content_div)
+    introduction_text = get_all_text(content_div, False)
     if introduction_text == "":
         logger.warning(f"No introduction text found for: {title}")
         return None
 
+    # get the full text
     if get_full_text:
-        full_text = get_all_text(content_div)
+        full_text = get_all_text(content_div, True)
+        if full_text == "":
+            logger.warning(f"No full text found for: {title}")
+            return None
     else:
         full_text = ""
 
-    logger.debug(f"Found ICD-10 {codes} codes for: {title}")
-    return {
-        "icd10": codes,
-        "title": title,
-        "text": clean_wikipedia_string(introduction_text),
-        "full_text": clean_wikipedia_string(full_text),
-        "pageid": pageid,
-    }
+    # get icd10 codes and return data
+    if get_icd10:
+        icd10_infos = soup.find_all("div", class_="float-right")
+        if icd10_infos is None or len(icd10_infos) == 0:
+            logger.warning(f"No ICD-10 codes found for: {title}")
+            return None
+        codes = parse_icd10_table(icd10_infos)
+        if codes is None or len(codes) == 0:
+            logger.warning(f"No ICD-10 codes found for: {title}")
+            return None
+        logger.debug(f"Found ICD-10 {codes} codes for: {title}")
+
+        return {
+            "title": title,
+            "text": clean_wikipedia_string(introduction_text),
+            "full_text": clean_wikipedia_string(full_text),
+            "icd10": codes,
+        }
+    # return data without icd10 codes
+    else:
+
+        return {
+            "title": title,
+            "text": clean_wikipedia_string(introduction_text),
+            "full_text": clean_wikipedia_string(full_text),
+        }
 
 
-def get_introduction_text(
-    content_div: BeautifulSoup | Tag | NavigableString | None,
+def get_all_text(
+    content_div: BeautifulSoup | Tag | NavigableString | None, full_text: bool
 ) -> str:
-    """Get the introduction text of a wikipedia article from the content div."""
-    introduction_text = ""
-    sections = content_div.find_all(name="section")
-    section = sections[0]
-    for child in section.children:
-        if child.name == "p":
-            introduction_text += child.text + "\n"
-
-    return introduction_text
-
-
-def get_all_text(content_div: BeautifulSoup | Tag | NavigableString | None) -> str:
-    """Get all text of a wikipedia article from the content div."""
+    """Get text for a wikipedia article from the content div.
+    If full_text is set to True, the full text of the article is returned.
+    Otherwise, only the introduction text is returned."""
     text = ""
     sections = content_div.find_all(name="section")
+    if not full_text:
+        sections = [sections[0]]
+
     stop_processing = False
     for section in sections:
         if stop_processing:
             break
 
         for child in section.children:
-            if child.name == "h2":
+            if (
+                child.name == "h2"
+                or child.name == "h3"
+                or child.name == "h4"
+                or child.name == "h5"
+                or child.name == "h6"
+            ):
                 if child.text.strip() in [
                     "Weblinks",
                     "Literatur",
@@ -242,14 +248,17 @@ def get_all_text(content_div: BeautifulSoup | Tag | NavigableString | None) -> s
                     break
                 else:
                     text = text + "\n" + child.text + "\n"
-            if child.name == "h3":
-                text = text + "\n" + child.text + "\n"
             if child.name == "p":
                 text += child.text + "\n"
             if child.name == "ul":
-                # todo!!
                 text += process_ul(child)
+            if child.name == "dl":
+                text += process_ul(child)
+            if child.name == "dl":
+                text += process_dl(child)
 
+    if text.startswith("- Wikidata:"):
+        return ""
     return text
 
 
@@ -260,6 +269,26 @@ def process_ul(ul_element: BeautifulSoup | Tag) -> str:
         list_text += "- " + li.text.strip() + "\n"
         for nested_ul in li.find_all("ul", recursive=False):
             list_text += process_ul(nested_ul)
+    return list_text
+
+
+def process_ol(ol_element: BeautifulSoup | Tag) -> str:
+    """Recursively process a <ol> element and its children <li> elements to extract text."""
+    list_text = ""
+    for li in ol_element.find_all("li", recursive=False):
+        list_text += "- " + li.text.strip() + "\n"
+        for nested_ol in li.find_all("ol", recursive=False):
+            list_text += process_ol(nested_ol)
+    return list_text
+
+
+def process_dl(dl_element: BeautifulSoup | Tag) -> str:
+    """Recursively process a <dl> element and its children <dt> and <dd> elements to extract text."""
+    list_text = ""
+    for dt in dl_element.find_all("dt", recursive=False):
+        list_text += "- " + dt.text.strip() + "\n"
+        for dd in dt.find_all("dd", recursive=False):
+            list_text += "  " + dd.text.strip() + "\n"
     return list_text
 
 
@@ -316,30 +345,29 @@ def add_views_to_db(overwrite=False):
     client.close()
 
 
-def build_wikipedia_icd10_db(file_exists=True, get_full_text=True, add_views=False):
+def build_wikipedia_icd10_db(
+    category="Krankheit", file_exists=True, get_full_text=True
+):
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
-    db.drop_collection("wikipedia_icd10")
-    wikipedia_icd10_collection = db.get_collection("wikipedia_icd10")
+    db.drop_collection("wikipedia")
+    wikipedia_collection = db.get_collection("wikipedia")
 
     if not file_exists:
-        save_article_ids_by_category("Krankheit")
-    articles = read_article_ids_from_file("Krankheit")
+        save_article_ids_by_category(category)
+    articles = read_article_ids_from_file(category)
 
     for title, _id in articles:
         try:
-            data = get_disease_info_from_article(title, _id, get_full_text)
-            if data is not None:
-                wikipedia_icd10_collection.insert_one(data)
-                logger.debug(f"Uploaded {title}({_id}) to MongoDB.")
+            existing_article = wikipedia_collection.find_one({"title": title})
+            if existing_article is None:
+                data = get_wikipedia_article_data(title, get_full_text, True)
+                if data is not None:
+                    wikipedia_collection.insert_one(data)
+                    logger.debug(f"Uploaded {title}({_id}) to MongoDB.")
+            else:
+                logger.debug(f"Article {title}({_id}) already exists in MongoDB.")
         except Exception as e:
             logger.error(f"Failed to upload {title}({_id}): {e}")
     client.close()
-
-    if add_views:
-        add_views_to_db()
-
-
-info = get_disease_info_from_article("Kopfschmerz", get_full_text=True)
-print(info["full_text"])
