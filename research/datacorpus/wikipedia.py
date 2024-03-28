@@ -4,9 +4,11 @@ from urllib.parse import quote_plus
 
 import requests
 import re
-from bs4 import BeautifulSoup, ResultSet, Tag, NavigableString
+from bs4 import BeautifulSoup, ResultSet
 from dotenv import load_dotenv
 from pymongo import MongoClient
+
+from research.datacorpus.scraping_utils import get_all_text
 from research.logger import logger
 
 ignore_list = [
@@ -141,7 +143,7 @@ def clean_wikipedia_string(text: str):
 
 
 def get_wikipedia_article_data(
-        title: str, get_full_text: bool = True, get_icd10: bool = False
+    title: str, get_full_text: bool = True, get_icd10: bool = False
 ):
     """Get the data of a wikipedia article by title.
     If get_full_text is set to True, the full text of the article is returned.
@@ -166,14 +168,16 @@ def get_wikipedia_article_data(
         return None
 
     # get the introduction text
-    introduction_text = get_all_text(content_div, False)
+    sections = content_div.find_all(name="section")
+    introduction_text = get_all_text(sections, False)
     if introduction_text == "":
         logger.warning(f"No introduction text found for: {title}")
         return None
 
     # get the full text
     if get_full_text:
-        full_text = get_all_text(content_div, True)
+        sections = content_div.find_all(name="section")
+        full_text = get_all_text(sections, True)
         if full_text == "":
             logger.warning(f"No full text found for: {title}")
             return None
@@ -206,94 +210,6 @@ def get_wikipedia_article_data(
             "text": clean_wikipedia_string(introduction_text),
             "full_text": clean_wikipedia_string(full_text),
         }
-
-
-def get_all_text(
-        content_div: BeautifulSoup | Tag | NavigableString | None, full_text: bool
-) -> str:
-    """Get text for a wikipedia article from the content div.
-    If full_text is set to True, the full text of the article is returned.
-    Otherwise, only the introduction text is returned."""
-    text = ""
-    sections = content_div.find_all(name="section")
-    if not full_text:
-        sections = [sections[0]]
-
-    stop_processing = False
-    for section in sections:
-        if stop_processing:
-            break
-
-        for child in section.children:
-            if (
-                    child.name == "h2"
-                    or child.name == "h3"
-                    or child.name == "h4"
-                    or child.name == "h5"
-                    or child.name == "h6"
-            ):
-                if child.text.strip() in [
-                    "Weblinks",
-                    "Literatur",
-                    "Einzelnachweise",
-                    "Siehe auch",
-                    "Referenzen",
-                    "Externe Links",
-                    "Quellen",
-                    "Weitere Informationen",
-                    "Zusätzliche Informationen",
-                    "Ähnliche Artikel",
-                    "Anmerkungen",
-                    "Audio",
-                ]:
-                    stop_processing = True
-                    break
-                else:
-                    text = text + "\n" + child.text + "\n"
-            if child.name == "p":
-                text += child.text + "\n"
-            if child.name == "ul":
-                text += process_ul(child)
-            if child.name == "ol":
-                text += process_ol(child)
-            if child.name == "dl":
-                text += process_ul(child)
-            if child.name == "dl":
-                text += process_dl(child)
-
-    if text.startswith("- Wikidata:"):
-        return ""
-    return text
-
-
-def process_ul(ul_element: BeautifulSoup | Tag) -> str:
-    """Recursively process a <ul> element and its children <li> elements to extract text."""
-    list_text = ""
-    for li in ul_element.find_all("li", recursive=False):
-        list_text += "- " + li.text.strip() + "\n"
-        for nested_ul in li.find_all("ul", recursive=False):
-            list_text += process_ul(nested_ul)
-    return list_text
-
-
-def process_ol(ol_element: BeautifulSoup | Tag) -> str:
-    """Recursively process a <ol> element and its children <li> elements to extract text."""
-    list_text = ""
-    for li in ol_element.find_all("li", recursive=False):
-        list_text += "- " + li.text.strip() + "\n"
-        for nested_ol in li.find_all("ol", recursive=False):
-            list_text += process_ol(nested_ol)
-    return list_text
-
-
-def process_dl(dl_element: BeautifulSoup | Tag) -> str:
-    """Recursively process a <dl> element and its children <dt> and <dd> elements to extract text."""
-    list_text = ""
-    for dt in dl_element.find_all("dt", recursive=False):
-        list_text += "- " + dt.text.strip() + "\n"
-        for dd in dt.find_all("dd", recursive=False):
-            list_text += "  " + dd.text.strip() + "\n"
-    return list_text
 
 
 # TODO: also parse the following pattern: T20.- bis T32
@@ -350,7 +266,7 @@ def add_views_to_db(overwrite=False):
 
 
 def build_wikipedia_icd10_db(
-        category="Krankheit", file_exists=True, get_full_text=True
+    category="Krankheit", file_exists=True, get_full_text=True
 ):
     """Build a MongoDB collection with the articles from a wikipedia category."""
     load_dotenv()
