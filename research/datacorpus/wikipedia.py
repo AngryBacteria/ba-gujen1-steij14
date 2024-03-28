@@ -8,10 +8,15 @@ from bs4 import BeautifulSoup, ResultSet
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-from research.datacorpus.scraping_utils import get_all_text
+from research.datacorpus.scraping_utils import (
+    process_ul,
+    process_ol,
+    process_dl,
+    ignore_list,
+)
 from research.logger import logger
 
-ignore_list = [
+article_ignore_list = [
     "Kategorie:Liste (Krankheiten nach ICD-10)",
     "Kategorie:Liste (Krankheitsopfer)",
     "Krankheitsbild in der Tiermedizin",
@@ -69,7 +74,7 @@ def get_article_ids_of_category(category):
     members = get_category_members_ids(category)
 
     for title, pageid in members:
-        if title in ignore_list:
+        if title in article_ignore_list:
             continue
         if title.startswith("Kategorie:"):
             logger.debug(f"Parsing subcategory: {title}")
@@ -212,6 +217,40 @@ def get_wikipedia_article_data(
         }
 
 
+def get_all_text(sections: ResultSet, full_text: bool) -> str:
+    """Get text for a wikipedia article from the content div.
+    If full_text is set to True, the full text of the article is returned.
+    Otherwise, only the introduction text is returned."""
+    text = ""
+    if not full_text:
+        sections = [sections[0]]
+
+    stop_processing = False
+    for section in sections:
+        if stop_processing:
+            break
+
+        for child in section.children:
+            if child.name in ["h2", "h3", "h4", "h5", "h6"]:
+                if child.text.strip() in ignore_list:
+                    stop_processing = True
+                    break
+                else:
+                    text = text + "\n" + child.text.strip() + "\n"
+            if child.name == "p":
+                text += child.text.strip() + "\n"
+            if child.name == "ul":
+                text += process_ul(child)
+            if child.name == "ol":
+                text += process_ol(child)
+            if child.name == "dl":
+                text += process_dl(child)
+
+    if text.startswith("- Wikidata:"):
+        return ""
+    return text
+
+
 # TODO: also parse the following pattern: T20.- bis T32
 def parse_icd10_table(icd10_infos: ResultSet):
     """Parse the ICD-10 table data from a wikipedia article. The infobox component is used."""
@@ -294,4 +333,9 @@ def build_wikipedia_icd10_db(
     client.close()
 
 
-build_wikipedia_icd10_db("Krankheit", file_exists=True, get_full_text=True)
+# build_wikipedia_icd10_db("Krankheit", file_exists=True, get_full_text=True)
+print(
+    get_wikipedia_article_data("Kopfschmerz", get_full_text=True, get_icd10=True)[
+        "full_text"
+    ]
+)

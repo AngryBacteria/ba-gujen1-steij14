@@ -1,4 +1,4 @@
-from bs4 import Tag, ResultSet
+from bs4 import Tag
 
 ignore_list = [
     "Weblinks",
@@ -13,48 +13,30 @@ ignore_list = [
     "Ähnliche Artikel",
     "Anmerkungen",
     "Audio",
+    "Bildquelle",
+    "Auskultationsgeräusch",
 ]
 
 
-def get_all_text(
-        sections: ResultSet, full_text: bool
-) -> str:
-    """Get text for a wikipedia article from the content div.
-    If full_text is set to True, the full text of the article is returned.
-    Otherwise, only the introduction text is returned."""
-    text = ""
+def process_tags_to_text(tags: list[Tag], full_text=True) -> str:
     if not full_text:
-        sections = [sections[0]]
+        tags = [tags[0]]
 
-    stop_processing = False
-    for section in sections:
-        if stop_processing:
-            break
-
-        for child in section.children:
-            if (
-                    child.name == "h2"
-                    or child.name == "h3"
-                    or child.name == "h4"
-                    or child.name == "h5"
-                    or child.name == "h6"
-            ):
-                if child.text.strip() in ignore_list:
-                    stop_processing = True
-                    break
-                else:
-                    text = text + "\n" + child.text + "\n"
-            if child.name == "p":
-                text += child.text + "\n"
-            if child.name == "ul":
-                text += process_ul(child)
-            if child.name == "ol":
-                text += process_ol(child)
-            if child.name == "dl":
-                text += process_dl(child)
-
-    if text.startswith("- Wikidata:"):
-        return ""
+    text = ""
+    for child in tags:
+        if child.name in ["h2", "h3", "h4", "h5", "h6"]:
+            if child.text.strip() in ignore_list:
+                break
+            else:
+                text = text + "\n" + child.text.strip() + "\n"
+        elif child.name == "p":
+            text += child.text.strip() + "\n"
+        elif child.name == "ul":
+            text += process_ul(child)
+        elif child.name == "ol":
+            text += process_ol(child)
+        elif child.name == "dl":
+            text += process_dl(child)
     return text
 
 

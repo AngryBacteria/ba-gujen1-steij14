@@ -3,10 +3,11 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
+from research.datacorpus.scraping_utils import process_tags_to_text
 from research.logger import logger
 
 
-def get_all_fachgebiete():
+def get_all_fachgebiete_links():
     """Get links for all fachgebiete from doccheck.com"""
 
     response = requests.get("https://flexikon.doccheck.com/de/Kategorie:%C3%9Cbersicht")
@@ -51,7 +52,7 @@ def get_all_tag_links():
         href = link.get("href")
         if href is None:
             continue
-        output.append("https://flexikon.doccheck.com" + href)
+        output.append(href)
 
     output = set(output)
     logger.debug(f"Found {len(output)} tags from doccheck.com")
@@ -96,22 +97,57 @@ def fetch_links_from_category_or_tag(url):
     # filter out duplicates
     links = list(set(links))
 
-    logger.debug(f"Found {len(links)} links from category {url}")
+    logger.debug(f"Found {len(links)} links from {url}")
     return links
 
 
 def get_all_links_from_doccheck(save_to_file=False):
-    """Get all links from doccheck.com"""
+    """Get all relevant links from doccheck.com"""
     links = []
-    fachgebiete = get_all_fachgebiete()
+    fachgebiete = get_all_fachgebiete_links()
     for fachgebiet in fachgebiete:
-        links.extend(fetch_links_from_category_or_tag(fachgebiet))
+        try:
+            links.extend(fetch_links_from_category_or_tag(fachgebiet))
+        except Exception as e:
+            logger.error(f"Failed to fetch links for fachgebiet {fachgebiet}: {e}")
+
+    tags = get_all_tag_links()
+    for tag in tags:
+        try:
+            links.extend(fetch_links_from_category_or_tag(tag))
+        except Exception as e:
+            logger.error(f"Failed to fetch links for tag {tag}: {e}")
 
     links = list(set(links))
 
     if save_to_file:
-        with open("doccheck_fachgebiete_artikel.txt", "w") as file:
+        with open("doccheck_artikel.txt", "w") as file:
             for entry in links:
                 file.write(entry + "\n")
 
     return links
+
+
+# https://flexikon.doccheck.com/de/Rachen
+def get_doccheck_article(url: str):
+    response = requests.get(url)
+    if not response.ok:
+        logger.error(f"Request failed for url: {url}")
+        return None
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    container = soup.find("div", {"class": "mw-parser-output"})
+    articles = container.find_all("div", {"class": "collapsible-article"})
+
+    text = ""
+    for article in articles:
+        tags = article.find_all(
+            ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "dl"]
+        )
+        text += process_tags_to_text(tags, full_text=True)
+
+    print(text)
+
+
+# get_all_links_from_doccheck(save_to_file=True)
+get_doccheck_article("https://flexikon.doccheck.com/de/Rachen")

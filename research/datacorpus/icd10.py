@@ -283,8 +283,4 @@ def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False):
     client.close()
 
 
-# entries = parse_xml_icd10_categories(icd10gm=True, add_alphabet=True)
-# entries = parse_xml_icd10_blocks(icd10gm=True)
-entries = parse_xml_icd10_chapters(icd10gm=True)
-for entry in entries:
-    print(entry)
+create_icd10_db_from_xml(icd10gm=True, add_alphabet=True)
