@@ -41,16 +41,20 @@ def build_bund_db():
     """Update the MongoDB database with the text from gesund.bund.de"""
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
-    icd10gm = db.get_collection("icd10gm")
-    gesundbund = db.get_collection("gesundbund")
+    icd10gm_collection = db.get_collection("icd10gm")
+    gesundbund_collection = db.get_collection("gesundbund")
 
-    for doc in icd10gm.find({"type": "category"}):
+    for doc in icd10gm_collection.find({"type": "category"}):
         try:
             code = doc["code"]
             text = get_bund_text(code)
             if text is not None:
-                gesundbund.insert_one({"code": code, "text": text})
-                logger.debug(f"Uploaded text from bund.de for {code}")
+                existing_doc = gesundbund_collection.find({"code": code})
+                if existing_doc is None:
+                    gesundbund_collection.insert_one({"code": code, "text": text})
+                    logger.debug(f"Uploaded text from bund.de for {code}")
+                else:
+                    logger.debug(f"Document already exists for {code}")
         except Exception as e:
             logger.error(f"Error for {doc['code']}: {e}")
     client.close()

@@ -17,7 +17,7 @@ load_dotenv()
 
 
 # Official CSV-Files. I recommend you use the XML-File instead.
-def parse_icd10_alphabet(icd10gm=False):
+def parse_csv_icd10_alphabet(icd10gm=False):
     """Parse an ICD-10 alphabet files and return a dataframe"""
     if icd10gm:
         columns = [
@@ -61,12 +61,46 @@ def parse_icd10_alphabet(icd10gm=False):
         data = pd.concat([alphabet1, alphabet2])
     data = data[data["code"].notnull()]
 
-    logger.debug(f"Parsed data icd10 data with {len(data)} rows.")
+    logger.debug(f"Parsed icd10 alphabet data with {len(data)} rows.")
     return data.groupby("code").agg(lambda x: list(x.dropna())).reset_index()
 
 
 # XML-File
+def get_title_from_xml(element: et.Element, code: str) -> str | None:
+    """Get the title from the preferred or preferredLong label of an ICD-10 element."""
+    label_element = element.find(".//Rubric[@kind='preferredLong']/Label")
+    if label_element is None or label_element.text is None:
+        label_element = element.find(".//Rubric[@kind='preferred']/Label")
+        if label_element is None or label_element.text is None:
+            logger.error(f"No preferred label found for chapter {code}")
+            return None
+    if "Nicht belegte Schlüsselnummer" in label_element.text:
+        return None
+
+    return label_element.text
+
+
+def get_super_class_from_xml(element: et.Element) -> str | None:
+    """Get the super class code from the SuperClass element of an ICD-10 element."""
+    super_class_element = element.find(".//SuperClass")
+    super_class_code = super_class_element.get("code", None)
+    return super_class_code
+
+
+def get_text_from_xml(element: et.Element) -> str | None:
+    """Get the text of the text-element from the Introduction element of an ICD-10 element."""
+    output = ""
+    text_rubrics = element.findall(".//Rubric[@kind='text']/Label/Para")
+    for para in text_rubrics:
+        output += para.text
+
+    if output == "":
+        return None
+    return output
+
+
 def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False):
+    """Parse the ICD-10 XML file and return a list of dictionaries with category data."""
     if icd10gm:
         tree = et.parse(icd10gm_xml_path)
     else:
@@ -96,20 +130,14 @@ def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False):
                 code = code + "!"
 
         # parse labels
-        label_element = category_element.find(".//Rubric[@kind='preferredLong']/Label")
-        if label_element is None or label_element.text is None:
-            label_element = category_element.find(".//Rubric[@kind='preferred']/Label")
-            if label_element is None or label_element.text is None:
-                logger.error(f"No label found for category: {code}")
-                continue
-        if "Nicht belegte Schlüsselnummer" in label_element.text:
+        title = get_title_from_xml(category_element, code)
+        if title is None:
             continue
 
-        # parse block
-        block_element = category_element.find(".//SuperClass")
-        block_code = block_element.get("code", None)
-        if block_code is None:
-            logger.error(f"No block code found for category: {code}")
+        # parse block (or superclass)
+        super_class_code = get_super_class_from_xml(category_element)
+        if super_class_code is None:
+            logger.error(f"No block (or superclass) code found for category: {code}")
             continue
 
         # parse metadata
@@ -121,8 +149,8 @@ def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False):
         icd10_categories.append(
             {
                 "code": code,
-                "block_code": block_code,
-                "title": label_element.text,
+                "super_class_code": super_class_code,
+                "title": title,
                 "synonyms": [],
                 "type": "category",
                 "meta": meta_dict,
@@ -131,7 +159,7 @@ def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False):
 
     # add synonyms from the alphabet file
     if add_alphabet:
-        alphabet_codes = parse_icd10_alphabet(icd10gm)
+        alphabet_codes = parse_csv_icd10_alphabet(icd10gm)
         for category in icd10_categories:
             code = category["code"]
             alphabet_entries = alphabet_codes[alphabet_codes["code"] == code]
@@ -168,28 +196,22 @@ def parse_xml_icd10_blocks(icd10gm=False):
             continue
 
         # parse labels
-        label_element = block_element.find(".//Rubric[@kind='preferredLong']/Label")
-        if label_element is None or label_element.text is None:
-            label_element = block_element.find(".//Rubric[@kind='preferred']/Label")
-            if label_element is None or label_element.text is None:
-                logger.error(f"No preferred label found for block: {code}")
-                continue
-        if "Nicht belegte Schlüsselnummer" in label_element.text:
+        title = get_title_from_xml(block_element, code)
+        if title is None:
             continue
 
-        # parse superclass chapter
-        chapter_element = block_element.find(".//SuperClass")
-        chapter_code = chapter_element.get("code", None)
-        if chapter_code is None:
-            logger.error(f"No chapter code found for block: {code}")
+        # parse chapter (or superclass)
+        super_class_code = get_super_class_from_xml(block_element)
+        if super_class_code is None:
+            logger.error(f"No chapter (or superclass) code found for block: {code}")
             continue
 
         # append to list
         icd10_blocks.append(
             {
                 "code": code,
-                "chapter_code": chapter_code,
-                "title": label_element.text,
+                "super_class_code": super_class_code,
+                "title": title,
                 "type": "block",
             }
         )
@@ -198,6 +220,9 @@ def parse_xml_icd10_blocks(icd10gm=False):
     return icd10_blocks
 
 
+# todo: parse introduction text
+# todo: parse note text
+# todo: parse text text
 def parse_xml_icd10_chapters(icd10gm=False):
     if icd10gm:
         tree = et.parse(icd10gm_xml_path)
@@ -218,18 +243,17 @@ def parse_xml_icd10_chapters(icd10gm=False):
             continue
 
         # parse labels
-        label_element = chapter_element.find(".//Rubric[@kind='preferredLong']/Label")
-        if label_element is None or label_element.text is None:
-            label_element = chapter_element.find(".//Rubric[@kind='preferred']/Label")
-            if label_element is None or label_element.text is None:
-                logger.error(f"No preferred label found for chapter {code}")
-                continue
-        if "Nicht belegte Schlüsselnummer" in label_element.text:
+        title = get_title_from_xml(chapter_element, code)
+        if title is None:
             continue
 
         # append to list
         icd10_chapters.append(
-            {"code": code, "title": label_element.text, "type": "chapter"}
+            {
+                "code": code,
+                "title": title,
+                "type": "chapter",
+            }
         )
 
     logger.debug(f"Parsed chapter data from icd10_xml with {len(icd10_chapters)} rows.")
@@ -237,7 +261,7 @@ def parse_xml_icd10_chapters(icd10gm=False):
 
 
 # TODO: icd10gm : parse subcategory, for example M08.4 --> M08.43
-def create_icd10_db_from_xml(icd10gm=False, add_alphabet=False):
+def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False):
     # parse xml files and combine
     categories = parse_xml_icd10_categories(add_alphabet)
     blocks = parse_xml_icd10_blocks(icd10gm)
@@ -257,3 +281,10 @@ def create_icd10_db_from_xml(icd10gm=False, add_alphabet=False):
 
     logger.debug(f"Uploaded {len(merged_output)} rows to MongoDB.")
     client.close()
+
+
+# entries = parse_xml_icd10_categories(icd10gm=True, add_alphabet=True)
+# entries = parse_xml_icd10_blocks(icd10gm=True)
+entries = parse_xml_icd10_chapters(icd10gm=True)
+for entry in entries:
+    print(entry)
