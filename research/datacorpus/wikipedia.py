@@ -22,17 +22,27 @@ article_ignore_list = [
     "Kategorie:Hypovitaminose",
 ]
 
-
 validation_articles = [
     "https://de.wikipedia.org/wiki/Ariboflavinose",
     "https://de.wikipedia.org/wiki/Kopfschmerz"
 ]
 
+relevant_categories = [
+    "Krankheit",
+    "Medizinische_Fachsprache",
+    "Therapie",
+    "Organ_als_Thema",
+    "Impfung",
+    "Biomedizin",
+    "Diagnostik",
+    "Medizinische_Vorsorge"
+]
+
 
 # WIKI PHP API
-def get_category_members_ids(category):
+def fetch_all_category_members(category):
     """Get all ids/titles of all members for a wikipedia category, including their page IDs.
-    Category shoul be the name of the category without the "Kategorie:" prefix."""
+    Category should be the name of the category without the "Kategorie:" prefix."""
 
     members = set()
     last_continue = {}
@@ -68,13 +78,13 @@ def get_category_members_ids(category):
     return members
 
 
-def get_article_ids_of_category(category):
+def get_all_titles_in_category(category):
     """Get all article ids/titles in a wikipedia category, including subcategories. Each article is represented
     by a tuple containing the title and page ID.
     Category should be the name of the category without the "Kategorie:" prefix."""
 
     articles = set()
-    members = get_category_members_ids(category)
+    members = fetch_all_category_members(category)
 
     for title, pageid in members:
         if title in article_ignore_list:
@@ -82,7 +92,7 @@ def get_article_ids_of_category(category):
         if title.startswith("Kategorie:"):
             logger.debug(f"Parsing subcategory: {title}")
             subcategory = title.split("Kategorie:")[1]
-            articles.update(get_article_ids_of_category(subcategory))
+            articles.update(get_all_titles_in_category(subcategory))
         else:
             articles.add((title, pageid))
 
@@ -113,7 +123,7 @@ def save_article_ids_by_category(category_name):
     """Save the articles of a category into a file.
     The file will be named 'wikipedia_article_titles_{category_name}.txt'.
     The data is saved as a CSV in the format: Title|Page ID"""
-    output = get_article_ids_of_category(category_name)
+    output = get_all_titles_in_category(category_name)
 
     file_path = f"wikipedia_article_titles_{category_name}.txt"
     with open(file_path, mode="w", newline="", encoding="utf-8") as file:
@@ -151,7 +161,7 @@ def clean_wikipedia_string(text: str):
 
 
 def get_wikipedia_article_data(
-    title: str, get_full_text: bool = True, get_icd10: bool = False
+        title: str, get_full_text: bool = True, get_icd10: bool = False
 ):
     """Get the data of a wikipedia article by title.
     If get_full_text is set to True, the full text of the article is returned.
@@ -292,12 +302,13 @@ def add_views_to_db(overwrite=False):
     client.close()
 
 
-def build_wikipedia_icd10_db(category="Krankheit", from_file=True, get_full_text=True):
+def build_wikipedia_icd10_db(category="Krankheit", from_file=True):
     """Build a MongoDB collection with the articles from a wikipedia category."""
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
     wikipedia_collection = db.get_collection("wikipedia")
+    wikipedia_collection.create_index("title", unique=True)
 
     if not from_file:
         save_article_ids_by_category(category)
@@ -307,7 +318,10 @@ def build_wikipedia_icd10_db(category="Krankheit", from_file=True, get_full_text
         try:
             existing_article = wikipedia_collection.find_one({"title": title})
             if existing_article is None:
-                data = get_wikipedia_article_data(title, get_full_text, True)
+                if category == "Krankheit":
+                    data = get_wikipedia_article_data(title, True, True)
+                else:
+                    data = get_wikipedia_article_data(title, True, False)
                 if data is not None:
                     data["category"] = category
                     wikipedia_collection.insert_one(data)
@@ -319,5 +333,4 @@ def build_wikipedia_icd10_db(category="Krankheit", from_file=True, get_full_text
     client.close()
 
 
-build_wikipedia_icd10_db("Krankheit", from_file=True, get_full_text=True)
-
+build_wikipedia_icd10_db("Krankheit", from_file=True)

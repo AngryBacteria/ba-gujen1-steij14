@@ -277,10 +277,13 @@ def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False):
     collection_name = "icd10gm" if icd10gm else "icd10who"
     db.drop_collection(collection_name)
     icd10_collection = db.get_collection(collection_name)
-    icd10_collection.insert_many(merged_output)
+    icd10_collection.create_index("code", unique=True)
 
+    icd10_collection.insert_many(merged_output)
     logger.debug(f"Uploaded {len(merged_output)} rows to MongoDB.")
+
     client.close()
 
 
 create_icd10_db_from_xml(icd10gm=True, add_alphabet=True)
+create_icd10_db_from_xml(icd10gm=False, add_alphabet=True)

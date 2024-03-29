@@ -43,6 +43,7 @@ def build_bund_db():
     db = client.get_database("main")
     icd10gm_collection = db.get_collection("icd10gm")
     gesundbund_collection = db.get_collection("gesundbund")
+    gesundbund_collection.create_index("code", unique=True)
 
     for doc in icd10gm_collection.find({"type": "category"}):
         try:

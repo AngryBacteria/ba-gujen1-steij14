@@ -215,6 +215,7 @@ def build_doccheck_corpus(from_file=False):
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
     doccheck_collection = db.get_collection("doccheck")
+    doccheck_collection.create_index("link", unique=True)
 
     links = get_all_links_from_doccheck(read_from_file=from_file)
     for link in links:
