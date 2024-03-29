@@ -1,3 +1,4 @@
+from markdownify import markdownify as md
 from bs4 import Tag
 
 ignore_list = [
@@ -19,10 +20,15 @@ ignore_list = [
     "Audio",
     "Bildquelle",
     "Auskultationsgeräusch",
+    "Quiz",
+    "Fortbildung"
 ]
 
 
 def process_tags_to_text(tags: list[Tag], full_text=True) -> str:
+    if tags is None or len(tags) == 0:
+        return ""
+
     if not full_text:
         tags = [tags[0]]
 
@@ -46,18 +52,12 @@ def process_tags_to_text(tags: list[Tag], full_text=True) -> str:
 
 def process_ul(ul_element: Tag) -> str:
     """Process a <ul> element and its children <li> elements to extract text."""
-    list_text = ""
-    for li in ul_element.find_all("li", recursive=False):
-        list_text += "- " + li.text.strip() + "\n"
-    return list_text
+    return md(str(ul_element), strip=['a', 'b', 'i'])
 
 
 def process_ol(ol_element: Tag) -> str:
     """Process a <ol> element and its children <li> elements to extract text."""
-    list_text = ""
-    for li in ol_element.find_all("li", recursive=False):
-        list_text += "- " + li.text.strip() + "\n"
-    return list_text
+    return md(str(ol_element), strip=['a', 'b', 'i'])
 
 
 def process_dl(dl_element: Tag) -> str:

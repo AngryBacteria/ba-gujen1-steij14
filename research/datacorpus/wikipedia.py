@@ -40,7 +40,7 @@ relevant_categories = [
 
 
 # WIKI PHP API
-def fetch_all_category_members(category):
+def fetch_all_category_members(category: str):
     """Get all ids/titles of all members for a wikipedia category, including their page IDs.
     Category should be the name of the category without the "Kategorie:" prefix."""
 
@@ -244,7 +244,7 @@ def get_all_wiki_text(sections: ResultSet, full_text: bool) -> str:
         )
         text = text + process_tags_to_text(tags, full_text)
 
-    if text.startswith("- Wikidata:"):
+    if text.startswith("* Wikidata:"):
         return ""
     return text
 
@@ -302,7 +302,7 @@ def add_views_to_db(overwrite=False):
     client.close()
 
 
-def build_wikipedia_icd10_db(category="Krankheit", from_file=True):
+def build_wikipedia_db(category="Krankheit", from_file=True):
     """Build a MongoDB collection with the articles from a wikipedia category."""
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
@@ -333,4 +333,5 @@ def build_wikipedia_icd10_db(category="Krankheit", from_file=True):
     client.close()
 
 
-build_wikipedia_icd10_db("Krankheit", from_file=True)
+for entry in relevant_categories:
+    build_wikipedia_db(entry, from_file=False)
