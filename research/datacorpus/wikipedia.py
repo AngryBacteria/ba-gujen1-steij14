@@ -326,5 +326,4 @@ def build_wikipedia_db(categories: list[str], from_file=True):
     client.close()
 
 
-for entry in relevant_categories:
-    build_wikipedia_db(entry, from_file=False)
+build_wikipedia_db(relevant_categories, from_file=True)
