@@ -9,10 +9,7 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 
 from research.datacorpus.scraping_utils import (
-    process_ul,
-    process_ol,
-    process_dl,
-    ignore_list,
+    process_tags_to_text,
 )
 from research.logger import logger
 
@@ -23,6 +20,12 @@ article_ignore_list = [
     "Krankheitsbild in der Wehrmedizin",
     "Kategorie:Krankheitsbild in der Tiermedizin",
     "Kategorie:Hypovitaminose",
+]
+
+
+validation_articles = [
+    "https://de.wikipedia.org/wiki/Ariboflavinose",
+    "https://de.wikipedia.org/wiki/Kopfschmerz"
 ]
 
 
@@ -173,16 +176,16 @@ def get_wikipedia_article_data(
         return None
 
     # get the introduction text
-    sections = content_div.find_all(name="section")
-    introduction_text = get_all_text(sections, False)
+    sections = content_div.find_all(name="section", recursive=False)
+    introduction_text = get_all_wiki_text(sections, False)
     if introduction_text == "":
         logger.warning(f"No introduction text found for: {title}")
         return None
 
     # get the full text
     if get_full_text:
-        sections = content_div.find_all(name="section")
-        full_text = get_all_text(sections, True)
+        sections = content_div.find_all(name="section", recursive=False)
+        full_text = get_all_wiki_text(sections, True)
         if full_text == "":
             logger.warning(f"No full text found for: {title}")
             return None
@@ -217,7 +220,7 @@ def get_wikipedia_article_data(
         }
 
 
-def get_all_text(sections: ResultSet, full_text: bool) -> str:
+def get_all_wiki_text(sections: ResultSet, full_text: bool) -> str:
     """Get text for a wikipedia article from the content div.
     If full_text is set to True, the full text of the article is returned.
     Otherwise, only the introduction text is returned."""
@@ -225,26 +228,11 @@ def get_all_text(sections: ResultSet, full_text: bool) -> str:
     if not full_text:
         sections = [sections[0]]
 
-    stop_processing = False
     for section in sections:
-        if stop_processing:
-            break
-
-        for child in section.children:
-            if child.name in ["h2", "h3", "h4", "h5", "h6"]:
-                if child.text.strip() in ignore_list:
-                    stop_processing = True
-                    break
-                else:
-                    text = text + "\n" + child.text.strip() + "\n"
-            if child.name == "p":
-                text += child.text.strip() + "\n"
-            if child.name == "ul":
-                text += process_ul(child)
-            if child.name == "ol":
-                text += process_ol(child)
-            if child.name == "dl":
-                text += process_dl(child)
+        tags = section.find_all(
+            ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "dl"]
+        )
+        text = text + process_tags_to_text(tags, full_text)
 
     if text.startswith("- Wikidata:"):
         return ""
@@ -304,16 +292,14 @@ def add_views_to_db(overwrite=False):
     client.close()
 
 
-def build_wikipedia_icd10_db(
-    category="Krankheit", file_exists=True, get_full_text=True
-):
+def build_wikipedia_icd10_db(category="Krankheit", from_file=True, get_full_text=True):
     """Build a MongoDB collection with the articles from a wikipedia category."""
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
     wikipedia_collection = db.get_collection("wikipedia")
 
-    if not file_exists:
+    if not from_file:
         save_article_ids_by_category(category)
     articles = read_article_ids_from_file(category)
 
@@ -333,9 +319,5 @@ def build_wikipedia_icd10_db(
     client.close()
 
 
-# build_wikipedia_icd10_db("Krankheit", file_exists=True, get_full_text=True)
-print(
-    get_wikipedia_article_data("Kopfschmerz", get_full_text=True, get_icd10=True)[
-        "full_text"
-    ]
-)
+build_wikipedia_icd10_db("Krankheit", from_file=True, get_full_text=True)
+

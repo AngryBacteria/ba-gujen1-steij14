@@ -49,7 +49,7 @@ def build_bund_db():
             code = doc["code"]
             text = get_bund_text(code)
             if text is not None:
-                existing_doc = gesundbund_collection.find({"code": code})
+                existing_doc = gesundbund_collection.find_one({"code": code})
                 if existing_doc is None:
                     gesundbund_collection.insert_one({"code": code, "text": text})
                     logger.debug(f"Uploaded text from bund.de for {code}")
