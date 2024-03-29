@@ -1,5 +1,5 @@
 from markdownify import markdownify as md
-from bs4 import Tag
+from bs4 import Tag, BeautifulSoup
 
 ignore_list = [
     "Weblinks",
@@ -23,6 +23,15 @@ ignore_list = [
     "Quiz",
     "Fortbildung",
 ]
+
+
+def remove_unwanted(soup: BeautifulSoup) -> BeautifulSoup:
+    """Remove unwanted tags from the soup-parser."""
+    for entry in soup.find_all(
+        ["table", "figure", "img", "iframe", "audio", "video", "img"]
+    ):
+        entry.decompose()
+    return soup
 
 
 def process_tags_to_text(tags: list[Tag], full_text=True) -> str:

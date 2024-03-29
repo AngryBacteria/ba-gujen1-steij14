@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-from research.datacorpus.scraping_utils import process_tags_to_text
+from research.datacorpus.scraping_utils import process_tags_to_text, remove_unwanted
 from research.logger import logger
 
 validation_articles = [
@@ -218,6 +218,7 @@ def get_doccheck_article(url: str):
 
     # get article container
     soup = BeautifulSoup(response.text, "html.parser")
+    soup = remove_unwanted(soup)
     container = soup.find("div", {"id": "mw-content-text"})
     if container is None:
         logger.error(f"No mw-content-text container found for article: {url}")

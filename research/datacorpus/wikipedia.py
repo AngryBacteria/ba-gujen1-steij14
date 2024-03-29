@@ -10,6 +10,7 @@ from pymongo import MongoClient
 
 from research.datacorpus.scraping_utils import (
     process_tags_to_text,
+    remove_unwanted,
 )
 from research.logger import logger
 
@@ -30,15 +31,15 @@ validation_articles = [
 relevant_categories = [
     "Krankheit",
     "Medizinische_Fachsprache",
-    "Therapie",
+    # "Therapie",
     "Organ_als_Thema",
-    "Impfung",
-    "Biomedizin",
+    # "Impfung",
+    # "Biomedizin",
     "Diagnostik",
-    "Medizinische_Vorsorge",
+    # "Medizinische_Vorsorge",
     "Medizinische_Behandlung",
-    "Heilberuf",
-    "Zahnmedizin",
+    # "Heilberuf",
+    # "Zahnmedizin",
 ]
 
 
@@ -182,9 +183,19 @@ def get_wikipedia_article_data(title: str, get_full_text: bool = True):
             f"Request failed with status code ({response.status_code}) for url: {response.url}"
         )
         return None
-
-    # get content div
     soup = BeautifulSoup(response.content, "html.parser")
+
+    # get icd10 codes and return data
+    icd10_infos = soup.find_all("div", class_="float-right")
+    if icd10_infos is None or len(icd10_infos) == 0:
+        codes = []
+    else:
+        codes = parse_icd10_table(icd10_infos)
+        if codes is None or len(codes) == 0:
+            codes = []
+
+    # remove unwanted tags and get content div
+    soup = remove_unwanted(soup)
     content_div = soup.find("body", class_=["mw-content-ltr", "mw-parser-output"])
     if content_div is None:
         logger.warning(f"No content div found for: {title}")
@@ -206,15 +217,6 @@ def get_wikipedia_article_data(title: str, get_full_text: bool = True):
             return None
     else:
         full_text = ""
-
-    # get icd10 codes and return data
-    icd10_infos = soup.find_all("div", class_="float-right")
-    if icd10_infos is None or len(icd10_infos) == 0:
-        codes = []
-    else:
-        codes = parse_icd10_table(icd10_infos)
-        if codes is None or len(codes) == 0:
-            codes = []
 
     return {
         "title": title,
