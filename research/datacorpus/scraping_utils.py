@@ -21,14 +21,13 @@ ignore_list = [
     "Bildquelle",
     "Auskultationsgeräusch",
     "Quiz",
-    "Fortbildung"
+    "Fortbildung",
 ]
 
 
 def process_tags_to_text(tags: list[Tag], full_text=True) -> str:
     if tags is None or len(tags) == 0:
         return ""
-
     if not full_text:
         tags = [tags[0]]
 
@@ -52,12 +51,12 @@ def process_tags_to_text(tags: list[Tag], full_text=True) -> str:
 
 def process_ul(ul_element: Tag) -> str:
     """Process a <ul> element and its children <li> elements to extract text."""
-    return md(str(ul_element), strip=['a', 'b', 'i'])
+    return md(str(ul_element), strip=["a", "b", "i"])
 
 
 def process_ol(ol_element: Tag) -> str:
     """Process a <ol> element and its children <li> elements to extract text."""
-    return md(str(ol_element), strip=['a', 'b', 'i'])
+    return md(str(ol_element), strip=["a", "b", "i"])
 
 
 def process_dl(dl_element: Tag) -> str:

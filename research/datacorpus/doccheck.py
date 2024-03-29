@@ -11,11 +11,13 @@ from research.logger import logger
 
 validation_articles = [
     "https://flexikon.doccheck.com/de/Rachen",
-    "https://flexikon.doccheck.com/de/%C3%9Cberdruckbeatmung"
+    "https://flexikon.doccheck.com/de/%C3%9Cberdruckbeatmung",
 ]
 
+
+# link gathering
 def get_all_fachgebiete_links():
-    """Get links for all fachgebiete from doccheck.com"""
+    """Get the links for all upper level fachgebiete from doccheck.com"""
 
     response = requests.get("https://flexikon.doccheck.com/de/Kategorie:%C3%9Cbersicht")
     if not response.ok:
@@ -42,7 +44,7 @@ def get_all_fachgebiete_links():
 
 
 def get_all_tag_links():
-    """Get all tag links from doccheck.com"""
+    """Get all upper level tag links from doccheck.com"""
     response = requests.get(
         "https://flexikon.doccheck.com/de/Spezial:Tags?page=1&limit=20000"
     )
@@ -52,7 +54,15 @@ def get_all_tag_links():
 
     soup = BeautifulSoup(response.content, "html.parser")
     outer_container = soup.find("div", {"class": "dc-container"})
+    if outer_container is None:
+        logger.error("No dc-container found")
+        return []
+
     container = outer_container.find("div", {"class": "is-flex column"})
+    if container is None:
+        logger.error("No is-flex column container found")
+        return []
+
     links = container.find_all("a")
     output = []
     for link in links:
@@ -67,7 +77,7 @@ def get_all_tag_links():
 
 
 def fetch_links_from_category_or_tag(url):
-    """Fetch all links from a doccheck.com category page and return a list of links."""
+    """Fetch all links from a doccheck.com category or tag page and return a list of links."""
 
     links = []
     current_url = url
@@ -79,6 +89,9 @@ def fetch_links_from_category_or_tag(url):
 
         soup = BeautifulSoup(response.text, "html.parser")
         container = soup.find("div", {"class": "mw-category-generated"})
+        if container is None:
+            logger.error("No mw-category-generated container found")
+            break
 
         # Extract all links
         links.extend([a["href"] for a in container.find_all("a", href=True)])
@@ -86,11 +99,6 @@ def fetch_links_from_category_or_tag(url):
         next_page_link = soup.find(
             "a", string=lambda text: text and "nächste Seite" in text
         )
-
-        # filter out links that are not articles
-        links = [
-            link for link in links if not re.search(r"index.php", link, re.IGNORECASE)
-        ]
 
         if next_page_link:
             current_url = "https://flexikon.doccheck.com" + next_page_link["href"]
@@ -106,12 +114,6 @@ def fetch_links_from_category_or_tag(url):
 
     logger.debug(f"Found {len(links)} links from {url}")
     return links
-
-
-def clean_doccheck_string(text: str) -> str:
-    text = text.replace("...", "")
-    text = text.strip()
-    return text
 
 
 def get_all_links_from_doccheck(save_to_file=True, read_from_file=False):
@@ -145,14 +147,81 @@ def get_all_links_from_doccheck(save_to_file=True, read_from_file=False):
     return links
 
 
+# article scraping
+def clean_doccheck_string(text: str) -> str:
+    """Clean up text from doccheck.com by removing unwanted characters and whitespace."""
+    text = text.replace("...", "")
+    text = text.strip()
+    return text
+
+
+def get_disciplines_and_tags_from_article(tags_category_container):
+    """Get disciplines and tags from a doccheck article. Returns a tuple of lists."""
+    if tags_category_container is None:
+        return [], []
+
+    try:
+        disciplines = []
+        tags = []
+        if tags_category_container is not None:
+            disciplines = tags_category_container.find("div", {"class": "disciplines"})
+            if disciplines is not None and disciplines.text is not None:
+                disciplines_text = disciplines.text.replace("Fachgebiete:", "").strip()
+                disciplines = [
+                    discipline.strip() for discipline in disciplines_text.split(",")
+                ]
+            tags = tags_category_container.find("div", {"class": "tags"})
+            if tags is not None and tags.text is not None:
+                tags_text = tags.text.replace("Stichworte:", "").strip()
+                tags = [tag.strip() for tag in tags_text.split(",")]
+
+        return disciplines, tags
+    except Exception as e:
+        logger.error(f"Failed to extract disciplines and tags: {e}")
+
+
+def get_synonyms_and_english_title_from_article(first_p):
+    """Get synonyms and english title from a doccheck article. Returns a tuple of lists."""
+    if first_p is None:
+        return [], []
+
+    try:
+        tags = []
+        if first_p is not None:
+            tags = first_p.find_all("i")
+        synonyms = []
+        english_title = []
+        for tag in tags:
+            if tag is not None and tag.text is not None:
+                if tag.get_text(strip=True).startswith("Synonyme:"):
+                    synonym_text = tag.get_text().replace("Synonyme:", "").strip()
+                    synonyms = [s.strip() for s in synonym_text.split(",")]
+                elif tag.get_text(strip=True).startswith("Synonym:"):
+                    synonym_text = tag.get_text().replace("Synonym:", "").strip()
+                    synonyms = [s.strip() for s in synonym_text.split(",")]
+                elif tag.get_text(strip=True).startswith("Englisch:"):
+                    english_title = tag.get_text().replace("Englisch:", "").strip()
+                    english_title = [s.strip() for s in english_title.split(",")]
+
+        return synonyms, english_title
+    except Exception as e:
+        logger.error(f"Failed to extract synonyms and english title: {e}")
+        return [], []
+
+
 def get_doccheck_article(url: str):
+    """Get an article from doccheck.com by url. Returns a dictionary."""
     response = requests.get(url)
     if not response.ok:
         logger.error(f"Request failed for url: {url}")
         return None
 
+    # get article container
     soup = BeautifulSoup(response.text, "html.parser")
     container = soup.find("div", {"id": "mw-content-text"})
+    if container is None:
+        logger.error(f"No mw-content-text container found for article: {url}")
+        return None
 
     # get title
     title_element = soup.find("h1")
@@ -162,21 +231,14 @@ def get_doccheck_article(url: str):
         logger.error(f"No title found for article: {url}")
         return None
 
-    # get synonyms and english title
+    # get synonyms and english translation
     first_p = soup.find("p")
-    synonym_tags = first_p.find_all("i")
-    synonyms = ""
-    english_title = ""
-    for tag in synonym_tags:
-        if tag is not None and tag.text is not None:
-            if tag.get_text(strip=True).startswith("Synonyme:"):
-                synonyms = tag.get_text(strip=True).replace("Synonyme:", "").strip()
-            elif tag.get_text(strip=True).startswith("Synonym:"):
-                synonyms = tag.get_text(strip=True).replace("Synonym:", "").strip()
-            elif tag.get_text(strip=True).startswith("Englisch:"):
-                english_title = (
-                    tag.get_text(strip=True).replace("Englisch:", "").strip()
-                )
+    synonyms, english_title = get_synonyms_and_english_title_from_article(first_p)
+    # get disciplines and tags
+    tags_category_container = soup.find("div", {"id": "categories"})
+    disciplines, article_tags = get_disciplines_and_tags_from_article(
+        tags_category_container
+    )
 
     # get text from article elements
     articles = container.find_all("div", {"class": "collapsible-article"})
@@ -195,17 +257,19 @@ def get_doccheck_article(url: str):
         tags = [tag for tag in tags if "mw-empty-elt" not in (tag.get("class") or [])]
         text += process_tags_to_text(tags, full_text=True)
 
+    # return cleaned text
     if text is None or text == "":
         logger.warning(f"No text found for article: {url}")
         return None
     text = clean_doccheck_string(text)
-
     return {
         "title": title,
         "english_title": english_title,
         "synonyms": synonyms,
         "text": text,
         "link": url,
+        "tags": article_tags,
+        "disciplines": disciplines,
     }
 
 
@@ -230,7 +294,7 @@ def build_doccheck_corpus(from_file=False):
                 logger.debug(f"Doccheck article already exists: {link}")
                 continue
         except Exception as e:
-            logger.error(f"Failed to fetch article from link: {e}")
+            logger.error(f"Failed to fetch article from link {link}: {e}")
 
     logger.info("Finished building doccheck corpus")
     client.close()
