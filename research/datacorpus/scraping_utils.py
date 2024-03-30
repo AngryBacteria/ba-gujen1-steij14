@@ -6,6 +6,8 @@ ignore_list = [
     "Literatur",
     "Fachliteratur",
     "Leitlinien",
+    "Podcast",
+    "Leitlinie",
     "Einzelnachweise",
     "Siehe auch",
     "Referenzen",

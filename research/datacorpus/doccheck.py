@@ -151,6 +151,8 @@ def get_all_links_from_doccheck(save_to_file=True, read_from_file=False):
 def clean_doccheck_string(text: str) -> str:
     """Clean up text from doccheck.com by removing unwanted characters and whitespace."""
     text = text.replace("...", "")
+    pattern = r"\[.*?\]"
+    text = re.sub(pattern, "", text)
     text = text.strip()
     return text
 

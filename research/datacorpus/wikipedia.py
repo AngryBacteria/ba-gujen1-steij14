@@ -32,12 +32,8 @@ relevant_categories = [
     "Krankheit",
     "Medizinische_Fachsprache",
     "Therapie",
-    # "Organ_als_Thema",
-    # "Impfung",
     # "Biomedizin",
     "Diagnostik",
-    # "Medizinische_Vorsorge",
-    # "Heilberuf",
 ]
 
 
