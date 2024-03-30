@@ -164,15 +164,15 @@ def get_disciplines_and_tags_from_article(tags_category_container):
         disciplines = []
         tags = []
         if tags_category_container is not None:
-            disciplines = tags_category_container.find("div", {"class": "disciplines"})
-            if disciplines is not None and disciplines.text is not None:
-                disciplines_text = disciplines.text.replace("Fachgebiete:", "").strip()
+            disciplines_element = tags_category_container.find("div", {"class": "disciplines"})
+            if disciplines_element is not None and disciplines_element.text is not None:
+                disciplines_text = disciplines_element.text.replace("Fachgebiete:", "").strip()
                 disciplines = [
                     discipline.strip() for discipline in disciplines_text.split(",")
                 ]
-            tags = tags_category_container.find("div", {"class": "tags"})
-            if tags is not None and tags.text is not None:
-                tags_text = tags.text.replace("Stichworte:", "").strip()
+            tags_element = tags_category_container.find("div", {"class": "tags"})
+            if tags_element is not None and tags_element.text is not None:
+                tags_text = tags_element.text.replace("Stichworte:", "").strip()
                 tags = [tag.strip() for tag in tags_text.split(",")]
 
         return disciplines, tags
@@ -200,8 +200,8 @@ def get_synonyms_and_english_title_from_article(first_p):
                     synonym_text = tag.get_text().replace("Synonym:", "").strip()
                     synonyms = [s.strip() for s in synonym_text.split(",")]
                 elif tag.get_text(strip=True).startswith("Englisch:"):
-                    english_title = tag.get_text().replace("Englisch:", "").strip()
-                    english_title = [s.strip() for s in english_title.split(",")]
+                    english_title_text = tag.get_text().replace("Englisch:", "").strip()
+                    english_title = [s.strip() for s in english_title_text.split(",")]
 
         return synonyms, english_title
     except Exception as e:

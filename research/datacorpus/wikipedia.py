@@ -31,15 +31,13 @@ validation_articles = [
 relevant_categories = [
     "Krankheit",
     "Medizinische_Fachsprache",
-    # "Therapie",
-    "Organ_als_Thema",
+    "Therapie",
+    # "Organ_als_Thema",
     # "Impfung",
     # "Biomedizin",
     "Diagnostik",
     # "Medizinische_Vorsorge",
-    "Medizinische_Behandlung",
     # "Heilberuf",
-    # "Zahnmedizin",
 ]
 
 
@@ -238,7 +236,7 @@ def get_all_wiki_text(sections: ResultSet, full_text: bool) -> str:
         tags = section.find_all(
             ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "dl"]
         )
-        text = text + process_tags_to_text(tags, full_text)
+        text = text + process_tags_to_text(tags, True)
 
     if text.startswith("* Wikidata:"):
         return ""
