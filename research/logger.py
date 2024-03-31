@@ -11,14 +11,16 @@ class CustomFormatter(logging.Formatter):
     red = Fore.RED
     bold_red = Style.BRIGHT + Fore.RED
     reset = Style.RESET_ALL
-    format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+    format = (
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+    )
 
     FORMATS = {
         logging.DEBUG: grey + format + reset,
         logging.INFO: grey + format + reset,
         logging.WARNING: yellow + format + reset,
         logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset
+        logging.CRITICAL: bold_red + format + reset,
     }
 
     def format(self, record):
@@ -37,9 +39,11 @@ ch.setFormatter(CustomFormatter())
 logger.addHandler(ch)
 
 # file handler
-fh = logging.FileHandler('main.log', encoding='utf-8')
+fh = logging.FileHandler("main.log", encoding="utf-8")
 fh.setLevel(logging.DEBUG)
-log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+log_format = (
+    "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+)
 formatter = logging.Formatter(log_format)
 fh.setFormatter(formatter)
 logger.addHandler(fh)

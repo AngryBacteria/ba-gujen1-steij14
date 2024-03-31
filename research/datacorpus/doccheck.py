@@ -166,9 +166,13 @@ def get_disciplines_and_tags_from_article(tags_category_container):
         disciplines = []
         tags = []
         if tags_category_container is not None:
-            disciplines_element = tags_category_container.find("div", {"class": "disciplines"})
+            disciplines_element = tags_category_container.find(
+                "div", {"class": "disciplines"}
+            )
             if disciplines_element is not None and disciplines_element.text is not None:
-                disciplines_text = disciplines_element.text.replace("Fachgebiete:", "").strip()
+                disciplines_text = disciplines_element.text.replace(
+                    "Fachgebiete:", ""
+                ).strip()
                 disciplines = [
                     discipline.strip() for discipline in disciplines_text.split(",")
                 ]
