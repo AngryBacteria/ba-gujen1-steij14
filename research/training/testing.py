@@ -62,6 +62,13 @@ training_args = TrainingArguments(
     evaluation_strategy="epoch",
     learning_rate=2e-5,
     weight_decay=0.01,
+
+    # optimizations
+    per_device_train_batch_size=1,
+    per_device_eval_batch_size=1,
+    optim="adafactor",
+    gradient_accumulation_steps=4,
+    gradient_checkpointing=True,
 )
 trainer = Trainer(
     model=model,
