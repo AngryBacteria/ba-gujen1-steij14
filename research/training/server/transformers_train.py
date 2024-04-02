@@ -1,6 +1,8 @@
-from datasets import load_dataset
-from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo
+import os
 
+import torch
+from datasets import load_dataset
+import setproctitle
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -9,36 +11,45 @@ from transformers import (
     Trainer,
 )
 
-MODEl_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+# Variables
+GPU_ID = 0
+MODEl_ID = "mistralai/Mistral-7B-v0.1"
 DEBUG = True
+SEQUENCE_LENGTH = 512
+BATCH_SIZE = 1
+OPTIMIZER = "adamw_bnb_8bit"  # adamw_bnb_8bit, adamw_torch, adafactor
+LOAD_LOWER_PRECISION = True
 
-
-def print_gpu_utilization():
-    nvmlInit()
-    handle = nvmlDeviceGetHandleByIndex(0)
-    info = nvmlDeviceGetMemoryInfo(handle)
-    print(
-        f"GPU memory occupied: {info.used // 1024 ** 2} / {info.total // 1024 ** 2} MB"
-    )
+# Setup
+setproctitle.setproctitle("gujen1 - ba-mistralai - testing.py")
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU_ID}"
 
 
 def preprocess_function(examples):
     inputs = examples["text"]
-    return tokenizer(inputs, padding=True, truncation=True, max_length=512)
+    return tokenizer(inputs, padding=True, truncation=True, max_length=SEQUENCE_LENGTH)
 
 
 # Load model and tokenizer
 print(f"{15 * '='} Load model and tokenizer {15 * '='}")
-print_gpu_utilization()
 tokenizer = AutoTokenizer.from_pretrained(MODEl_ID, use_fast=True)
 tokenizer.pad_token = tokenizer.eos_token
-model = AutoModelForCausalLM.from_pretrained(MODEl_ID)
-print_gpu_utilization()
 
+if LOAD_LOWER_PRECISION:
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEl_ID,
+        attn_implementation="sdpa",
+        torch_dtype=torch.float16,
+    ).to("cuda")
+else:
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEl_ID,
+        attn_implementation="sdpa",
+    ).to("cuda")
 
 # Load and prepare dataset
 print(f"{15 * '='} Load and prepare dataset {15 * '='}")
-print_gpu_utilization()
 dataset = load_dataset("tatsu-lab/alpaca", split="train[:100]")
 train_val_dataset = dataset.train_test_split(test_size=0.2, seed=42)
 train_dataset = train_val_dataset["train"]
@@ -57,23 +68,19 @@ tokenized_val_dataset = val_dataset.map(
     num_proc=4,
     remove_columns=["instruction", "input", "output", "text"],
 )
-print_gpu_utilization()
-
 
 # Train model
 print(f"{15 * '='} Train model {15 * '='}")
-print_gpu_utilization()
 training_args = TrainingArguments(
     output_dir="my_awesome_new_model",
     evaluation_strategy="epoch",
     learning_rate=2e-5,
-    weight_decay=0.01,
     # optimizations
-    per_device_train_batch_size=1,
-    per_device_eval_batch_size=1,
-    optim="adafactor",
-    gradient_accumulation_steps=4,
+    per_device_train_batch_size=BATCH_SIZE,
+    per_device_eval_batch_size=BATCH_SIZE,
+    gradient_accumulation_steps=BATCH_SIZE * 4,
     gradient_checkpointing=True,
+    optim=OPTIMIZER,
 )
 if DEBUG:
     training_args.include_tokens_per_second = True

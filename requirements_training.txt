@@ -1,5 +1,8 @@
 pynvml
 setproctitle
 datasets
-transformers
+transformers[torch]
 accelerate
+bitsandbytes
+
+galore-torch
