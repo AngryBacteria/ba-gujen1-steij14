@@ -4,5 +4,6 @@ datasets
 transformers[torch]
 accelerate
 bitsandbytes
+wandb
 
 galore-torch

@@ -1,6 +1,8 @@
+import gc
 import os
 
 import torch
+import wandb
 from datasets import load_dataset
 import setproctitle
 from transformers import (
@@ -11,17 +13,24 @@ from transformers import (
     Trainer,
 )
 
-# Variables
+# Variables General
 GPU_ID = 0
-MODEl_ID = "mistralai/Mistral-7B-v0.1"
+MODEl_ID = "mistralai/Mistral-7B-v0.1"  # microsoft/phi-1_5, mistralai/Mistral-7B-v0.1
 DEBUG = True
+WANDB_LOGGING = True  # First you have to login with wandb login
 SETUP_ENVIRONMENT = True
+# Variables Model
+MODEL_PRECISION = torch.float  # Lower makes training faster, but can also lead to problems. Possible values: torch.float16, torch.bfloat16, torch.float
+ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
+# Variables Data processing
+PROCESSING_THREADS = 1
+# Variables Trainer
 SEQUENCE_LENGTH = 512
+EPOCHS = 3
 BATCH_SIZE = 1
-GRADIENT_ACCUMULATION_STEPS = 0  # 0 to disable. Should be proportional to the batch size. Reduces VRAM usage.
+GRADIENT_ACCUMULATION_STEPS = 4  # 1 to disable. Should be proportional to the batch size. Reduces VRAM usage.
 GRADIENT_CHECKPOINTING = True
-OPTIMIZER = "adamw_torch"  # adamw_bnb_8bit, adamw_torch, adafactor, adamw_apex_fused
-LOAD_LOWER_PRECISION = True
+OPTIMIZER = "adamw_bnb_8bit"  # adamw_bnb_8bit, adamw_torch, adafactor, adamw_apex_fused
 
 # Setup
 if SETUP_ENVIRONMENT:
@@ -31,20 +40,11 @@ if SETUP_ENVIRONMENT:
 
 # Load model
 print(f"{15 * '='} Load model {15 * '='}")
-tokenizer = AutoTokenizer.from_pretrained(MODEl_ID, use_fast=True)
-tokenizer.pad_token = tokenizer.eos_token
-
-if LOAD_LOWER_PRECISION:
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEl_ID,
-        attn_implementation="sdpa",
-        torch_dtype=torch.float16,
-    ).to(GPU_ID)
-else:
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEl_ID,
-        attn_implementation="sdpa",
-    ).to(GPU_ID)
+model = AutoModelForCausalLM.from_pretrained(
+    MODEl_ID,
+    torch_dtype=MODEL_PRECISION,
+    attn_implementation=ATTENTION_IMPLEMENTATION,
+).to(GPU_ID)
 
 # Load tokenizer
 print(f"{15 * '='} Load tokenizer {15 * '='}")
@@ -59,7 +59,7 @@ def preprocess_function(examples):
 
 
 print(f"{15 * '='} Load and prepare dataset {15 * '='}")
-dataset = load_dataset("tatsu-lab/alpaca", split="train[:100]")
+dataset = load_dataset("tatsu-lab/alpaca", split="train[:100]", num_proc=PROCESSING_THREADS)
 train_val_dataset = dataset.train_test_split(test_size=0.2, seed=42)
 train_dataset = train_val_dataset["train"]
 val_dataset = train_val_dataset["test"]
@@ -68,13 +68,13 @@ data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 tokenized_train_dataset = train_dataset.map(
     preprocess_function,
     batched=True,
-    num_proc=4,
+    num_proc=PROCESSING_THREADS,
     remove_columns=["instruction", "input", "output", "text"],
 )
 tokenized_val_dataset = val_dataset.map(
     preprocess_function,
     batched=True,
-    num_proc=4,
+    num_proc=PROCESSING_THREADS,
     remove_columns=["instruction", "input", "output", "text"],
 )
 
@@ -84,6 +84,7 @@ training_args = TrainingArguments(
     output_dir="my_awesome_new_model",
     evaluation_strategy="epoch",
     learning_rate=2e-5,
+    num_train_epochs=EPOCHS,
     # optimizations
     per_device_train_batch_size=BATCH_SIZE,
     per_device_eval_batch_size=BATCH_SIZE,
@@ -91,9 +92,14 @@ training_args = TrainingArguments(
     gradient_checkpointing=GRADIENT_CHECKPOINTING,
     optim=OPTIMIZER,
 )
+
 if DEBUG:
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
+if WANDB_LOGGING:
+    training_args.report_to = ["wandb"]
+    training_args.logging_steps = 1
+    os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
 
 # Train model
 trainer = Trainer(
@@ -104,3 +110,10 @@ trainer = Trainer(
     data_collator=data_collator,
 )
 trainer.train()
+wandb.finish()
+
+# cleanup
+del model
+del tokenizer
+gc.collect()
+torch.cuda.empty_cache()
