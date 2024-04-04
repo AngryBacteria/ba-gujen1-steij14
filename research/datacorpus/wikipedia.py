@@ -32,8 +32,8 @@ relevant_categories = [
     "Krankheit",
     "Medizinische_Fachsprache",
     "Therapie",
-    # "Biomedizin",
     "Diagnostik",
+    "Medizinische_Dokumentation"
 ]
 
 
@@ -180,13 +180,12 @@ def get_wikipedia_article_data(title: str, get_full_text: bool = True):
     soup = BeautifulSoup(response.content, "html.parser")
 
     # get icd10 codes and return data
-    icd10_infos = soup.find_all("div", class_="float-right")
-    if icd10_infos is None or len(icd10_infos) == 0:
-        codes = []
+    icd10_info_table = soup.find_all("div", class_="float-right")
+    if icd10_info_table is None or len(icd10_info_table) == 0:
+        codes_who = []
+        codes_gm = []
     else:
-        codes = parse_icd10_table(icd10_infos)
-        if codes is None or len(codes) == 0:
-            codes = []
+        codes_who, codes_gm = parse_icd10_table(icd10_info_table)
 
     # remove unwanted tags and get content div
     soup = remove_unwanted(soup)
@@ -216,7 +215,8 @@ def get_wikipedia_article_data(title: str, get_full_text: bool = True):
         "title": title,
         "text": clean_wikipedia_string(introduction_text),
         "full_text": clean_wikipedia_string(full_text),
-        "icd10": codes,
+        "icd10_who": codes_who,
+        "icd10_gm": codes_gm,
     }
 
 
@@ -232,7 +232,7 @@ def get_all_wiki_text(sections: ResultSet, full_text: bool) -> str:
         tags = section.find_all(
             ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "dl"]
         )
-        text = text + process_tags_to_text(tags, True)
+        text = text + process_tags_to_text(tags)
 
     if text.startswith("* Wikidata:"):
         return ""
@@ -240,9 +240,11 @@ def get_all_wiki_text(sections: ResultSet, full_text: bool) -> str:
 
 
 # TODO: also parse the following pattern: T20.- bis T32
+#  or M30-M36 (https://de.wikipedia.org/wiki/Kollagenose)
 def parse_icd10_table(icd10_infos: ResultSet):
     """Parse the ICD-10 table data from a wikipedia article. The infobox component is used."""
-    output = []
+    output_icd10_who = []
+    output_icd10_gm = []
     for icd10_info in icd10_infos:
         table = icd10_info.find("table")
         if table is None:
@@ -254,20 +256,23 @@ def parse_icd10_table(icd10_infos: ResultSet):
         # check if icd10-who is used for article
         if rows[0] is not None:
             title = rows[0].text.replace("\n", " ").strip()
-            if title != "Klassifikation nach ICD-10":
-                continue
-        if rows[len(rows) - 1] is not None:
-            title = rows[len(rows) - 1].text.replace("\n", " ").strip()
-            if title != "ICD-10 online (WHO-Version 2019)":
-                continue
+            if title == "Klassifikation nach ICD-10":
+                for row in rows:
+                    row_text = row.text.replace("\n", " ").strip()
+                    pattern = r"\b([A-Z][0-9]{2}(?:\.[0-9]{1,2})?[\+\*]?)\b"
+                    icd10_codes = re.findall(pattern, row_text)
+                    if icd10_codes is not None and len(icd10_codes) > 0:
+                        output_icd10_who.extend(icd10_codes)
 
-        for row in rows:
-            row_text = row.text.replace("\n", " ").strip()
-            pattern = r"\b([A-Z][0-9]{2}(?:\.[0-9]{1,2})?[\+\*]?)\b"
-            icd10_codes = re.findall(pattern, row_text)
-            if icd10_codes is not None and len(icd10_codes) > 0:
-                output.extend(icd10_codes)
-    return output
+            elif title == "Klassifikation nach ICD-10-GM":
+                for row in rows:
+                    row_text = row.text.replace("\n", " ").strip()
+                    pattern = r"\b([A-Z][0-9]{2}(?:\.[0-9]{1,2})?[\+\*]?)\b"
+                    icd10_codes = re.findall(pattern, row_text)
+                    if icd10_codes is not None and len(icd10_codes) > 0:
+                        output_icd10_gm.extend(icd10_codes)
+
+    return output_icd10_who, output_icd10_gm
 
 
 def add_views_to_db(overwrite=False):

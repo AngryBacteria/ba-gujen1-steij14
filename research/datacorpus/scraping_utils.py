@@ -36,11 +36,9 @@ def remove_unwanted(soup: BeautifulSoup) -> BeautifulSoup:
     return soup
 
 
-def process_tags_to_text(tags: list[Tag], full_text=True) -> str:
+def process_tags_to_text(tags: list[Tag]) -> str:
     if tags is None or len(tags) == 0:
         return ""
-    if not full_text:
-        tags = [tags[0]]
 
     text = ""
     for child in tags:

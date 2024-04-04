@@ -262,7 +262,7 @@ def get_doccheck_article(url: str):
         tags = tags_header + tags_content
         # Filter out tags with that contain class mw-empty-elt
         tags = [tag for tag in tags if "mw-empty-elt" not in (tag.get("class") or [])]
-        text += process_tags_to_text(tags, full_text=True)
+        text += process_tags_to_text(tags)
 
     # return cleaned text
     if text is None or text == "":
