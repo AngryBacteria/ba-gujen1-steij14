@@ -61,7 +61,10 @@ def parse_csv_icd10_alphabet(icd10gm=False):
         data = pd.concat([alphabet1, alphabet2])
     data = data[data["code"].notnull()]
 
-    logger.debug(f"Parsed icd10 alphabet data with {len(data)} rows.")
+    if icd10gm:
+        logger.debug(f"Parsed icd10gm alphabet data with {len(data)} rows.")
+    else:
+        logger.debug(f"Parsed icd10 alphabet data with {len(data)} rows.")
     return data.groupby("code").agg(lambda x: list(x.dropna())).reset_index()
 
 
@@ -85,18 +88,6 @@ def get_super_class_from_xml(element: et.Element) -> str | None:
     super_class_element = element.find(".//SuperClass")
     super_class_code = super_class_element.get("code", None)
     return super_class_code
-
-
-def get_text_from_xml(element: et.Element) -> str | None:
-    """Get the text of the text-element from the Introduction element of an ICD-10 element."""
-    output = ""
-    text_rubrics = element.findall(".//Rubric[@kind='text']/Label/Para")
-    for para in text_rubrics:
-        output += para.text
-
-    if output == "":
-        return None
-    return output
 
 
 def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False):
@@ -170,9 +161,14 @@ def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False):
                 synonyms = [title for title in titles if title != category_title]
                 category["synonyms"] = synonyms
 
-    logger.debug(
-        f"Parsed category data from icd10_xml with {len(icd10_categories)} rows."
-    )
+    if icd10gm:
+        logger.debug(
+            f"Parsed category data from icd10gm xml with {len(icd10_categories)} rows."
+        )
+    else:
+        logger.debug(
+            f"Parsed category data from icd10 xml with {len(icd10_categories)} rows."
+        )
     return icd10_categories
 
 
@@ -216,7 +212,12 @@ def parse_xml_icd10_blocks(icd10gm=False):
             }
         )
 
-    logger.debug(f"Parsed block data from icd10_xml with {len(icd10_blocks)} rows.")
+    if icd10gm:
+        logger.debug(
+            f"Parsed block data from icd10gm xml with {len(icd10_blocks)} rows."
+        )
+    else:
+        logger.debug(f"Parsed block data from icd10 xml with {len(icd10_blocks)} rows.")
     return icd10_blocks
 
 
@@ -256,16 +257,23 @@ def parse_xml_icd10_chapters(icd10gm=False):
             }
         )
 
-    logger.debug(f"Parsed chapter data from icd10_xml with {len(icd10_chapters)} rows.")
+    if icd10gm:
+        logger.debug(
+            f"Parsed chapter data from icd10gm xml with {len(icd10_chapters)} rows."
+        )
+    else:
+        logger.debug(
+            f"Parsed chapter data from icd10 xml with {len(icd10_chapters)} rows."
+        )
     return icd10_chapters
 
 
 # TODO: icd10gm : parse subcategory, for example M08.4 --> M08.43
 def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False):
     # parse xml files and combine
-    categories = parse_xml_icd10_categories(add_alphabet)
-    blocks = parse_xml_icd10_blocks(icd10gm)
-    chapters = parse_xml_icd10_chapters(icd10gm)
+    categories = parse_xml_icd10_categories(add_alphabet=add_alphabet, icd10gm=icd10gm)
+    blocks = parse_xml_icd10_blocks(icd10gm=icd10gm)
+    chapters = parse_xml_icd10_chapters(icd10gm=icd10gm)
     merged_output = categories + blocks + chapters
 
     # sort by code

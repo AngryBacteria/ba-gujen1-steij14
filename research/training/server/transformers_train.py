@@ -20,7 +20,9 @@ DEBUG = True
 WANDB_LOGGING = True  # First you have to login with wandb login
 SETUP_ENVIRONMENT = True
 # Variables Model
-MODEL_PRECISION = torch.float  # Lower makes training faster, but can also lead to problems. Possible values: torch.float16, torch.bfloat16, torch.float
+MODEL_PRECISION = (
+    torch.float
+)  # Lower makes training faster, but can also lead to problems. Possible values: torch.float16, torch.bfloat16, torch.float
 ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
 # Variables Data processing
 PROCESSING_THREADS = 1
@@ -28,7 +30,9 @@ PROCESSING_THREADS = 1
 SEQUENCE_LENGTH = 512
 EPOCHS = 3
 BATCH_SIZE = 1
-GRADIENT_ACCUMULATION_STEPS = 4  # 1 to disable. Should be proportional to the batch size. Reduces VRAM usage.
+GRADIENT_ACCUMULATION_STEPS = (
+    4  # 1 to disable. Should be proportional to the batch size. Reduces VRAM usage.
+)
 GRADIENT_CHECKPOINTING = True
 OPTIMIZER = "adamw_bnb_8bit"  # adamw_bnb_8bit, adamw_torch, adafactor, adamw_apex_fused
 
@@ -59,7 +63,9 @@ def preprocess_function(examples):
 
 
 print(f"{15 * '='} Load and prepare dataset {15 * '='}")
-dataset = load_dataset("tatsu-lab/alpaca", split="train[:100]", num_proc=PROCESSING_THREADS)
+dataset = load_dataset(
+    "tatsu-lab/alpaca", split="train[:100]", num_proc=PROCESSING_THREADS
+)
 train_val_dataset = dataset.train_test_split(test_size=0.2, seed=42)
 train_dataset = train_val_dataset["train"]
 val_dataset = train_val_dataset["test"]
