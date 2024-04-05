@@ -1,22 +1,179 @@
-import xml.etree.ElementTree as ET
+import os.path
 
-# Parse the XML data
-root = ET.parse(
-    "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\datensets\\bronco\\BRONCO150.xml"
-).getroot()
+from dotenv import load_dotenv
+from pymongo import MongoClient
+from research.logger import logger
 
-# Iterate through the passages
-for passage in root.iter("passage"):
-    text = passage.find("text").text
+path_text = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\textFiles"
+path_annotation = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\bratFiles"
 
-    # Iterate through the annotations
-    for annotation in passage.findall("annotation"):
-        annotation_id = annotation.get("id")
-        annotation_type = annotation.find('infon[@key="type"]').text
-        annotation_text = annotation.find("text").text
-        offset = int(annotation.find("location").get("offset"))
-        length = int(annotation.find("location").get("length"))
 
-        print(
-            f"Annotation ID: {annotation_id}, Type: {annotation_type}, Text: {annotation_text}, Offset: {offset}, Length: {length}"
-        )
+def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -> str:
+    """
+    Find the sentence in which the given positions are located
+    :param start_pos: start position
+    :param end_pos: end position
+    :param content: the text to search
+    :return: the string of the sentence
+    """
+    # Find the start of the sentence. Finds the last newline before start_pos
+    start_of_sentence = content.rfind("\n", 0, start_pos)
+    if (
+        start_of_sentence == -1
+    ):  # If no newline is found, start from the beginning (first sentence)
+        start_of_sentence = 0
+    else:
+        start_of_sentence += 1  # Move past the newline character
+
+    # Find the end of the sentence
+    end_of_sentence = content.find("\n", end_pos)
+    if (
+        end_of_sentence == -1
+    ):  # If no newline is found, go to the end of the file (last sentence)
+        end_of_sentence = len(content)
+
+    # Extract and return the sentence
+    sentence = content[start_of_sentence:end_of_sentence]
+    return sentence.strip()
+
+
+# read the text data
+def read_text_file(file_number: int):
+    """
+    Read the .txt file that containing raw sentences
+    :param file_number: number of the file to read
+    :return: the text of the file as string
+    """
+    with open(os.path.join(path_text, f"randomSentSet{file_number}.txt"), "r") as file:
+        annotation_text = file.read()
+        return annotation_text
+
+
+# parse the annotation data. The id starts either with N, T OR A
+def parse_annotation_data(file_number: int) -> list[dict]:
+    """
+    Parse the annotation data from the .ann file
+    :param file_number: number of the file to read
+    :return: list of dictionaries with the annotation data
+    """
+    with open(
+        os.path.join(path_annotation, f"randomSentSet{file_number}.ann"), "r"
+    ) as file:
+        annotations_text = file.read()
+        annotation_entries = annotations_text.strip().split("\n")
+        sentences_text = read_text_file(file_number)
+
+        output = []
+        for entry in annotation_entries:
+            parts = entry.split()
+            entry_id = parts[0]
+            # Entity labels start with T
+            try:
+                if entry_id.startswith("T"):
+                    # if the entity is split into multiple words, the end position is in a different part
+                    modifier = 0
+                    for part in parts[3:]:
+                        if ";" in part:
+                            modifier += 1
+                        else:
+                            break
+
+                    type_string = parts[1]
+                    start = int(parts[2])
+                    end = int(parts[3 + modifier])
+                    text_part = " ".join(parts[4 + modifier :])
+                    origin = find_sentence_by_word_position(sentences_text, start, end)
+                    output.append(
+                        {
+                            "id": f"{file_number}_" + entry_id,
+                            "type": type_string.strip(),
+                            "text": text_part.strip(),
+                            "origin": origin.strip(),
+                            "normalizations": [],
+                            "attributes": [],
+                            "start": start,
+                            "end": end,
+                        }
+                    )
+
+                # Attributes starts with A
+                # LevelOfTruth (negative, speculative, possibleFuture)
+                # or Localisation (R,L,B) , note Localisation==Laterality
+                elif entry_id.startswith("A"):
+                    attribute_label = parts[1]
+                    attribute_reference = parts[2]
+                    attribute = parts[3]
+
+                    found = False
+                    for entry_dict in output:
+                        if entry_dict["id"] == (
+                            f"{file_number}_" + attribute_reference
+                        ):
+                            entry_dict["attributes"].append(
+                                {
+                                    "attribute_label": attribute_label,
+                                    "attribute": attribute,
+                                }
+                            )
+                            found = True
+
+                    if not found:
+                        logger.warning(
+                            f"Attribute reference {file_number}_{attribute_reference} not found"
+                        )
+
+                # Normalization starts with N
+                # DIAGNOSIS (ICD10GM2017)
+                # TREATMENT (OPS2017)
+                # MEDICATION (ATC2017)
+                elif entry_id.startswith("N"):
+                    normalization_reference = parts[2]
+                    normalization = parts[3]
+                    normalization_text = " ".join(parts[4:])
+
+                    found = False
+                    for entry_dict in output:
+                        if entry_dict["id"] == (
+                            f"{file_number}_" + normalization_reference
+                        ):
+                            entry_dict["normalizations"].append(
+                                {
+                                    "normalization": normalization,
+                                    "normalization_text": normalization_text,
+                                }
+                            )
+                            found = True
+
+                    if not found:
+                        logger.warning(
+                            f"Normalization reference {file_number}_{normalization_reference} not found"
+                        )
+
+            except Exception as e:
+                logger.warning(f"Outer Error while parsing {entry} - {e}")
+
+        logger.debug(f"Parsed {len(output)} entries from file {file_number}")
+        return output
+
+
+def create_bronco_db():
+    """
+    Create the bronco database in MongoDB
+    """
+    data = []
+    for i in range(1, 6):
+        data.extend(parse_annotation_data(i))
+    logger.debug(f"Parsed {len(data)} entries in total")
+
+    load_dotenv()
+    client = MongoClient(os.getenv("MONGO_URL"))
+    db = client.get_database("main")
+    collection_name = "bronco"
+    bronco_collection = db.get_collection(collection_name)
+    bronco_collection.create_index("id", unique=True)
+    bronco_collection.insert_many(data)
+    client.close()
+    logger.info(f"Inserted {len(data)} entries into the {collection_name} collection")
+
+
+create_bronco_db()

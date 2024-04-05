@@ -13,7 +13,6 @@ icd10who_xml_path = "icd10who2019syst_claml_20180824.xml"
 
 icd10gm_alphabet_csv_path1 = "icd10gm2024alpha_edvtxt_20230929.txt"
 icd10gm_xml_path = "icd10gm2024syst_claml_20230915.xml"
-load_dotenv()
 
 
 # Official CSV-Files. I recommend you use the XML-File instead.
@@ -280,6 +279,7 @@ def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False):
     merged_output = sorted(merged_output, key=lambda x: x["code"])
 
     # Upload to MongoDB
+    load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
     collection_name = "icd10gm" if icd10gm else "icd10who"
