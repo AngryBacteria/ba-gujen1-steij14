@@ -1,17 +1,18 @@
 import gc
 import os
-
+import warnings
 import torch
 import wandb
 from datasets import load_dataset
 import setproctitle
-
+from peft import prepare_model_for_kbit_training
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
     DataCollatorForLanguageModeling,
     TrainingArguments,
     Trainer,
+    BitsAndBytesConfig,
 )
 
 # Variables General
@@ -23,13 +24,17 @@ DEBUG = True
 WANDB_LOGGING = True  # First you have to login with "wandb login"
 SETUP_ENVIRONMENT = True
 DISABLE_ANNOYING_WARNINGS = True
+RUN_NAME = "test_qlora1"
 
 # Variables Model
 MODEL_PRECISION = (
     torch.float
 )  # Lower makes training faster, but can also lead to convergence problems. Possible values: torch.float16, torch.bfloat16, torch.float
 ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
-LOAD_LORA = True
+
+# LORA / QLORA
+LORA = True
+QLORA = True
 
 # Variables Data processing
 PROCESSING_THREADS = 4
@@ -46,6 +51,13 @@ OPTIMIZER = (
     "adamw_torch_fused"  # adamw_bnb_8bit, adamw_torch, adafactor, adamw_torch_fused
 )
 
+# Pre-checks
+if QLORA and not LORA:
+    raise ValueError("QLORA can only be used in combination with LORA.")
+if LORA and GRADIENT_CHECKPOINTING:
+    print("Gradient checkpointing is not supported with LORA. Disabling it.")
+    GRADIENT_CHECKPOINTING = False
+
 # Setup
 if SETUP_ENVIRONMENT:
     torch.cuda.set_device(GPU_ID)
@@ -53,20 +65,37 @@ if SETUP_ENVIRONMENT:
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU_ID}"
 if DISABLE_ANNOYING_WARNINGS:
-    import warnings
     warnings.filterwarnings(
         "ignore", category=UserWarning, module="torch.utils.checkpoint"
     )
     warnings.filterwarnings("ignore", category=FutureWarning, module="accelerate")
 
-
 # Load model
-print(f"{15 * '='} Load model {15 * '='}")
-model = AutoModelForCausalLM.from_pretrained(
-    MODEl_ID,
-    torch_dtype=MODEL_PRECISION,
-    attn_implementation=ATTENTION_IMPLEMENTATION,
-).to(GPU_ID)
+if QLORA and LORA:
+    # TODO: maybe implement LoftQ
+    print(f"{15 * '='} Load QLora model {15 * '='}")
+    bnb_quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",  # theoretically better according to docs
+        bnb_4bit_compute_dtype=torch.float,  # less resources
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEl_ID,
+        quantization_config=bnb_quantization_config,
+        torch_dtype=MODEL_PRECISION,
+        attn_implementation=ATTENTION_IMPLEMENTATION,
+        device_map=GPU_ID,
+    )
+    model = prepare_model_for_kbit_training(model)
+else:
+    print(f"{15 * '='} Load model {15 * '='}")
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEl_ID,
+        torch_dtype=MODEL_PRECISION,
+        attn_implementation=ATTENTION_IMPLEMENTATION,
+        device_map=GPU_ID,
+    )
+
 # Load tokenizer
 print(f"{15 * '='} Load tokenizer {15 * '='}")
 tokenizer = AutoTokenizer.from_pretrained(MODEl_ID, use_fast=True)
@@ -101,28 +130,26 @@ tokenized_val_dataset = val_dataset.map(
     remove_columns=["instruction", "input", "output", "text"],
 )
 
-
 #  Load LORA
-if LOAD_LORA:
-    GRADIENT_CHECKPOINTING = False
+if LORA:
     print(f"{15 * '='} Loading LORA {15 * '='}")
     from peft import (
         get_peft_model,
         LoraConfig,
+        prepare_model_for_kbit_training,
     )
 
     peft_config = LoraConfig(
         lora_alpha=16,
         lora_dropout=0.1,
         r=64,
-        # bias="none",
+        # bias="none", # TODO: find out what this does
         task_type="CAUSAL_LM",
-        # target_modules="all-linear",
+        target_modules="all-linear",
     )
 
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
-
 
 # Setup training arguments
 print(f"{15 * '='} Train model {15 * '='}")
@@ -147,7 +174,8 @@ if DEBUG:
 if WANDB_LOGGING:
     training_args.report_to = ["wandb"]
     os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
-
+if RUN_NAME != "":
+    training_args.run_name = RUN_NAME
 
 # Train model
 trainer = Trainer(
