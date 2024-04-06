@@ -5,10 +5,10 @@ from pymongo import MongoClient
 from research.logger import logger
 
 path_text = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\textFiles"
-path_annotation = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\bratFiles"
+path_annotation_brat = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\bratFiles"
+path_annotation_conll = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\conllIOBTags"
 
 
-# TODO: save multi word annotations or flag for it so we can train BERT
 def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -> str:
     """
     Find the sentence in which the given positions are located
@@ -20,7 +20,7 @@ def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -
     # Find the start of the sentence. Finds the last newline before start_pos
     start_of_sentence = content.rfind("\n", 0, start_pos)
     if (
-        start_of_sentence == -1
+            start_of_sentence == -1
     ):  # If no newline is found, start from the beginning (first sentence)
         start_of_sentence = 0
     else:
@@ -29,7 +29,7 @@ def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -
     # Find the end of the sentence
     end_of_sentence = content.find("\n", end_pos)
     if (
-        end_of_sentence == -1
+            end_of_sentence == -1
     ):  # If no newline is found, go to the end of the file (last sentence)
         end_of_sentence = len(content)
 
@@ -51,14 +51,14 @@ def read_text_file(file_number: int):
 
 
 # parse the annotation data. The id starts either with N, T OR A
-def parse_annotation_data(file_number: int) -> list[dict]:
+def parse_annotation_data_general(file_number: int) -> list[dict]:
     """
     Parse the annotation data from the .ann file
     :param file_number: number of the file to read
     :return: list of dictionaries with the annotation data
     """
     with open(
-        os.path.join(path_annotation, f"randomSentSet{file_number}.ann"), "r"
+            os.path.join(path_annotation_brat, f"randomSentSet{file_number}.ann"), "r"
     ) as file:
         annotations_text = file.read()
         annotation_entries = annotations_text.strip().split("\n")
@@ -82,7 +82,7 @@ def parse_annotation_data(file_number: int) -> list[dict]:
                     type_string = parts[1]
                     start = int(parts[2])
                     end = int(parts[3 + modifier])
-                    text_part = " ".join(parts[4 + modifier :])
+                    text_part = " ".join(parts[4 + modifier:])
                     origin = find_sentence_by_word_position(sentences_text, start, end)
                     output.append(
                         {
@@ -108,7 +108,7 @@ def parse_annotation_data(file_number: int) -> list[dict]:
                     found = False
                     for entry_dict in output:
                         if entry_dict["id"] == (
-                            f"{file_number}_" + attribute_reference
+                                f"{file_number}_" + attribute_reference
                         ):
                             entry_dict["attributes"].append(
                                 {
@@ -135,7 +135,7 @@ def parse_annotation_data(file_number: int) -> list[dict]:
                     found = False
                     for entry_dict in output:
                         if entry_dict["id"] == (
-                            f"{file_number}_" + normalization_reference
+                                f"{file_number}_" + normalization_reference
                         ):
                             entry_dict["normalizations"].append(
                                 {
@@ -153,28 +153,76 @@ def parse_annotation_data(file_number: int) -> list[dict]:
             except Exception as e:
                 logger.warning(f"Outer Error while parsing {entry} - {e}")
 
-        logger.debug(f"Parsed {len(output)} entries from file {file_number}")
+        logger.debug(f"Parsed {len(output)} entries from file randomSentSet{file_number}.ann")
         return output
+
+
+def parse_annotation_data_ner(file_number: int) -> list[dict[str, list]]:
+    """
+    Parse the annotation data in the CoNLL format with the NER tags.
+    Useful for BERT and other NER models
+    :return: List of CoNLL formatted data
+    """
+    with open(os.path.join(path_annotation_conll, f"randomSentSet{file_number}.CONLL"), 'r') as file:
+        text = file.read()
+    # holds output data
+    sentences = []
+    # split the text into the data chunks and init empty lists
+    lines = text.strip().split('\n')
+    words = []
+    word_types = []
+    ner_tags = []
+    for line in lines:
+        if line.strip():  # This skips empty lines, they are used to separate sentences
+            word, word_type, ner_tag = line.split()
+            words.append(word)
+            word_types.append(word_type)
+            ner_tags.append(ner_tag)
+        else:  # End of sentence is reached
+            if words:
+                sentences.append({
+                    'words': words,
+                    'word_types': word_types,
+                    'ner_tags': ner_tags
+                })
+                words = []
+                word_types = []
+                ner_tags = []
+
+    logger.debug(f"Parsed {len(sentences)} sentences from file randomSentSet{file_number}.CONLL")
+    return sentences
 
 
 def create_bronco_db():
     """
     Create the bronco database in MongoDB
     """
-    data = []
-    for i in range(1, 6):
-        data.extend(parse_annotation_data(i))
-    logger.debug(f"Parsed {len(data)} entries in total")
-
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("main")
+
+    # main bronco collection
+    data = []
+    for i in range(1, 6):
+        data.extend(parse_annotation_data_general(i))
+    logger.debug(f"Parsed {len(data)} entries in total")
     collection_name = "bronco"
     bronco_collection = db.get_collection(collection_name)
     bronco_collection.create_index("id", unique=True)
     bronco_collection.insert_many(data)
-    client.close()
     logger.info(f"Inserted {len(data)} entries into the {collection_name} collection")
+
+    # NER bronco collection
+    data_ner = []
+    for i in range(1, 6):
+        data_ner.extend(parse_annotation_data_ner(i))
+    logger.debug(f"Parsed {len(data_ner)} NER entries in total")
+    collection_name = "bronco_ner"
+    bronco_collection = db.get_collection(collection_name)
+    bronco_collection.insert_many(data_ner)
+    logger.info(f"Inserted {len(data)} entries into the {collection_name} collection")
+
+    client.close()
 
 
 create_bronco_db()
