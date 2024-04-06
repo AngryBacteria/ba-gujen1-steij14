@@ -5,6 +5,7 @@ import torch
 import wandb
 from datasets import load_dataset
 import setproctitle
+
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -17,15 +18,19 @@ from transformers import (
 GPU_ID = 0
 MODEl_ID = "mistralai/Mistral-7B-v0.1"  # microsoft/phi-1_5, mistralai/Mistral-7B-v0.1
 DEBUG = True
-WANDB_LOGGING = True  # First you have to login with wandb login
+WANDB_LOGGING = False  # First you have to login with wandb login
 SETUP_ENVIRONMENT = True
+
 # Variables Model
 MODEL_PRECISION = (
     torch.float
-)  # Lower makes training faster, but can also lead to problems. Possible values: torch.float16, torch.bfloat16, torch.float
+)  # Lower makes training faster, but can also lead to convergence problems. Possible values: torch.float16, torch.bfloat16, torch.float
 ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
+LOAD_LORA = False
+
 # Variables Data processing
-PROCESSING_THREADS = 1
+PROCESSING_THREADS = 4
+
 # Variables Trainer
 SEQUENCE_LENGTH = 512
 EPOCHS = 3
@@ -34,7 +39,7 @@ GRADIENT_ACCUMULATION_STEPS = (
     4  # 1 to disable. Should be proportional to the batch size. Reduces VRAM usage.
 )
 GRADIENT_CHECKPOINTING = True
-OPTIMIZER = "adamw_bnb_8bit"  # adamw_bnb_8bit, adamw_torch, adafactor, adamw_apex_fused
+OPTIMIZER = "adafactor"  # adamw_bnb_8bit, adamw_torch, adafactor, adamw_torch_fused
 
 # Setup
 if SETUP_ENVIRONMENT:
@@ -70,7 +75,7 @@ train_val_dataset = dataset.train_test_split(test_size=0.2, seed=42)
 train_dataset = train_val_dataset["train"]
 val_dataset = train_val_dataset["test"]
 
-data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+data_collator_fn = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 tokenized_train_dataset = train_dataset.map(
     preprocess_function,
     batched=True,
@@ -84,13 +89,37 @@ tokenized_val_dataset = val_dataset.map(
     remove_columns=["instruction", "input", "output", "text"],
 )
 
+
+#  Load LORA
+if LOAD_LORA:
+    print(f"{15 * '='} Loading LORA {15 * '='}")
+    from peft import (
+        get_peft_model,
+        LoraConfig,
+    )
+
+    peft_config = LoraConfig(
+        lora_alpha=16,
+        lora_dropout=0.1,
+        r=64,
+        # bias="none",
+        task_type="CAUSAL_LM",
+        # target_modules="all-linear",
+    )
+
+    model = get_peft_model(model, peft_config)
+    model.print_trainable_parameters()
+
 # Setup training arguments
+
 print(f"{15 * '='} Train model {15 * '='}")
 training_args = TrainingArguments(
     output_dir="my_awesome_new_model",
     evaluation_strategy="epoch",
     learning_rate=2e-5,
     num_train_epochs=EPOCHS,
+    logging_strategy="steps",
+    logging_steps=10,
     # optimizations
     per_device_train_batch_size=BATCH_SIZE,
     per_device_eval_batch_size=BATCH_SIZE,
@@ -98,14 +127,13 @@ training_args = TrainingArguments(
     gradient_checkpointing=GRADIENT_CHECKPOINTING,
     optim=OPTIMIZER,
 )
-
 if DEBUG:
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
 if WANDB_LOGGING:
     training_args.report_to = ["wandb"]
-    training_args.logging_steps = 1
     os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
+
 
 # Train model
 trainer = Trainer(
@@ -113,7 +141,7 @@ trainer = Trainer(
     args=training_args,
     train_dataset=tokenized_train_dataset,
     eval_dataset=tokenized_val_dataset,
-    data_collator=data_collator,
+    data_collator=data_collator_fn,
 )
 trainer.train()
 wandb.finish()

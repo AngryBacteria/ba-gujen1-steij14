@@ -4,7 +4,6 @@ import torch
 
 # Variables
 GPU_ID = 0
-MODEl_ID = "mistralai/Mistral-7B-v0.1"
 
 # Setup
 setproctitle.setproctitle("gujen1 - ba-mistralai - testing.py")
