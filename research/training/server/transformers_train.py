@@ -16,17 +16,20 @@ from transformers import (
 
 # Variables General
 GPU_ID = 0
-MODEl_ID = "mistralai/Mistral-7B-v0.1"  # microsoft/phi-1_5, mistralai/Mistral-7B-v0.1
+MODEl_ID = (
+    "mistralai/Mistral-7B-Instruct-v0.2"  # microsoft/phi-1_5, mistralai/Mistral-7B-v0.1
+)
 DEBUG = True
-WANDB_LOGGING = False  # First you have to login with wandb login
+WANDB_LOGGING = True  # First you have to login with "wandb login"
 SETUP_ENVIRONMENT = True
+DISABLE_ANNOYING_WARNINGS = True
 
 # Variables Model
 MODEL_PRECISION = (
     torch.float
 )  # Lower makes training faster, but can also lead to convergence problems. Possible values: torch.float16, torch.bfloat16, torch.float
 ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
-LOAD_LORA = False
+LOAD_LORA = True
 
 # Variables Data processing
 PROCESSING_THREADS = 4
@@ -39,13 +42,23 @@ GRADIENT_ACCUMULATION_STEPS = (
     4  # 1 to disable. Should be proportional to the batch size. Reduces VRAM usage.
 )
 GRADIENT_CHECKPOINTING = True
-OPTIMIZER = "adafactor"  # adamw_bnb_8bit, adamw_torch, adafactor, adamw_torch_fused
+OPTIMIZER = (
+    "adamw_torch_fused"  # adamw_bnb_8bit, adamw_torch, adafactor, adamw_torch_fused
+)
 
 # Setup
 if SETUP_ENVIRONMENT:
+    torch.cuda.set_device(GPU_ID)
     setproctitle.setproctitle("gujen1 - bachelorthesis")
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU_ID}"
+if DISABLE_ANNOYING_WARNINGS:
+    import warnings
+    warnings.filterwarnings(
+        "ignore", category=UserWarning, module="torch.utils.checkpoint"
+    )
+    warnings.filterwarnings("ignore", category=FutureWarning, module="accelerate")
+
 
 # Load model
 print(f"{15 * '='} Load model {15 * '='}")
@@ -54,7 +67,6 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype=MODEL_PRECISION,
     attn_implementation=ATTENTION_IMPLEMENTATION,
 ).to(GPU_ID)
-
 # Load tokenizer
 print(f"{15 * '='} Load tokenizer {15 * '='}")
 tokenizer = AutoTokenizer.from_pretrained(MODEl_ID, use_fast=True)
@@ -92,6 +104,7 @@ tokenized_val_dataset = val_dataset.map(
 
 #  Load LORA
 if LOAD_LORA:
+    GRADIENT_CHECKPOINTING = False
     print(f"{15 * '='} Loading LORA {15 * '='}")
     from peft import (
         get_peft_model,
@@ -110,16 +123,17 @@ if LOAD_LORA:
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-# Setup training arguments
 
+# Setup training arguments
 print(f"{15 * '='} Train model {15 * '='}")
 training_args = TrainingArguments(
     output_dir="my_awesome_new_model",
     evaluation_strategy="epoch",
     learning_rate=2e-5,
     num_train_epochs=EPOCHS,
+    report_to=["none"],
     logging_strategy="steps",
-    logging_steps=10,
+    logging_steps=2,
     # optimizations
     per_device_train_batch_size=BATCH_SIZE,
     per_device_eval_batch_size=BATCH_SIZE,
