@@ -8,6 +8,7 @@ path_text = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbei
 path_annotation = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\bratFiles"
 
 
+# TODO: save multi word annotations or flag for it so we can train BERT
 def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -> str:
     """
     Find the sentence in which the given positions are located
