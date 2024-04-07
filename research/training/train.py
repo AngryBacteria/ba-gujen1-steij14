@@ -1,13 +1,11 @@
 import os
 import setproctitle
-
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = f"0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
-
+import torch
 import gc
 import warnings
-import torch
 import wandb
 from datasets import load_dataset
 from peft import prepare_model_for_kbit_training
@@ -22,37 +20,29 @@ from transformers import (
 from transformers.training_args import OptimizerNames
 
 # Variables General
-MODEl_ID = (
-    "mistralai/Mistral-7B-Instruct-v0.2"  # microsoft/phi-1_5, mistralai/Mistral-7B-v0.1
-)
+MODEl_ID = "mistralai/Mistral-7B-Instruct-v0.2"
 DEBUG = True
 WANDB_LOGGING = False  # First you have to login with "wandb login"
 DISABLE_ANNOYING_WARNINGS = True
-RUN_NAME = "test_galore1"
-
+RUN_NAME = ""
 # Variables Model
-MODEL_PRECISION = (
-    torch.float
-)  # Lower makes training faster, but can also lead to convergence problems. Possible values: torch.float16, torch.bfloat16, torch.float
+MODEL_PRECISION = torch.float  # torch.float16, torch.bfloat16, torch.float
 ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
-
 # PEFT
 LORA = False
 QLORA = False
 GALORE = False
-
 # Variables Data processing
 PROCESSING_THREADS = 4
-
 # Variables Trainer
 SEQUENCE_LENGTH = 512
-EPOCHS = 3
+EPOCHS = 1
 BATCH_SIZE = 1
 GRADIENT_ACCUMULATION_STEPS = (
-    4  # 1 to disable. Should be proportional to the batch size. Reduces VRAM usage.
+    4  # 1 to disable. Should be proportional to the batch size.
 )
 GRADIENT_CHECKPOINTING = True
-OPTIMIZER = OptimizerNames.ADAFACTOR  # BEST = OPTIMIZER.ADAMW_TORCH_FUSED
+OPTIMIZER = OptimizerNames.ADAMW_8BIT  # BEST = OPTIMIZER.ADAMW_TORCH_FUSED
 
 # Pre-checks
 if QLORA and not LORA:
@@ -62,6 +52,9 @@ if GALORE and (LORA or QLORA):
 if LORA and GRADIENT_CHECKPOINTING:
     print("Gradient checkpointing is not supported with LORA. Disabling it.")
     GRADIENT_CHECKPOINTING = False
+if GALORE and GRADIENT_ACCUMULATION_STEPS != 1:
+    print("Gradient accumulation steps are not supported with GALORE. Disabling it.")
+    GRADIENT_ACCUMULATION_STEPS = 1
 
 # Setup
 if DISABLE_ANNOYING_WARNINGS:
@@ -165,12 +158,9 @@ training_args = TrainingArguments(
 )
 # Init GALORE
 if GALORE:
-    training_args.optim = OptimizerNames.GALORE_ADAMW_LAYERWISE
-    training_args.optim_target_modules = ["attn", "mlp"]
-    training_args.optim_args = f"rank={1024}, update_proj_gap={200}, scale={2}"
-    training_args.gradient_accumulation_steps = (
-        1  # disable because not supported with layer-wise optimization
-    )
+    training_args.optim = OptimizerNames.GALORE_ADAMW
+    training_args.optim_target_modules = (["attn", "mlp"],)
+    training_args.optim_args = ("rank=1024, update_proj_gap=200, scale=2",)
 if DEBUG:
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
@@ -189,6 +179,7 @@ trainer = Trainer(
     data_collator=data_collator_fn,
 )
 trainer.train()
+trainer.save_model()
 wandb.finish()
 
 # cleanup
