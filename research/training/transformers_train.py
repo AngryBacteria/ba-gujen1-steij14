@@ -21,10 +21,10 @@ MODEl_ID = (
     "mistralai/Mistral-7B-Instruct-v0.2"  # microsoft/phi-1_5, mistralai/Mistral-7B-v0.1
 )
 DEBUG = True
-WANDB_LOGGING = True  # First you have to login with "wandb login"
+WANDB_LOGGING = False  # First you have to login with "wandb login"
 SETUP_ENVIRONMENT = True
 DISABLE_ANNOYING_WARNINGS = True
-RUN_NAME = "test_qlora1"
+RUN_NAME = "test_galore1"
 
 # Variables Model
 MODEL_PRECISION = (
@@ -33,8 +33,8 @@ MODEL_PRECISION = (
 ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
 
 # LORA / QLORA
-LORA = True
-QLORA = True
+LORA = False
+QLORA = False
 
 # Variables Data processing
 PROCESSING_THREADS = 4
@@ -74,14 +74,14 @@ if DISABLE_ANNOYING_WARNINGS:
 if QLORA and LORA:
     # TODO: maybe implement LoftQ
     print(f"{15 * '='} Load QLora model {15 * '='}")
-    bnb_quantization_config = BitsAndBytesConfig(
+    _bnb_quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",  # theoretically better according to docs
         bnb_4bit_compute_dtype=torch.float,  # less resources
     )
     model = AutoModelForCausalLM.from_pretrained(
         MODEl_ID,
-        quantization_config=bnb_quantization_config,
+        quantization_config=_bnb_quantization_config,
         torch_dtype=MODEL_PRECISION,
         attn_implementation=ATTENTION_IMPLEMENTATION,
         device_map=GPU_ID,
@@ -112,18 +112,18 @@ print(f"{15 * '='} Load and prepare dataset {15 * '='}")
 dataset = load_dataset(
     "tatsu-lab/alpaca", split="train[:100]", num_proc=PROCESSING_THREADS
 )
-train_val_dataset = dataset.train_test_split(test_size=0.2, seed=42)
-train_dataset = train_val_dataset["train"]
-val_dataset = train_val_dataset["test"]
+_train_val_dataset = dataset.train_test_split(test_size=0.2, seed=42)
+_train_dataset = _train_val_dataset["train"]
+_val_dataset = _train_val_dataset["test"]
 
 data_collator_fn = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
-tokenized_train_dataset = train_dataset.map(
+tokenized_train_dataset = _train_dataset.map(
     preprocess_function,
     batched=True,
     num_proc=PROCESSING_THREADS,
     remove_columns=["instruction", "input", "output", "text"],
 )
-tokenized_val_dataset = val_dataset.map(
+tokenized_val_dataset = _val_dataset.map(
     preprocess_function,
     batched=True,
     num_proc=PROCESSING_THREADS,
@@ -139,7 +139,7 @@ if LORA:
         prepare_model_for_kbit_training,
     )
 
-    peft_config = LoraConfig(
+    _peft_config = LoraConfig(
         lora_alpha=16,
         lora_dropout=0.1,
         r=64,
@@ -148,7 +148,7 @@ if LORA:
         target_modules="all-linear",
     )
 
-    model = get_peft_model(model, peft_config)
+    model = get_peft_model(model, _peft_config)
     model.print_trainable_parameters()
 
 # Setup training arguments
