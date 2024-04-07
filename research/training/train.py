@@ -1,10 +1,14 @@
-import gc
 import os
+import setproctitle
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = f"0"
+setproctitle.setproctitle("gujen1 - bachelorthesis")
+
+import gc
 import warnings
 import torch
 import wandb
 from datasets import load_dataset
-import setproctitle
 from peft import prepare_model_for_kbit_training
 from transformers import (
     AutoTokenizer,
@@ -17,13 +21,11 @@ from transformers import (
 from transformers.training_args import OptimizerNames
 
 # Variables General
-GPU_ID = 0
 MODEl_ID = (
     "mistralai/Mistral-7B-Instruct-v0.2"  # microsoft/phi-1_5, mistralai/Mistral-7B-v0.1
 )
 DEBUG = True
 WANDB_LOGGING = False  # First you have to login with "wandb login"
-SETUP_ENVIRONMENT = True
 DISABLE_ANNOYING_WARNINGS = True
 RUN_NAME = "test_galore1"
 
@@ -61,11 +63,6 @@ if LORA and GRADIENT_CHECKPOINTING:
     GRADIENT_CHECKPOINTING = False
 
 # Setup
-if SETUP_ENVIRONMENT:
-    torch.cuda.set_device(GPU_ID)
-    setproctitle.setproctitle("gujen1 - bachelorthesis")
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU_ID}"
 if DISABLE_ANNOYING_WARNINGS:
     warnings.filterwarnings(
         "ignore", category=UserWarning, module="torch.utils.checkpoint"
