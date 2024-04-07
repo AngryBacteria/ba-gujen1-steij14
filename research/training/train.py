@@ -1,5 +1,6 @@
 import os
 import setproctitle
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"0"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
