@@ -14,6 +14,7 @@ from transformers import (
     Trainer,
     BitsAndBytesConfig,
 )
+from transformers.training_args import OptimizerNames
 
 # Variables General
 GPU_ID = 0
@@ -32,9 +33,10 @@ MODEL_PRECISION = (
 )  # Lower makes training faster, but can also lead to convergence problems. Possible values: torch.float16, torch.bfloat16, torch.float
 ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
 
-# LORA / QLORA
+# PEFT
 LORA = False
 QLORA = False
+GALORE = False
 
 # Variables Data processing
 PROCESSING_THREADS = 4
@@ -47,13 +49,13 @@ GRADIENT_ACCUMULATION_STEPS = (
     4  # 1 to disable. Should be proportional to the batch size. Reduces VRAM usage.
 )
 GRADIENT_CHECKPOINTING = True
-OPTIMIZER = (
-    "adamw_torch_fused"  # adamw_bnb_8bit, adamw_torch, adafactor, adamw_torch_fused
-)
+OPTIMIZER = OptimizerNames.ADAFACTOR  # BEST = OPTIMIZER.ADAMW_TORCH_FUSED
 
 # Pre-checks
 if QLORA and not LORA:
     raise ValueError("QLORA can only be used in combination with LORA.")
+if GALORE and (LORA or QLORA):
+    raise ValueError("GALORE can not be used in combination with LORA or QLORA.")
 if LORA and GRADIENT_CHECKPOINTING:
     print("Gradient checkpointing is not supported with LORA. Disabling it.")
     GRADIENT_CHECKPOINTING = False
@@ -84,7 +86,6 @@ if QLORA and LORA:
         quantization_config=_bnb_quantization_config,
         torch_dtype=MODEL_PRECISION,
         attn_implementation=ATTENTION_IMPLEMENTATION,
-        device_map=GPU_ID,
     )
     model = prepare_model_for_kbit_training(model)
 else:
@@ -93,13 +94,13 @@ else:
         MODEl_ID,
         torch_dtype=MODEL_PRECISION,
         attn_implementation=ATTENTION_IMPLEMENTATION,
-        device_map=GPU_ID,
     )
 
 # Load tokenizer
 print(f"{15 * '='} Load tokenizer {15 * '='}")
 tokenizer = AutoTokenizer.from_pretrained(MODEl_ID, use_fast=True)
-tokenizer.pad_token = tokenizer.eos_token
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
 
 
 # Load and prepare dataset
@@ -130,14 +131,10 @@ tokenized_val_dataset = _val_dataset.map(
     remove_columns=["instruction", "input", "output", "text"],
 )
 
-#  Load LORA
+#  Init LORA
 if LORA:
     print(f"{15 * '='} Loading LORA {15 * '='}")
-    from peft import (
-        get_peft_model,
-        LoraConfig,
-        prepare_model_for_kbit_training,
-    )
+    from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 
     _peft_config = LoraConfig(
         lora_alpha=16,
@@ -168,6 +165,14 @@ training_args = TrainingArguments(
     gradient_checkpointing=GRADIENT_CHECKPOINTING,
     optim=OPTIMIZER,
 )
+# Init GALORE
+if GALORE:
+    training_args.optim = OptimizerNames.GALORE_ADAMW_LAYERWISE
+    training_args.optim_target_modules = ["attn", "mlp"]
+    training_args.optim_args = f"rank={1024}, update_proj_gap={200}, scale={2}"
+    training_args.gradient_accumulation_steps = (
+        1  # disable because not supported with layer-wise optimization
+    )
 if DEBUG:
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
