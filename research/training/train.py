@@ -11,11 +11,10 @@ from datasets import load_dataset
 from peft import prepare_model_for_kbit_training
 from transformers import (
     AutoTokenizer,
-    AutoModelForCausalLM,
     DataCollatorForLanguageModeling,
     TrainingArguments,
     Trainer,
-    BitsAndBytesConfig,
+    BitsAndBytesConfig, MistralForCausalLM,
 )
 from transformers.training_args import OptimizerNames
 
@@ -26,14 +25,14 @@ WANDB_LOGGING = False  # First you have to login with "wandb login"
 DISABLE_ANNOYING_WARNINGS = True
 RUN_NAME = ""
 # Variables Model
-MODEL_PRECISION = torch.float  # torch.float16, torch.bfloat16, torch.float
+MODEL_PRECISION = torch.float16  # torch.float16, torch.bfloat16, torch.float
 ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
 # PEFT
-LORA = False
+LORA = True
 QLORA = False
 GALORE = False
 # Variables Data processing
-PROCESSING_THREADS = 4
+PROCESSING_THREADS = 1
 # Variables Trainer
 SEQUENCE_LENGTH = 512
 EPOCHS = 1
@@ -42,7 +41,7 @@ GRADIENT_ACCUMULATION_STEPS = (
     4  # 1 to disable. Should be proportional to the batch size.
 )
 GRADIENT_CHECKPOINTING = True
-OPTIMIZER = OptimizerNames.ADAMW_8BIT  # BEST = OPTIMIZER.ADAMW_TORCH_FUSED
+OPTIMIZER = OptimizerNames.ADAMW_TORCH_FUSED  # BEST = OPTIMIZER.ADAMW_TORCH_FUSED
 
 # Pre-checks
 if QLORA and not LORA:
@@ -72,7 +71,7 @@ if QLORA and LORA:
         bnb_4bit_quant_type="nf4",  # theoretically better according to docs
         bnb_4bit_compute_dtype=torch.float,  # less resources
     )
-    model = AutoModelForCausalLM.from_pretrained(
+    model = MistralForCausalLM.from_pretrained(
         MODEl_ID,
         quantization_config=_bnb_quantization_config,
         torch_dtype=MODEL_PRECISION,
@@ -81,7 +80,7 @@ if QLORA and LORA:
     model = prepare_model_for_kbit_training(model)
 else:
     print(f"{15 * '='} Load model {15 * '='}")
-    model = AutoModelForCausalLM.from_pretrained(
+    model = MistralForCausalLM.from_pretrained(
         MODEl_ID,
         torch_dtype=MODEL_PRECISION,
         attn_implementation=ATTENTION_IMPLEMENTATION,
