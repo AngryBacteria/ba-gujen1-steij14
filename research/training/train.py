@@ -1,5 +1,6 @@
 import os
 import setproctitle
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
@@ -14,7 +15,8 @@ from transformers import (
     DataCollatorForLanguageModeling,
     TrainingArguments,
     Trainer,
-    BitsAndBytesConfig, MistralForCausalLM,
+    BitsAndBytesConfig,
+    MistralForCausalLM,
 )
 from transformers.training_args import OptimizerNames
 
@@ -23,12 +25,12 @@ MODEl_ID = "mistralai/Mistral-7B-Instruct-v0.2"
 DEBUG = True
 WANDB_LOGGING = False  # First you have to login with "wandb login"
 DISABLE_ANNOYING_WARNINGS = True
-RUN_NAME = ""
+RUN_NAME = "BaseConfig"
 # Variables Model
-MODEL_PRECISION = torch.float16  # torch.float16, torch.bfloat16, torch.float
+LOWER_PRECISION = False
 ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
 # PEFT
-LORA = True
+LORA = False
 QLORA = False
 GALORE = False
 # Variables Data processing
@@ -63,13 +65,20 @@ if DISABLE_ANNOYING_WARNINGS:
     warnings.filterwarnings("ignore", category=FutureWarning, module="accelerate")
 
 # Load model
+if LOWER_PRECISION:
+    MODEL_PRECISION = (
+        torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+    )
+else:
+    MODEL_PRECISION = torch.float
+
 if QLORA and LORA:
     # TODO: maybe implement LoftQ
     print(f"{15 * '='} Load QLora model {15 * '='}")
     _bnb_quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",  # theoretically better according to docs
-        bnb_4bit_compute_dtype=torch.float,  # less resources
+        bnb_4bit_compute_dtype=torch.float,
     )
     model = MistralForCausalLM.from_pretrained(
         MODEl_ID,
