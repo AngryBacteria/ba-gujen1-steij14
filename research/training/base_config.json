@@ -1,6 +1,6 @@
 {
   "general": {
-    "model_id": "mistralai/Mistral-7B-Instruct-v0.2",
+    "id_model": "mistralai/Mistral-7B-Instruct-v0.2",
     "debug": true,
     "wandb_logging": false,
     "disable_annoying_warnings": true,
@@ -22,6 +22,6 @@
     "batch_size": 1,
     "gradient_accumulation_steps": 4,
     "gradient_checkpointing": true,
-    "optimizer": "ADAMW_TORCH_FUSED"
+    "optimizer": "adamw_torch_fused"
   }
 }

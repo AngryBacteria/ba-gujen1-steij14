@@ -79,7 +79,7 @@ if config.model.qlora and config.model.lora:
         bnb_4bit_compute_dtype=torch.float,
     )
     model = MistralForCausalLM.from_pretrained(
-        config.general.model_id,
+        config.model.id_model,
         quantization_config=_bnb_quantization_config,
         torch_dtype=MODEL_PRECISION,
         attn_implementation=config.model.attention_implementation,
@@ -88,14 +88,14 @@ if config.model.qlora and config.model.lora:
 else:
     print(f"{15 * '='} Load model {15 * '='}")
     model = MistralForCausalLM.from_pretrained(
-        config.general.model_id,
+        config.model.id_model,
         torch_dtype=MODEL_PRECISION,
         attn_implementation=config.model.attention_implementation,
     )
 
 # Load tokenizer
 print(f"{15 * '='} Load tokenizer {15 * '='}")
-tokenizer = AutoTokenizer.from_pretrained(config.general.model_id, use_fast=True)
+tokenizer = AutoTokenizer.from_pretrained(config.model.id_model, use_fast=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 

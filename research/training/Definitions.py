@@ -3,6 +3,7 @@ from typing import Optional
 
 
 class ModelConfig(BaseModel):
+    id_model: str
     lower_precision: bool
     attention_implementation: str
     lora: bool
@@ -24,7 +25,6 @@ class TrainerConfig(BaseModel):
 
 
 class GeneralConfig(BaseModel):
-    model_id: str
     debug: bool
     wandb_logging: bool
     disable_annoying_warnings: bool
