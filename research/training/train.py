@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--config",
     type=str,
-    default="base_config.json",
+    default="research/training/configs/base.json",
     required=False,
     help="Path to the configuration file.",
 )
@@ -25,10 +25,12 @@ with open(config_path, "r") as file:
 # set gpu environment
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["TOKENIZERS_PARALLELISM"] = (
+    "false"  # there was en error if this was not set to false
+)
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 import torch
-import gc
 import warnings
 import wandb
 from datasets import load_dataset
@@ -50,10 +52,10 @@ if config.model.galore and (config.model.lora or config.model.qlora):
     raise ValueError("GALORE can not be used in combination with LORA or QLORA.")
 if config.model.lora and config.trainer.gradient_checkpointing:
     print("Gradient checkpointing is not supported with LORA. Disabling it.")
-    GRADIENT_CHECKPOINTING = False
+    config.trainer.gradient_checkpointing = False
 if config.model.galore and config.trainer.gradient_accumulation_steps != 1:
     print("Gradient accumulation steps are not supported with GALORE. Disabling it.")
-    GRADIENT_ACCUMULATION_STEPS = 1
+    config.trainer.gradient_accumulation_steps = 1
 
 # Setup
 if config.general.disable_annoying_warnings:
@@ -138,9 +140,9 @@ if config.model.lora:
     from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 
     _peft_config = LoraConfig(
-        lora_alpha=16,
-        lora_dropout=0.1,
-        r=64,
+        lora_alpha=32,
+        lora_dropout=0.05,
+        r=8,
         # bias="none", # TODO: find out what this does
         task_type="CAUSAL_LM",
         target_modules="all-linear",
@@ -189,11 +191,5 @@ trainer = Trainer(
     data_collator=data_collator_fn,
 )
 trainer.train()
-trainer.save_model()
+# trainer.save_model()
 wandb.finish()
-
-# cleanup
-del model
-del tokenizer
-gc.collect()
-torch.cuda.empty_cache()
