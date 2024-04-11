@@ -3,7 +3,7 @@ import json
 import os
 import setproctitle
 
-from research.training.configs.Definitions import TrainConfig
+from research.training.Definitions import TrainConfig
 
 # load config
 parser = argparse.ArgumentParser(
