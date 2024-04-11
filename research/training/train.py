@@ -1,9 +1,32 @@
+import argparse
+import json
 import os
 import setproctitle
 
+from research.training.configs.Definitions import TrainConfig
+
+# load config
+parser = argparse.ArgumentParser(
+    description="Run the training script with a specified config file."
+)
+parser.add_argument(
+    "--config",
+    type=str,
+    default="configs/base_config.json",
+    required=False,
+    help="Path to the configuration file.",
+)
+args = parser.parse_args()
+config_path = args.config
+with open(config_path, "r") as file:
+    config_json = json.loads(file.read())
+    config = TrainConfig(**config_json)
+
+# set gpu environment
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
+
 import torch
 import gc
 import warnings
@@ -20,59 +43,34 @@ from transformers import (
 )
 from transformers.training_args import OptimizerNames
 
-# Variables General
-MODEl_ID = "mistralai/Mistral-7B-Instruct-v0.2"
-DEBUG = True
-WANDB_LOGGING = False  # First you have to login with "wandb login"
-DISABLE_ANNOYING_WARNINGS = True
-RUN_NAME = "BaseConfig"
-# Variables Model
-LOWER_PRECISION = False
-ATTENTION_IMPLEMENTATION = "sdpa"  # sdpa, eager, flash_attention_2
-# PEFT
-LORA = False
-QLORA = False
-GALORE = False
-# Variables Data processing
-PROCESSING_THREADS = 1
-# Variables Trainer
-SEQUENCE_LENGTH = 512
-EPOCHS = 1
-BATCH_SIZE = 1
-GRADIENT_ACCUMULATION_STEPS = (
-    4  # 1 to disable. Should be proportional to the batch size.
-)
-GRADIENT_CHECKPOINTING = True
-OPTIMIZER = OptimizerNames.ADAMW_TORCH_FUSED  # BEST = OPTIMIZER.ADAMW_TORCH_FUSED
-
 # Pre-checks
-if QLORA and not LORA:
+if config.model.qlora and not config.model.lora:
     raise ValueError("QLORA can only be used in combination with LORA.")
-if GALORE and (LORA or QLORA):
+if config.model.galore and (config.model.lora or config.model.qlora):
     raise ValueError("GALORE can not be used in combination with LORA or QLORA.")
-if LORA and GRADIENT_CHECKPOINTING:
+if config.model.lora and config.trainer.gradient_checkpointing:
     print("Gradient checkpointing is not supported with LORA. Disabling it.")
     GRADIENT_CHECKPOINTING = False
-if GALORE and GRADIENT_ACCUMULATION_STEPS != 1:
+if config.model.galore and config.trainer.gradient_accumulation_steps != 1:
     print("Gradient accumulation steps are not supported with GALORE. Disabling it.")
     GRADIENT_ACCUMULATION_STEPS = 1
 
 # Setup
-if DISABLE_ANNOYING_WARNINGS:
+if config.general.disable_annoying_warnings:
     warnings.filterwarnings(
         "ignore", category=UserWarning, module="torch.utils.checkpoint"
     )
     warnings.filterwarnings("ignore", category=FutureWarning, module="accelerate")
 
 # Load model
-if LOWER_PRECISION:
+if config.model.lower_precision:
     MODEL_PRECISION = (
         torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
     )
 else:
     MODEL_PRECISION = torch.float
 
-if QLORA and LORA:
+if config.model.qlora and config.model.lora:
     # TODO: maybe implement LoftQ
     print(f"{15 * '='} Load QLora model {15 * '='}")
     _bnb_quantization_config = BitsAndBytesConfig(
@@ -81,23 +79,23 @@ if QLORA and LORA:
         bnb_4bit_compute_dtype=torch.float,
     )
     model = MistralForCausalLM.from_pretrained(
-        MODEl_ID,
+        config.general.model_id,
         quantization_config=_bnb_quantization_config,
         torch_dtype=MODEL_PRECISION,
-        attn_implementation=ATTENTION_IMPLEMENTATION,
+        attn_implementation=config.model.attention_implementation,
     )
     model = prepare_model_for_kbit_training(model)
 else:
     print(f"{15 * '='} Load model {15 * '='}")
     model = MistralForCausalLM.from_pretrained(
-        MODEl_ID,
+        config.general.model_id,
         torch_dtype=MODEL_PRECISION,
-        attn_implementation=ATTENTION_IMPLEMENTATION,
+        attn_implementation=config.model.attention_implementation,
     )
 
 # Load tokenizer
 print(f"{15 * '='} Load tokenizer {15 * '='}")
-tokenizer = AutoTokenizer.from_pretrained(MODEl_ID, use_fast=True)
+tokenizer = AutoTokenizer.from_pretrained(config.general.model_id, use_fast=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
@@ -105,12 +103,16 @@ if tokenizer.pad_token is None:
 # Load and prepare dataset
 def preprocess_function(examples):
     inputs = examples["text"]
-    return tokenizer(inputs, padding=True, truncation=True, max_length=SEQUENCE_LENGTH)
+    return tokenizer(
+        inputs, padding=True, truncation=True, max_length=config.trainer.sequence_length
+    )
 
 
 print(f"{15 * '='} Load and prepare dataset {15 * '='}")
 dataset = load_dataset(
-    "tatsu-lab/alpaca", split="train[:100]", num_proc=PROCESSING_THREADS
+    "tatsu-lab/alpaca",
+    split="train[:100]",
+    num_proc=config.data_processing.processing_threads,
 )
 _train_val_dataset = dataset.train_test_split(test_size=0.2, seed=42)
 _train_dataset = _train_val_dataset["train"]
@@ -120,18 +122,18 @@ data_collator_fn = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=Fals
 tokenized_train_dataset = _train_dataset.map(
     preprocess_function,
     batched=True,
-    num_proc=PROCESSING_THREADS,
+    num_proc=config.data_processing.processing_threads,
     remove_columns=["instruction", "input", "output", "text"],
 )
 tokenized_val_dataset = _val_dataset.map(
     preprocess_function,
     batched=True,
-    num_proc=PROCESSING_THREADS,
+    num_proc=config.data_processing.processing_threads,
     remove_columns=["instruction", "input", "output", "text"],
 )
 
 #  Init LORA
-if LORA:
+if config.model.lora:
     print(f"{15 * '='} Loading LORA {15 * '='}")
     from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 
@@ -153,30 +155,30 @@ training_args = TrainingArguments(
     output_dir="my_awesome_new_model",
     evaluation_strategy="epoch",
     learning_rate=2e-5,
-    num_train_epochs=EPOCHS,
+    num_train_epochs=config.trainer.epochs,
     report_to=["none"],
     logging_strategy="steps",
     logging_steps=2,
     # optimizations
-    per_device_train_batch_size=BATCH_SIZE,
-    per_device_eval_batch_size=BATCH_SIZE,
-    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-    gradient_checkpointing=GRADIENT_CHECKPOINTING,
-    optim=OPTIMIZER,
+    per_device_train_batch_size=config.trainer.batch_size,
+    per_device_eval_batch_size=config.trainer.batch_size,
+    gradient_accumulation_steps=config.trainer.gradient_accumulation_steps,
+    gradient_checkpointing=config.trainer.gradient_checkpointing,
+    optim=config.trainer.optimizer,
 )
 # Init GALORE
-if GALORE:
+if config.model.galore:
     training_args.optim = OptimizerNames.GALORE_ADAMW
     training_args.optim_target_modules = (["attn", "mlp"],)
     training_args.optim_args = ("rank=1024, update_proj_gap=200, scale=2",)
-if DEBUG:
+if config.general.debug:
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-if WANDB_LOGGING:
+if config.general.wandb_logging:
     training_args.report_to = ["wandb"]
     os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
-if RUN_NAME != "":
-    training_args.run_name = RUN_NAME
+if config.general.run_name != "":
+    training_args.run_name = config.general.run_name
 
 # Train model
 trainer = Trainer(

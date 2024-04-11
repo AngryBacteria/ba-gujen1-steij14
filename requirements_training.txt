@@ -6,4 +6,5 @@ accelerate
 bitsandbytes
 wandb
 peft
+pydantic
 galore-torch

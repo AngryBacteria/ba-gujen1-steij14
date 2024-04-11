@@ -1,0 +1,27 @@
+{
+  "general": {
+    "model_id": "mistralai/Mistral-7B-Instruct-v0.2",
+    "debug": true,
+    "wandb_logging": false,
+    "disable_annoying_warnings": true,
+    "run_name": "BaseConfig"
+  },
+  "model": {
+    "lower_precision": false,
+    "attention_implementation": "sdpa",
+    "lora": false,
+    "qlora": false,
+    "galore": false
+  },
+  "data_processing": {
+    "processing_threads": 1
+  },
+  "trainer": {
+    "sequence_length": 512,
+    "epochs": 1,
+    "batch_size": 1,
+    "gradient_accumulation_steps": 4,
+    "gradient_checkpointing": true,
+    "optimizer": "ADAMW_TORCH_FUSED"
+  }
+}
