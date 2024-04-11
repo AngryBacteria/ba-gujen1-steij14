@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--config",
     type=str,
-    default="configs/base_config.json",
+    default="base_config.json",
     required=False,
     help="Path to the configuration file.",
 )
