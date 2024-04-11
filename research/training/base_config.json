@@ -1,12 +1,12 @@
 {
   "general": {
-    "id_model": "mistralai/Mistral-7B-Instruct-v0.2",
     "debug": true,
     "wandb_logging": false,
     "disable_annoying_warnings": true,
     "run_name": "BaseConfig"
   },
   "model": {
+    "id_model": "mistralai/Mistral-7B-Instruct-v0.2",
     "lower_precision": false,
     "attention_implementation": "sdpa",
     "lora": false,
