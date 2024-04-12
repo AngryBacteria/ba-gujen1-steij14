@@ -21,7 +21,7 @@
     "epochs": 1,
     "batch_size": 1,
     "gradient_accumulation_steps": 4,
-    "gradient_checkpointing": true,
+    "gradient_checkpointing": false,
     "optimizer": "adamw_torch_fused"
   }
 }

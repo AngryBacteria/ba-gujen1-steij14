@@ -3,7 +3,8 @@ import json
 import os
 import setproctitle
 
-from research.training.Definitions import TrainConfig
+from research.training.custom_callbacks import GPUMemoryUsageCallback
+from research.training.type_definitions import TrainConfig
 
 # load config
 parser = argparse.ArgumentParser(
@@ -102,7 +103,9 @@ if tokenizer.pad_token is None:
 
 # Load and prepare dataset
 def preprocess_function(examples):
-    inputs = examples["text"]
+    inputs = [
+        text * 100 for text in examples["text"]
+    ]  # makes sure that whole context is used
     return tokenizer(
         inputs, padding=True, truncation=True, max_length=config.trainer.sequence_length
     )
@@ -117,7 +120,6 @@ dataset = load_dataset(
 _train_val_dataset = dataset.train_test_split(test_size=0.2, seed=42)
 _train_dataset = _train_val_dataset["train"]
 _val_dataset = _train_val_dataset["test"]
-
 data_collator_fn = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 tokenized_train_dataset = _train_dataset.map(
     preprocess_function,
@@ -150,7 +152,9 @@ if config.model.lora:
     model.print_trainable_parameters()
 
 # Setup training arguments
-print(f"{15 * '='} Train model for {config.trainer.epochs} epochs {15 * '='}")
+print(
+    f"{15 * '='} Train model [optim {config.trainer.optimizer}, epoch {config.trainer.epochs}, batch {config.trainer.batch_size}, sequence {config.trainer.sequence_length}] {15 * '='}"
+)
 training_args = TrainingArguments(
     output_dir="my_awesome_new_model",
     evaluation_strategy="epoch",
@@ -175,6 +179,9 @@ if config.model.galore:
 if config.general.debug:
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
+    custom_callbacks = [GPUMemoryUsageCallback(0)]
+else:
+    custom_callbacks = []
 if config.general.wandb_logging:
     training_args.report_to = ["wandb"]
     os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
@@ -188,6 +195,7 @@ trainer = Trainer(
     train_dataset=tokenized_train_dataset,
     eval_dataset=tokenized_val_dataset,
     data_collator=data_collator_fn,
+    callbacks=custom_callbacks,
 )
 trainer.train()
 # trainer.save_model()
