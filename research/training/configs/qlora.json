@@ -1,0 +1,27 @@
+{
+  "general": {
+    "debug": true,
+    "wandb_logging": false,
+    "disable_annoying_warnings": true,
+    "run_name": "QLoraConfig"
+  },
+  "model": {
+    "id_model": "mistralai/Mistral-7B-Instruct-v0.2",
+    "lower_precision": false,
+    "attention_implementation": "sdpa",
+    "lora": true,
+    "qlora": true,
+    "galore": false
+  },
+  "data_processing": {
+    "processing_threads": 1
+  },
+  "trainer": {
+    "sequence_length": 512,
+    "epochs": 1,
+    "batch_size": 1,
+    "gradient_accumulation_steps": 4,
+    "gradient_checkpointing": true,
+    "optimizer": "adamw_torch_fused"
+  }
+}

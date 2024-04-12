@@ -26,7 +26,7 @@ with open(config_path, "r") as file:
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["TOKENIZERS_PARALLELISM"] = (
-    "false"  # there was en error if this was not set to false
+    "false"  # there was en error if this was not set to false. Might need to investigate further why
 )
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
@@ -71,24 +71,22 @@ if config.model.lower_precision:
     )
 else:
     MODEL_PRECISION = torch.float
-
 if config.model.qlora and config.model.lora:
     # TODO: maybe implement LoftQ
-    print(f"{15 * '='} Load QLora model {15 * '='}")
+    print(f"{15 * '='} Load 4bit QLora model {15 * '='}")
     _bnb_quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",  # theoretically better according to docs
-        bnb_4bit_compute_dtype=torch.float,
+        bnb_4bit_compute_dtype=MODEL_PRECISION,
     )
     model = MistralForCausalLM.from_pretrained(
         config.model.id_model,
         quantization_config=_bnb_quantization_config,
-        torch_dtype=MODEL_PRECISION,
         attn_implementation=config.model.attention_implementation,
     )
     model = prepare_model_for_kbit_training(model)
 else:
-    print(f"{15 * '='} Load model {15 * '='}")
+    print(f"{15 * '='} Load model [{MODEL_PRECISION}] {15 * '='}")
     model = MistralForCausalLM.from_pretrained(
         config.model.id_model,
         torch_dtype=MODEL_PRECISION,
@@ -96,7 +94,7 @@ else:
     )
 
 # Load tokenizer
-print(f"{15 * '='} Load tokenizer {15 * '='}")
+print(f"{15 * '='} Load fast tokenizer {15 * '='}")
 tokenizer = AutoTokenizer.from_pretrained(config.model.id_model, use_fast=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
@@ -136,7 +134,7 @@ tokenized_val_dataset = _val_dataset.map(
 
 #  Init LORA
 if config.model.lora:
-    print(f"{15 * '='} Loading LORA {15 * '='}")
+    print(f"{15 * '='} Loading LORA [alpha 32, rank 8] {15 * '='}")
     from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 
     _peft_config = LoraConfig(
@@ -152,7 +150,7 @@ if config.model.lora:
     model.print_trainable_parameters()
 
 # Setup training arguments
-print(f"{15 * '='} Train model {15 * '='}")
+print(f"{15 * '='} Train model for {config.trainer.epochs} epochs {15 * '='}")
 training_args = TrainingArguments(
     output_dir="my_awesome_new_model",
     evaluation_strategy="epoch",
@@ -170,6 +168,7 @@ training_args = TrainingArguments(
 )
 # Init GALORE
 if config.model.galore:
+    print(f"{15 * '='} Setup GaLore [rank 1024, proj_gap 200, scale 2] {15 * '='}")
     training_args.optim = OptimizerNames.GALORE_ADAMW
     training_args.optim_target_modules = (["attn", "mlp"],)
     training_args.optim_args = ("rank=1024, update_proj_gap=200, scale=2",)
@@ -179,10 +178,10 @@ if config.general.debug:
 if config.general.wandb_logging:
     training_args.report_to = ["wandb"]
     os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
-if config.general.run_name != "":
-    training_args.run_name = config.general.run_name
+    if config.general.run_name != "":
+        training_args.run_name = config.general.run_name
 
-# Train model
+# Train model and save it
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -192,4 +191,14 @@ trainer = Trainer(
 )
 trainer.train()
 # trainer.save_model()
+
+# cleanup
 wandb.finish()
+del model
+del trainer
+del tokenizer
+del tokenized_val_dataset
+del tokenized_train_dataset
+del _train_dataset
+del _val_dataset
+torch.cuda.empty_cache()
