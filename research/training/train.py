@@ -25,7 +25,7 @@ with open(config_path, "r") as file:
 
 # set gpu environment
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = f"{config.general.gpu}"
 os.environ["TOKENIZERS_PARALLELISM"] = (
     "false"  # there was en error if this was not set to false. Might need to investigate further why
 )
@@ -51,9 +51,6 @@ if config.model.qlora and not config.model.lora:
     raise ValueError("QLORA can only be used in combination with LORA.")
 if config.model.galore and (config.model.lora or config.model.qlora):
     raise ValueError("GALORE can not be used in combination with LORA or QLORA.")
-if config.model.lora and config.trainer.gradient_checkpointing:
-    print("Gradient checkpointing is not supported with LORA. Disabling it.")
-    config.trainer.gradient_checkpointing = False
 if config.model.galore and config.trainer.gradient_accumulation_steps != 1:
     print("Gradient accumulation steps are not supported with GALORE. Disabling it.")
     config.trainer.gradient_accumulation_steps = 1
@@ -72,6 +69,7 @@ if config.model.lower_precision:
     )
 else:
     MODEL_PRECISION = torch.float
+# Load QLora model
 if config.model.qlora and config.model.lora:
     # TODO: maybe implement LoftQ
     print(f"{15 * '='} Load 4bit QLora model {15 * '='}")
@@ -86,6 +84,7 @@ if config.model.qlora and config.model.lora:
         attn_implementation=config.model.attention_implementation,
     )
     model = prepare_model_for_kbit_training(model)
+# Load normal model
 else:
     print(f"{15 * '='} Load model [{MODEL_PRECISION}] {15 * '='}")
     model = MistralForCausalLM.from_pretrained(
@@ -93,6 +92,24 @@ else:
         torch_dtype=MODEL_PRECISION,
         attn_implementation=config.model.attention_implementation,
     )
+#  Init LORA config and apply it to the model
+if config.model.lora:
+    print(f"{15 * '='} Loading LORA [alpha 32, rank 8] {15 * '='}")
+    from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
+
+    _peft_config = LoraConfig(
+        lora_alpha=32,
+        lora_dropout=0.05,
+        r=8,
+        # bias="none", # TODO: find out what this does
+        task_type="CAUSAL_LM",
+        target_modules="all-linear",
+    )
+
+    model = get_peft_model(model, _peft_config)
+    model.print_trainable_parameters()
+    if config.trainer.gradient_checkpointing:
+        model.enable_input_require_grads()  # fix gradient checkpointing https://github.com/huggingface/peft/issues/1142
 
 # Load tokenizer
 print(f"{15 * '='} Load fast tokenizer {15 * '='}")
@@ -134,26 +151,15 @@ tokenized_val_dataset = _val_dataset.map(
     remove_columns=["instruction", "input", "output", "text"],
 )
 
-#  Init LORA
-if config.model.lora:
-    print(f"{15 * '='} Loading LORA [alpha 32, rank 8] {15 * '='}")
-    from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
-
-    _peft_config = LoraConfig(
-        lora_alpha=32,
-        lora_dropout=0.05,
-        r=8,
-        # bias="none", # TODO: find out what this does
-        task_type="CAUSAL_LM",
-        target_modules="all-linear",
-    )
-
-    model = get_peft_model(model, _peft_config)
-    model.print_trainable_parameters()
-
 # Setup training arguments
 print(
-    f"{15 * '='} Train model [optim {config.trainer.optimizer}, epoch {config.trainer.epochs}, batch {config.trainer.batch_size}, sequence {config.trainer.sequence_length}] {15 * '='}"
+    f"{15 * '='} "
+    f"Train model [optim {config.trainer.optimizer}, "
+    f"epochs {config.trainer.epochs}, batch {config.trainer.batch_size}, "
+    f"accumulation {config.trainer.gradient_accumulation_steps}, "
+    f"checkpointing {config.trainer.gradient_checkpointing}, "
+    f"sequence {config.trainer.sequence_length}] "
+    f"{15 * '='}"
 )
 training_args = TrainingArguments(
     output_dir="my_awesome_new_model",
@@ -179,7 +185,7 @@ if config.model.galore:
 if config.general.debug:
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-    custom_callbacks = [GPUMemoryUsageCallback(0)]
+    custom_callbacks = [GPUMemoryUsageCallback(config.general.gpu)]
 else:
     custom_callbacks = []
 if config.general.wandb_logging:

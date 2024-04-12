@@ -29,6 +29,7 @@ class GeneralConfig(BaseModel):
     wandb_logging: bool
     disable_annoying_warnings: bool
     run_name: Optional[str] = ""
+    gpu: int
 
 
 class TrainConfig(BaseModel):
