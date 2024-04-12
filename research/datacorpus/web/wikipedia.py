@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup, ResultSet
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-from research.datacorpus.scraping_utils import (
+from research.datacorpus.web.scraping_utils import (
     process_tags_to_text,
     remove_unwanted,
 )

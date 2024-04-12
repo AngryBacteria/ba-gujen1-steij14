@@ -32,6 +32,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = (
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 import torch
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
 import warnings
 import wandb
 from datasets import load_dataset
