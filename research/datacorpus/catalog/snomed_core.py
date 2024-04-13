@@ -8,7 +8,7 @@ from research.logger import logger
 
 # DATA SOURCE: https://www.nlm.nih.gov/research/umls/Snomed/core_subset.html
 
-CORE_PATH = "SNOMEDCT_CORE_SUBSET_202311.txt"
+CORE_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\snomed\\SNOMEDCT_CORE_SUBSET_202311.txt"
 
 snomed_classes = [
     "situation",
@@ -30,8 +30,8 @@ def extract_and_remove_class(row: str):
         last_match = matches[-1]
         if last_match.lower() in snomed_classes:
             modified_fsn = re.sub(r"\(" + re.escape(last_match) + r"\)$", "", row)
-            return last_match, modified_fsn
-    return "", row
+            return last_match.strip(), modified_fsn.strip()
+    return "", row.strip()
 
 
 def load_snomed_core(print_unique_classes=False):

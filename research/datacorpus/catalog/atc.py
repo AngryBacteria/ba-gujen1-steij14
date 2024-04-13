@@ -8,7 +8,7 @@ from research.logger import logger
 
 # DATA SOURCE: Medication_Pharmacode_ATC.xlsx
 
-EXCEL_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\atc\\Medication_Pharmacode_ATC.xlsx"
+EXCEL_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\atc\\Medication_Pharmacode_ATC.xlsx"
 
 
 def read_atc_data():
@@ -34,17 +34,21 @@ def read_atc_data():
     data = data[data["name"] != ""]
     data = data[data["text"] != ""]
     data = data[data["atc"] != ""]
+    data = data[data["ingredient"] != ""]
 
-    data = data.to_dict(orient="records")
+    unique_combinations = data[
+        ["name", "atc", "ingredient", "primary_indication"]
+    ].drop_duplicates()
+    unique_combinations = unique_combinations.to_dict(orient="records")
+
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("catalog")
     collection_name = "atc"
     db.drop_collection(collection_name)
     atc_collection = db.get_collection(collection_name)
-    atc_collection.create_index("pharmacode", unique=True)
-    atc_collection.insert_many(data)
-    logger.debug(f"Uploaded {len(data)} rows to MongoDB.")
+    atc_collection.insert_many(unique_combinations)
+    logger.debug(f"Uploaded {len(unique_combinations)} rows to MongoDB.")
     client.close()
 
 
