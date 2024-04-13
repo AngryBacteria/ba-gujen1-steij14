@@ -281,7 +281,7 @@ def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False):
     # Upload to MongoDB
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("main")
+    db = client.get_database("catalog")
     collection_name = "icd10gm" if icd10gm else "icd10who"
     db.drop_collection(collection_name)
     icd10_collection = db.get_collection(collection_name)

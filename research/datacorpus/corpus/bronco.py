@@ -169,7 +169,6 @@ def parse_annotation_data_ner(file_number: int) -> list[dict[str, list]]:
         os.path.join(path_annotation_conll, f"randomSentSet{file_number}.CONLL"), "r"
     ) as file:
         text = file.read()
-    # holds output data
     sentences = []
     # split the text into the data chunks and init empty lists
     lines = text.strip().split("\n")
@@ -203,9 +202,8 @@ def create_bronco_db():
     """
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("main")
+    db = client.get_database("corpus")
 
-    # main bronco collection
     data = []
     for i in range(1, 6):
         data.extend(parse_annotation_data_general(i))

@@ -6,7 +6,7 @@ import setproctitle
 from research.training.custom_callbacks import GPUMemoryUsageCallback
 from research.training.type_definitions import TrainConfig
 
-# load config
+# load config todo: fix use_cache and todo: fix weird high usage with lora
 parser = argparse.ArgumentParser(
     description="Run the training script with a specified config file."
 )
@@ -27,11 +27,12 @@ with open(config_path, "r") as file:
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{config.general.gpu}"
 os.environ["TOKENIZERS_PARALLELISM"] = (
-    "false"  # there was en error if this was not set to false. Might need to investigate further why
+    "false"  # https://github.com/huggingface/transformers/issues/5486
 )
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 import torch
+
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 import warnings
@@ -85,7 +86,9 @@ if config.model.qlora and config.model.lora:
         quantization_config=_bnb_quantization_config,
         attn_implementation=config.model.attention_implementation,
     )
-    model = prepare_model_for_kbit_training(model)
+    model = prepare_model_for_kbit_training(
+        model, use_gradient_checkpointing=config.trainer.gradient_checkpointing
+    )
 # Load normal model
 else:
     print(f"{15 * '='} Load model [{MODEL_PRECISION}] {15 * '='}")
@@ -110,8 +113,6 @@ if config.model.lora:
 
     model = get_peft_model(model, _peft_config)
     model.print_trainable_parameters()
-    if config.trainer.gradient_checkpointing:
-        model.enable_input_require_grads()  # fix gradient checkpointing https://github.com/huggingface/peft/issues/1142
 
 # Load tokenizer
 print(f"{15 * '='} Load fast tokenizer {15 * '='}")
@@ -176,6 +177,9 @@ training_args = TrainingArguments(
     per_device_eval_batch_size=config.trainer.batch_size,
     gradient_accumulation_steps=config.trainer.gradient_accumulation_steps,
     gradient_checkpointing=config.trainer.gradient_checkpointing,
+    gradient_checkpointing_kwargs={
+        "use_reentrant": False
+    },  # https://github.com/huggingface/transformers/issues/26969
     optim=config.trainer.optimizer,
 )
 # Init GALORE
