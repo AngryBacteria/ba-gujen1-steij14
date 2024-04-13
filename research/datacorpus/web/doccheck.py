@@ -284,7 +284,7 @@ def build_doccheck_corpus(from_file=False):
     """Build a corpus of articles from doccheck.com"""
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("main")
+    db = client.get_database("web")
     doccheck_collection = db.get_collection("doccheck")
     doccheck_collection.create_index("link", unique=True)
 

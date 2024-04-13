@@ -280,7 +280,7 @@ def add_views_to_db(overwrite=False):
     """Add the views of the articles to the articles already present in the MongoDB database."""
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("main")
+    db = client.get_database("web")
     wikipedia_icd10_collection = db.get_collection("wikipedia_icd10")
     for doc in wikipedia_icd10_collection.find():
         try:
@@ -302,7 +302,7 @@ def build_wikipedia_db(categories: list[str], from_file=True):
     """Build a MongoDB collection with the articles from a wikipedia category."""
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("main")
+    db = client.get_database("web")
     wikipedia_collection = db.get_collection("wikipedia")
     wikipedia_collection.create_index("title", unique=True)
 

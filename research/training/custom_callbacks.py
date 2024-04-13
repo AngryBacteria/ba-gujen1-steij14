@@ -6,9 +6,7 @@ class GPUMemoryUsageCallback(TrainerCallback):
     def __init__(self, gpu_id=0):
         super().__init__()
         pynvml.nvmlInit()
-        self.handle = pynvml.nvmlDeviceGetHandleByIndex(
-            gpu_id
-        )  # Assuming you're using the first GPU (index 0)
+        self.handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
         self.peak_memory = 0
 
     def on_train_begin(self, args, state, control, **kwargs):

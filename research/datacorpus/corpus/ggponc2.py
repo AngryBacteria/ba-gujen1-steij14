@@ -18,7 +18,7 @@ def load_json(filename):
     return data
 
 
-def get_ggponc_data():
+def get_ggponc_json():
     """Load the GGPONC json data from the fine annotations folder and return the short and long documents."""
     # Load data from both files
     data_short = load_json(os.path.join(fine_annotations_folder, "short", "all.json"))
@@ -51,7 +51,7 @@ def load_conll(filepath):
     return sentences
 
 
-def get_ggponc_ner_data():
+def get_ggponc_ner():
     """Load the GGPOC NER data from the fine annotations folder and return the short and long documents."""
     # get and combine short data
     data_short_dev = load_conll(
@@ -80,8 +80,8 @@ def get_ggponc_ner_data():
 
 
 def build_ggponc_db():
-    data_short, data_long = get_ggponc_data()
-    data_short_ner, data_long_ner = get_ggponc_ner_data()
+    data_short_json, data_long_json = get_ggponc_json()
+    data_short_ner, data_long_ner = get_ggponc_ner()
 
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
@@ -92,11 +92,11 @@ def build_ggponc_db():
     db.drop_collection("ggponc_long")
     ggponc_short = db.get_collection("ggponc_short")
     ggponc_long = db.get_collection("ggponc_long")
-    ggponc_short.insert_many(data_short)
-    ggponc_long.insert_many(data_long)
+    ggponc_short.insert_many(data_short_json)
+    ggponc_long.insert_many(data_long_json)
 
     logger.debug(
-        f"Uploaded {len(data_short)} short and {len(data_long)} long json annotations to ggponc collection."
+        f"Uploaded {len(data_short_json)} short and {len(data_long_json)} long json annotations to ggponc collection."
     )
 
     # ner data

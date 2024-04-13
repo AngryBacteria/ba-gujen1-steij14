@@ -6,3 +6,4 @@ beautifulsoup4==4.12.3
 colorama==0.4.6
 markdownify==0.11.6
 tiktoken
+openpyxl

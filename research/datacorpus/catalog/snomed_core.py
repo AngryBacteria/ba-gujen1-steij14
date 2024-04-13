@@ -6,6 +6,8 @@ from pymongo import MongoClient
 
 from research.logger import logger
 
+# DATA SOURCE: https://www.nlm.nih.gov/research/umls/Snomed/core_subset.html
+
 CORE_PATH = "SNOMEDCT_CORE_SUBSET_202311.txt"
 
 snomed_classes = [

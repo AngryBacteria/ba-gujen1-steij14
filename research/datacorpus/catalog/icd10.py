@@ -7,6 +7,9 @@ import xml.etree.ElementTree as et
 
 from research.logger import logger
 
+# DATA SOURCE ICD10GM: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html
+# DATA SOURCE ICD10GM: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-WHO/_node.html
+
 icd10who_alphabet_csv_path1 = "icd10who2019alpha_edvtxt_teil1_20180824.txt"
 icd10who_alphabet_csv_path2 = "icd10who2019alpha_edvtxt_teil2_20180824.txt"
 icd10who_xml_path = "icd10who2019syst_claml_20180824.xml"
@@ -15,7 +18,6 @@ icd10gm_alphabet_csv_path1 = "icd10gm2024alpha_edvtxt_20230929.txt"
 icd10gm_xml_path = "icd10gm2024syst_claml_20230915.xml"
 
 
-# Official CSV-Files. I recommend you use the XML-File instead.
 def parse_csv_icd10_alphabet(icd10gm=False):
     """Parse an ICD-10 alphabet files and return a dataframe"""
     if icd10gm:
@@ -67,7 +69,6 @@ def parse_csv_icd10_alphabet(icd10gm=False):
     return data.groupby("code").agg(lambda x: list(x.dropna())).reset_index()
 
 
-# XML-File
 def get_title_from_xml(element: et.Element, code: str) -> str | None:
     """Get the title from the preferred or preferredLong label of an ICD-10 element."""
     label_element = element.find(".//Rubric[@kind='preferredLong']/Label")

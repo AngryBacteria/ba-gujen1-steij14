@@ -54,7 +54,7 @@ def build_jsyncc_db():
     corpus = get_jsyncc_data()
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("main")
+    db = client.get_database("corpus")
     db.drop_collection("jsyncc")
     jsyncc = db.get_collection("jsyncc")
     jsyncc.insert_many(corpus)

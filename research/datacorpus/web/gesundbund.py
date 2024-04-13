@@ -39,7 +39,7 @@ def get_bund_text(code: str):
 def build_bund_db():
     """Update the MongoDB database with the text from gesund.bund.de"""
     client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("main")
+    db = client.get_database("web")
     icd10gm_collection = db.get_collection("icd10gm")
     gesundbund_collection = db.get_collection("gesundbund")
     gesundbund_collection.create_index("code", unique=True)

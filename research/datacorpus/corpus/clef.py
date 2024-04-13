@@ -47,7 +47,7 @@ for filename in os.listdir(text_files_folder_path):
 
 load_dotenv()
 client = MongoClient(os.getenv("MONGO_URL"))
-db = client.get_database("main")
+db = client.get_database("corpus")
 clef_collection = db.get_collection("clef2019")
 clef_collection.create_index("document_id", unique=True)
 clef_collection.insert_many(data)
