@@ -1,29 +1,10 @@
-import argparse
-import json
 import os
 import setproctitle
-
 from research.training.custom_callbacks import GPUMemoryUsageCallback
-from research.training.type_definitions import TrainConfig
+from research.training.config_parser import parse_training_config
 
-# load config todo: fix use_cache and todo: fix weird high usage with lora
-parser = argparse.ArgumentParser(
-    description="Run the training script with a specified config file."
-)
-parser.add_argument(
-    "--config",
-    type=str,
-    default="research/training/configs/base.json",
-    required=False,
-    help="Path to the configuration file.",
-)
-args = parser.parse_args()
-config_path = args.config
-with open(config_path, "r") as file:
-    config_json = json.loads(file.read())
-    config = TrainConfig(**config_json)
-
-# set gpu environment
+config = parse_training_config()
+# Setup gpu environment (needs to happen before importing huggingface library)
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{config.general.gpu}"
 os.environ["TOKENIZERS_PARALLELISM"] = (
@@ -35,6 +16,7 @@ import torch
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
+
 import warnings
 import wandb
 from datasets import load_dataset
@@ -49,23 +31,8 @@ from transformers import (
 )
 from transformers.training_args import OptimizerNames
 
-# Pre-checks
-if config.model.qlora and not config.model.lora:
-    raise ValueError("QLORA can only be used in combination with LORA.")
-if config.model.galore and (config.model.lora or config.model.qlora):
-    raise ValueError("GALORE can not be used in combination with LORA or QLORA.")
-if config.model.galore and config.trainer.gradient_accumulation_steps != 1:
-    print("Gradient accumulation steps are not supported with GALORE. Disabling it.")
-    config.trainer.gradient_accumulation_steps = 1
 
-# Setup
-if config.general.disable_annoying_warnings:
-    warnings.filterwarnings(
-        "ignore", category=UserWarning, module="torch.utils.checkpoint"
-    )
-    warnings.filterwarnings("ignore", category=FutureWarning, module="accelerate")
-
-# Load model
+# MODEL
 if config.model.lower_precision:
     MODEL_PRECISION = (
         torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
@@ -80,6 +47,7 @@ if config.model.qlora and config.model.lora:
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",  # theoretically better according to docs
         bnb_4bit_compute_dtype=MODEL_PRECISION,
+        bnb_4bit_quant_storage=torch.bfloat16,  # axolotl uses this
     )
     model = MistralForCausalLM.from_pretrained(
         config.model.id_model,
@@ -87,7 +55,9 @@ if config.model.qlora and config.model.lora:
         attn_implementation=config.model.attention_implementation,
     )
     model = prepare_model_for_kbit_training(
-        model, use_gradient_checkpointing=config.trainer.gradient_checkpointing
+        model,
+        use_gradient_checkpointing=config.trainer.gradient_checkpointing,
+        gradient_checkpointing_kwargs={"use_reentrant": config.trainer.use_reentrant},
     )
 # Load normal model
 else:
@@ -106,9 +76,17 @@ if config.model.lora:
         lora_alpha=32,
         lora_dropout=0.05,
         r=8,
-        # bias="none", # TODO: find out what this does
+        bias="none",
         task_type="CAUSAL_LM",
-        target_modules="all-linear",
+        target_modules=[
+            "gate_proj",
+            "down_proj",
+            "up_proj",
+            "q_proj",
+            "v_proj",
+            "k_proj",
+            "o_proj",
+        ],
     )
 
     model = get_peft_model(model, _peft_config)
@@ -178,7 +156,7 @@ training_args = TrainingArguments(
     gradient_accumulation_steps=config.trainer.gradient_accumulation_steps,
     gradient_checkpointing=config.trainer.gradient_checkpointing,
     gradient_checkpointing_kwargs={
-        "use_reentrant": False
+        "use_reentrant": config.trainer.use_reentrant
     },  # https://github.com/huggingface/transformers/issues/26969
     optim=config.trainer.optimizer,
 )
@@ -188,6 +166,11 @@ if config.model.galore:
     training_args.optim = OptimizerNames.GALORE_ADAMW
     training_args.optim_target_modules = (["attn", "mlp"],)
     training_args.optim_args = ("rank=1024, update_proj_gap=200, scale=2",)
+# Init other relevant configs
+if config.trainer.gradient_checkpointing:
+    model.gradient_checkpointing_enable(
+        gradient_checkpointing_kwargs={"use_reentrant": config.trainer.use_reentrant}
+    )
 if config.general.debug:
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True

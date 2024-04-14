@@ -2,7 +2,7 @@
   "general": {
     "debug": true,
     "wandb_logging": false,
-    "disable_annoying_warnings": true,
+    "disable_annoying_warnings": false,
     "run_name": "BaseConfig",
     "gpu": 0
   },
@@ -23,6 +23,7 @@
     "batch_size": 1,
     "gradient_accumulation_steps": 4,
     "gradient_checkpointing": true,
+    "use_reentrant": false,
     "optimizer": "adamw_torch_fused"
   }
 }

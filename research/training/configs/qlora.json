@@ -2,13 +2,13 @@
   "general": {
     "debug": true,
     "wandb_logging": false,
-    "disable_annoying_warnings": true,
+    "disable_annoying_warnings": false,
     "run_name": "QLoraConfig",
     "gpu": 0
   },
   "model": {
     "id_model": "mistralai/Mistral-7B-Instruct-v0.2",
-    "lower_precision": false,
+    "lower_precision": true,
     "attention_implementation": "sdpa",
     "lora": true,
     "qlora": true,
@@ -23,6 +23,7 @@
     "batch_size": 1,
     "gradient_accumulation_steps": 4,
     "gradient_checkpointing": true,
+    "use_reentrant": false,
     "optimizer": "adamw_torch_fused"
   }
 }
