@@ -1,7 +1,6 @@
 import os
 
-from dotenv import load_dotenv
-from pymongo import MongoClient
+from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 
 # path of the file containing the id and annotations
 annotation_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\clef ehealth\\anns_train_dev.txt"
@@ -45,9 +44,6 @@ for filename in os.listdir(text_files_folder_path):
         ):
             data.append(file_data)
 
-load_dotenv()
-client = MongoClient(os.getenv("MONGO_URL"))
-db = client.get_database("corpus")
-clef_collection = db.get_collection("clef2019")
-clef_collection.create_index("document_id", unique=True)
-clef_collection.insert_many(data)
+
+# Upload to MongoDB
+upload_data_to_mongodb(data, "corpus", "clef2019", True, ["document_id"])

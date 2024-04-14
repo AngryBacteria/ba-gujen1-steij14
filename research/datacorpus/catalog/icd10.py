@@ -1,10 +1,8 @@
-import os
-
-import pandas as pd
-from dotenv import load_dotenv
-from pymongo import MongoClient
 import xml.etree.ElementTree as et
 
+import pandas as pd
+
+from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 # DATA SOURCE ICD10GM: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html
@@ -280,18 +278,8 @@ def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False):
     merged_output = sorted(merged_output, key=lambda x: x["code"])
 
     # Upload to MongoDB
-    load_dotenv()
-    client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("catalog")
     collection_name = "icd10gm" if icd10gm else "icd10who"
-    db.drop_collection(collection_name)
-    icd10_collection = db.get_collection(collection_name)
-    icd10_collection.create_index("code", unique=True)
-
-    icd10_collection.insert_many(merged_output)
-    logger.debug(f"Uploaded {len(merged_output)} rows to MongoDB.")
-
-    client.close()
+    upload_data_to_mongodb(merged_output, "catalog", collection_name, True, ["code"])
 
 
 create_icd10_db_from_xml(icd10gm=True, add_alphabet=True)

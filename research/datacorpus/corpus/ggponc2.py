@@ -1,10 +1,8 @@
 import json
 import os.path
 
-from dotenv import load_dotenv
-from pymongo import MongoClient
-
 from research.datacorpus.corpus.utils_ner import parse_ner_dataset
+from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 fine_annotations_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fine"
@@ -59,34 +57,13 @@ def build_ggponc_db():
     data_short_json, data_long_json = get_ggponc_json()
     data_short_ner, data_long_ner = get_ggponc_ner()
 
-    load_dotenv()
-    client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("corpus")
-
     # json data
-    db.drop_collection("ggponc_short")
-    db.drop_collection("ggponc_long")
-    ggponc_short = db.get_collection("ggponc_short")
-    ggponc_long = db.get_collection("ggponc_long")
-    ggponc_short.insert_many(data_short_json)
-    ggponc_long.insert_many(data_long_json)
-
-    logger.debug(
-        f"Uploaded {len(data_short_json)} short and {len(data_long_json)} long json annotations to ggponc collection."
-    )
+    upload_data_to_mongodb(data_short_json, "corpus", "ggponc_short", True, [])
+    upload_data_to_mongodb(data_long_json, "corpus", "ggponc_long", True, [])
 
     # ner data
-    db.drop_collection("ggponc_short_ner")
-    db.drop_collection("ggponc_long_ner")
-    ggponc_short_ner = db.get_collection("ggponc_short_ner")
-    ggponc_long_ner = db.get_collection("ggponc_long_ner")
-    ggponc_short_ner.insert_many(data_short_ner)
-    ggponc_long_ner.insert_many(data_long_ner)
-    logger.debug(
-        f"Uploaded {len(data_short_ner)} short and {len(data_long_ner)} long NER annotations to ggponc collection."
-    )
-
-    client.close()
+    upload_data_to_mongodb(data_short_ner, "corpus", "ggponc_short_ner", True, [])
+    upload_data_to_mongodb(data_long_ner, "corpus", "ggponc_long_ner", True, [])
 
 
 build_ggponc_db()

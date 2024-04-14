@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-from research.datacorpus.web.scraping_utils import process_tags_to_text, remove_unwanted
+from research.datacorpus.web.utils_scraping import process_tags_to_text, remove_unwanted
 from research.logger import logger
 
 validation_articles = [

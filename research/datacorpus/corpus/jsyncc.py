@@ -1,11 +1,6 @@
-import os
-
 import xml.etree.ElementTree as ET
-from dotenv import load_dotenv
-from pymongo import MongoClient
 
-from research.datacorpus.token_counter import count_tokens_db
-from research.logger import logger
+from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 
 corpus_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\jsyncc\\corpus.xml"
 
@@ -52,14 +47,7 @@ def get_jsyncc_data():
 
 def build_jsyncc_db():
     corpus = get_jsyncc_data()
-    load_dotenv()
-    client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("corpus")
-    db.drop_collection("jsyncc")
-    jsyncc = db.get_collection("jsyncc")
-    jsyncc.insert_many(corpus)
-    logger.debug(f"Uploaded {len(corpus)} documents to jsyncc collection.")
-    client.close()
+    upload_data_to_mongodb(corpus, "corpus", "jsyncc", True, [])
 
 
 build_jsyncc_db()

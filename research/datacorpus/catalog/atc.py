@@ -1,10 +1,6 @@
-import os
-
 import pandas as pd
-from dotenv import load_dotenv
-from pymongo import MongoClient
 
-from research.logger import logger
+from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 
 # DATA SOURCE: Medication_Pharmacode_ATC.xlsx
 
@@ -41,15 +37,8 @@ def read_atc_data():
     ].drop_duplicates()
     unique_combinations = unique_combinations.to_dict(orient="records")
 
-    load_dotenv()
-    client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("catalog")
-    collection_name = "atc"
-    db.drop_collection(collection_name)
-    atc_collection = db.get_collection(collection_name)
-    atc_collection.insert_many(unique_combinations)
-    logger.debug(f"Uploaded {len(unique_combinations)} rows to MongoDB.")
-    client.close()
+    # Upload to MongoDB
+    upload_data_to_mongodb(unique_combinations, "catalog", "atc", True, [])
 
 
 read_atc_data()

@@ -1,5 +1,5 @@
-from markdownify import markdownify as md
 from bs4 import Tag, BeautifulSoup
+from markdownify import markdownify as md
 
 ignore_list = [
     "Weblinks",

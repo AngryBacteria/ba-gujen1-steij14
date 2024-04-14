@@ -1,7 +1,6 @@
 import os.path
 
-from dotenv import load_dotenv
-from pymongo import MongoClient
+from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 path_text = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\textFiles"
@@ -200,31 +199,19 @@ def create_bronco_db():
     """
     Create the bronco database in MongoDB
     """
-    load_dotenv()
-    client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("corpus")
-
+    # JSON bronco collection
     data = []
     for i in range(1, 6):
         data.extend(parse_annotation_data_general(i))
     logger.debug(f"Parsed {len(data)} entries in total")
-    collection_name = "bronco"
-    bronco_collection = db.get_collection(collection_name)
-    bronco_collection.create_index("id", unique=True)
-    bronco_collection.insert_many(data)
-    logger.info(f"Inserted {len(data)} entries into the {collection_name} collection")
+    upload_data_to_mongodb(data, "corpus", "bronco", True, ["id"])
 
     # NER bronco collection
     data_ner = []
     for i in range(1, 6):
         data_ner.extend(parse_annotation_data_ner(i))
     logger.debug(f"Parsed {len(data_ner)} NER entries in total")
-    collection_name = "bronco_ner"
-    bronco_collection = db.get_collection(collection_name)
-    bronco_collection.insert_many(data_ner)
-    logger.info(f"Inserted {len(data)} entries into the {collection_name} collection")
-
-    client.close()
+    upload_data_to_mongodb(data, "corpus", "bronco_ner", True, [])
 
 
 create_bronco_db()

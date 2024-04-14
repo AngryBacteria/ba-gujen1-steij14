@@ -1,9 +1,8 @@
-import os
 import re
-import pandas as pd
-from dotenv import load_dotenv
-from pymongo import MongoClient
 
+import pandas as pd
+
+from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 # DATA SOURCE: https://www.nlm.nih.gov/research/umls/Snomed/core_subset.html
@@ -92,19 +91,8 @@ def load_snomed_core(print_unique_classes=False):
 
 def create_snomed_db():
     # Upload to MongoDB
-    load_dotenv()
-    client = MongoClient(os.getenv("MONGO_URL"))
-    db = client.get_database("catalog")
-    collection_name = "snomed_core"
-    db.drop_collection(collection_name)
-    snomed_core_collection = db.get_collection(collection_name)
-    snomed_core_collection.create_index("cid", unique=True)
-
     data = load_snomed_core().to_dict(orient="records")
-    snomed_core_collection.insert_many(data)
-    logger.debug(f"Uploaded {len(data)} rows to MongoDB.")
-
-    client.close()
+    upload_data_to_mongodb(data, "catalog", "snomed_core", True, ["cid"])
 
 
 create_snomed_db()
