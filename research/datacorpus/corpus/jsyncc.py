@@ -4,6 +4,8 @@ from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 
 corpus_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\jsyncc\\corpus.xml"
 
+# PAPER: https://aclanthology.org/L18-1201/
+# DATA SOURCE: https://github.com/JULIELab/jsyncc
 
 def find_with_default(element, tag, default_value=""):
     """Attempt to find the tag in the element, return text or a default value if not found or empty."""

@@ -5,8 +5,8 @@ from research.datacorpus.corpus.utils_ner import parse_ner_dataset
 from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
-fine_annotations_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fine"
-fine_annotations_ner_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\conll\\fine"
+fine_annotations_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fine"
+fine_annotations_ner_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\conll\\fine"
 
 
 def load_json(filename):

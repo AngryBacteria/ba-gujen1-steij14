@@ -3,9 +3,9 @@ import os.path
 from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
-path_text = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\textFiles"
-path_annotation_brat = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\bratFiles"
-path_annotation_conll = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\bronco\\conllIOBTags"
+path_text = "Bachelorarbeit\\datensets\\bronco\\textFiles"
+path_annotation_brat = "Bachelorarbeit\\datensets\\bronco\\bratFiles"
+path_annotation_conll = "Bachelorarbeit\\datensets\\bronco\\conllIOBTags"
 
 
 def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -> str:

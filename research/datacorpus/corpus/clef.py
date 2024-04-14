@@ -2,6 +2,8 @@ import os
 
 from research.datacorpus.utils_mongodb import upload_data_to_mongodb
 
+# DATA SOURCE: https://clefehealth.imag.fr/?page_id=215
+
 # path of the file containing the id and annotations
 annotation_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\clef ehealth\\anns_train_dev.txt"
 # path of the folder containing the text files
