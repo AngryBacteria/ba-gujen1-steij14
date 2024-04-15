@@ -1,7 +1,7 @@
 import os
 import setproctitle
-from research.training.custom_callbacks import GPUMemoryUsageCallback
-from research.training.config_parser import parse_training_config
+
+from research.training.utils.utils_config_parser import parse_training_config
 
 config = parse_training_config()
 # Setup gpu environment (needs to happen before importing huggingface library)
@@ -14,9 +14,11 @@ setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 import torch
 
+# The server is new enough to support the TF32 data type
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
+from research.training.custom_callbacks import GPUMemoryUsageCallback
 import wandb
 from datasets import load_dataset
 from peft import prepare_model_for_kbit_training
@@ -30,7 +32,6 @@ from transformers import (
 )
 from transformers.training_args import OptimizerNames
 
-
 # MODEL
 if config.model.lower_precision:
     MODEL_PRECISION = (
@@ -38,7 +39,7 @@ if config.model.lower_precision:
     )
 else:
     MODEL_PRECISION = torch.float
-# Load QLora model
+
 if config.model.qlora and config.model.lora:
     # TODO: maybe implement LoftQ
     print(f"{15 * '='} Load 4bit QLora model {15 * '='}")
@@ -58,7 +59,6 @@ if config.model.qlora and config.model.lora:
         use_gradient_checkpointing=config.trainer.gradient_checkpointing,
         gradient_checkpointing_kwargs={"use_reentrant": config.trainer.use_reentrant},
     )
-# Load normal model
 else:
     print(f"{15 * '='} Load model [{MODEL_PRECISION}] {15 * '='}")
     model = MistralForCausalLM.from_pretrained(
@@ -66,7 +66,6 @@ else:
         torch_dtype=MODEL_PRECISION,
         attn_implementation=config.model.attention_implementation,
     )
-#  Init LORA config and apply it to the model
 if config.model.lora:
     print(f"{15 * '='} Loading LORA [alpha 32, rank 8] {15 * '='}")
     from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
@@ -87,18 +86,17 @@ if config.model.lora:
             "o_proj",
         ],
     )
-
     model = get_peft_model(model, _peft_config)
     model.print_trainable_parameters()
 
-# Load tokenizer
+# Tokenizer
 print(f"{15 * '='} Load fast tokenizer {15 * '='}")
 tokenizer = AutoTokenizer.from_pretrained(config.model.id_model, use_fast=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
 
-# Load and prepare dataset
+# Dataset
 def preprocess_function(examples):
     inputs = [
         text * 100 for text in examples["text"]
@@ -131,7 +129,7 @@ tokenized_val_dataset = _val_dataset.map(
     remove_columns=["instruction", "input", "output", "text"],
 )
 
-# Setup training arguments
+# Training arguments
 print(
     f"{15 * '='} "
     f"Train model [optim {config.trainer.optimizer}, "
@@ -143,12 +141,12 @@ print(
 )
 training_args = TrainingArguments(
     output_dir="my_awesome_new_model",
-    evaluation_strategy="epoch",
-    learning_rate=2e-5,
+    learning_rate=config.trainer.learning_rate,
     num_train_epochs=config.trainer.epochs,
     report_to=["none"],
     logging_strategy="steps",
-    logging_steps=2,
+    logging_steps=1,
+    lr_scheduler_type="cosine",  # axolotl does this
     # optimizations
     per_device_train_batch_size=config.trainer.batch_size,
     per_device_eval_batch_size=config.trainer.batch_size,
@@ -159,21 +157,30 @@ training_args = TrainingArguments(
     },  # https://github.com/huggingface/transformers/issues/26969
     optim=config.trainer.optimizer,
 )
-# Init GALORE
-if config.model.galore:
+
+if config.trainer.eval_steps > 0:
+    training_args.evaluation_strategy = "steps"
+    training_args.eval_steps = config.trainer.eval_steps
+else:
+    training_args.evaluation_strategy = "epoch"
+
+if config.model.galore:  # setup GaLore
     print(f"{15 * '='} Setup GaLore [rank 1024, proj_gap 200, scale 2] {15 * '='}")
     training_args.optim = OptimizerNames.GALORE_ADAMW
     training_args.optim_target_modules = (["attn", "mlp"],)
     training_args.optim_args = ("rank=1024, update_proj_gap=200, scale=2",)
-# Init other relevant configs
-if config.trainer.gradient_checkpointing:
+
+if (
+    config.trainer.gradient_checkpointing
+):  # re-enable gradient checkpointing just to be sure :)
     model.gradient_checkpointing_enable(
         gradient_checkpointing_kwargs={"use_reentrant": config.trainer.use_reentrant}
     )
-if config.general.debug:
+
+if config.general.debug:  # setup logging and debugging
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-    custom_callbacks = [GPUMemoryUsageCallback(config.general.gpu)]
+    custom_callbacks = [GPUMemoryUsageCallback(config.general.gpu, True)]
 else:
     custom_callbacks = []
 if config.general.wandb_logging:
@@ -182,7 +189,17 @@ if config.general.wandb_logging:
     if config.general.run_name != "":
         training_args.run_name = config.general.run_name
 
-# Train model and save it
+if config.trainer.mixed_precision:  # setup mixed precision training
+    if MODEL_PRECISION == torch.float16:
+        training_args.fp16 = True
+        training_args.fp16_full_eval = True
+    if MODEL_PRECISION == torch.bfloat16:
+        training_args.fp16 = True
+        training_args.bf16_full_eval = True
+    if MODEL_PRECISION == torch.float:
+        training_args.tf32 = True
+
+# Training
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -192,7 +209,8 @@ trainer = Trainer(
     callbacks=custom_callbacks,
 )
 trainer.train()
-# trainer.save_model()
+if config.general.save_model:
+    trainer.save_model()
 
 # cleanup
 wandb.finish()

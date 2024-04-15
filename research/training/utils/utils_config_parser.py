@@ -16,17 +16,20 @@ class ModelConfig(BaseModel):
 
 
 class DataProcessingConfig(BaseModel):
+    sequence_length: int
     processing_threads: int
 
 
 class TrainerConfig(BaseModel):
-    sequence_length: int
     epochs: int
     batch_size: int
+    optimizer: str
+    learning_rate: float
     gradient_accumulation_steps: int
     gradient_checkpointing: bool
     use_reentrant: bool
-    optimizer: str
+    mixed_precision: bool
+    eval_steps: int
 
 
 class GeneralConfig(BaseModel):
@@ -35,6 +38,7 @@ class GeneralConfig(BaseModel):
     disable_annoying_warnings: bool
     run_name: Optional[str] = ""
     gpu: int
+    save_model: bool
 
 
 class TrainConfig(BaseModel):

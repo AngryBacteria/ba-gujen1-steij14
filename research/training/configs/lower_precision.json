@@ -4,7 +4,8 @@
     "wandb_logging": false,
     "disable_annoying_warnings": false,
     "run_name": "LowerPrecisionConfig",
-    "gpu": 0
+    "gpu": 0,
+    "save_model": false
   },
   "model": {
     "id_model": "mistralai/Mistral-7B-Instruct-v0.2",
@@ -15,15 +16,18 @@
     "galore": false
   },
   "data_processing": {
+    "sequence_length": 512,
     "processing_threads": 1
   },
   "trainer": {
-    "sequence_length": 512,
     "epochs": 1,
     "batch_size": 1,
+    "optimizer": "adamw_8bit",
+    "learning_rate": 0.00005,
     "gradient_accumulation_steps": 4,
     "gradient_checkpointing": true,
     "use_reentrant": false,
-    "optimizer": "adamw_8bit"
+    "mixed_precision": false,
+    "eval_steps": -1
   }
 }
