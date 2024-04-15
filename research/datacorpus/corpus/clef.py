@@ -1,6 +1,6 @@
 import os
 
-from research.datacorpus.utils_mongodb import upload_data_to_mongodb
+from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 
 # DATA SOURCE: https://clefehealth.imag.fr/?page_id=215
 

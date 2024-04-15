@@ -2,7 +2,7 @@ import re
 
 import pandas as pd
 
-from research.datacorpus.utils_mongodb import upload_data_to_mongodb
+from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 # DATA SOURCE: https://www.nlm.nih.gov/research/umls/Snomed/core_subset.html

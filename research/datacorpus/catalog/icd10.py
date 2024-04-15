@@ -2,7 +2,7 @@ import xml.etree.ElementTree as et
 
 import pandas as pd
 
-from research.datacorpus.utils_mongodb import upload_data_to_mongodb
+from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 # DATA SOURCE ICD10GM: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html

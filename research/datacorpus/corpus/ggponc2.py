@@ -1,8 +1,8 @@
 import json
 import os.path
 
-from research.datacorpus.corpus.utils_ner import parse_ner_dataset
-from research.datacorpus.utils_mongodb import upload_data_to_mongodb
+from research.datacorpus.utils.utils_ner import parse_ner_dataset
+from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 fine_annotations_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fine"

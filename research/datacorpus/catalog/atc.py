@@ -1,6 +1,6 @@
 import pandas as pd
 
-from research.datacorpus.utils_mongodb import upload_data_to_mongodb
+from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 
 # DATA SOURCE: Medication_Pharmacode_ATC.xlsx
 

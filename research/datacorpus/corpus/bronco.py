@@ -1,6 +1,6 @@
 import os.path
 
-from research.datacorpus.utils_mongodb import upload_data_to_mongodb
+from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 path_text = "Bachelorarbeit\\datensets\\bronco\\textFiles"
