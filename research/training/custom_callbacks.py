@@ -21,11 +21,11 @@ class GPUMemoryUsageCallback(TrainerCallback):
         if self.every_step:
             usage_percent = (allocated / self.total_capacity) * 100
             print(
-                f"Current GPU memory usage: {allocated:.2f} MB ({usage_percent:.2f}%)"
+                f"Current GPU memory usage: {allocated:.2f} GB ({usage_percent:.2f}%)"
             )
 
     def on_train_end(self, args, state, control, **kwargs):
         usage_percent = (self.peak_memory / self.total_capacity) * 100
         print(
-            f"Peak GPU memory usage: {self.peak_memory:.2f} MB ({usage_percent:.2f}%)"
+            f"Peak GPU memory usage: {self.peak_memory:.2f} GB ({usage_percent:.2f}%)"
         )

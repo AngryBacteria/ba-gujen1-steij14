@@ -42,7 +42,7 @@ else:
 
 if config.model.qlora and config.model.lora:
     # TODO: maybe implement LoftQ
-    print(f"{15 * '='} Load 4bit QLora model {15 * '='}")
+    print(f"{30 * '='} Load 4bit QLora model {30 * '='}")
     _bnb_quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",  # theoretically better according to docs
@@ -60,14 +60,14 @@ if config.model.qlora and config.model.lora:
         gradient_checkpointing_kwargs={"use_reentrant": config.trainer.use_reentrant},
     )
 else:
-    print(f"{15 * '='} Load model [{MODEL_PRECISION}] {15 * '='}")
+    print(f"{30 * '='} Load model [{MODEL_PRECISION}] {30 * '='}")
     model = MistralForCausalLM.from_pretrained(
         config.model.id_model,
         torch_dtype=MODEL_PRECISION,
         attn_implementation=config.model.attention_implementation,
     )
 if config.model.lora:
-    print(f"{15 * '='} Loading LORA [alpha 32, rank 8] {15 * '='}")
+    print(f"{30 * '='} Loading LORA [alpha 32, rank 8] {30 * '='}")
     from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 
     _peft_config = LoraConfig(
@@ -90,7 +90,7 @@ if config.model.lora:
     model.print_trainable_parameters()
 
 # Tokenizer
-print(f"{15 * '='} Load fast tokenizer {15 * '='}")
+print(f"{30 * '='} Load fast tokenizer {30 * '='}")
 tokenizer = AutoTokenizer.from_pretrained(config.model.id_model, use_fast=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
@@ -106,7 +106,7 @@ def preprocess_function(examples):
     )
 
 
-print(f"{15 * '='} Load and prepare dataset {15 * '='}")
+print(f"{30 * '='} Load and prepare dataset {30 * '='}")
 dataset = load_dataset(
     "tatsu-lab/alpaca",
     split="train[:100]",
@@ -131,13 +131,15 @@ tokenized_val_dataset = _val_dataset.map(
 
 # Training arguments
 print(
-    f"{15 * '='} "
+    f"{30 * '='} "
     f"Train model [optim {config.trainer.optimizer}, "
+    f"Precision {MODEL_PRECISION}, "
+    f"Mixed Training {config.trainer.mixed_precision}, "
     f"epochs {config.trainer.epochs}, batch {config.trainer.batch_size}, "
     f"accumulation {config.trainer.gradient_accumulation_steps}, "
     f"checkpointing {config.trainer.gradient_checkpointing}, "
     f"sequence {config.data_processing.sequence_length}] "
-    f"{15 * '='}"
+    f"{30 * '='}"
 )
 training_args = TrainingArguments(
     output_dir="my_awesome_new_model",
@@ -165,7 +167,7 @@ else:
     training_args.evaluation_strategy = "epoch"
 
 if config.model.galore:  # setup GaLore
-    print(f"{15 * '='} Setup GaLore [rank 1024, proj_gap 200, scale 2] {15 * '='}")
+    print(f"{30 * '='} Setup GaLore [rank 1024, proj_gap 200, scale 2] {30 * '='}")
     training_args.optim = OptimizerNames.GALORE_ADAMW
     training_args.optim_target_modules = (["attn", "mlp"],)
     training_args.optim_args = ("rank=1024, update_proj_gap=200, scale=2",)
@@ -194,7 +196,7 @@ if config.trainer.mixed_precision:  # setup mixed precision training
         training_args.fp16 = True
         training_args.fp16_full_eval = True
     if MODEL_PRECISION == torch.bfloat16:
-        training_args.fp16 = True
+        training_args.bf16 = True
         training_args.bf16_full_eval = True
     if MODEL_PRECISION == torch.float:
         training_args.tf32 = True
