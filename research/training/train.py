@@ -102,7 +102,7 @@ def preprocess_function(examples):
         text * 100 for text in examples["text"]
     ]  # makes sure that whole context is used
     return tokenizer(
-        inputs, padding=True, truncation=True, max_length=config.trainer.sequence_length
+        inputs, padding=True, truncation=True, max_length=config.data_processing.sequence_length
     )
 
 
@@ -136,7 +136,7 @@ print(
     f"epochs {config.trainer.epochs}, batch {config.trainer.batch_size}, "
     f"accumulation {config.trainer.gradient_accumulation_steps}, "
     f"checkpointing {config.trainer.gradient_checkpointing}, "
-    f"sequence {config.trainer.sequence_length}] "
+    f"sequence {config.data_processing.sequence_length}] "
     f"{15 * '='}"
 )
 training_args = TrainingArguments(
