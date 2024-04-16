@@ -5,6 +5,8 @@ from research.datacorpus.utils.utils_ner import parse_ner_dataset
 from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
+# DATA SOURCE: https://www.leitlinienprogramm-onkologie.de/projekte/ggponc-deutsch
+
 fine_annotations_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fine"
 fine_annotations_ner_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\conll\\fine"
 

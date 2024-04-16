@@ -41,7 +41,6 @@ else:
     MODEL_PRECISION = torch.float
 
 if config.model.qlora and config.model.lora:
-    # TODO: maybe implement LoftQ
     print(f"{30 * '='} Load 4bit QLora model {30 * '='}")
     _bnb_quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -102,7 +101,10 @@ def preprocess_function(examples):
         text * 100 for text in examples["text"]
     ]  # makes sure that whole context is used
     return tokenizer(
-        inputs, padding=True, truncation=True, max_length=config.data_processing.sequence_length
+        inputs,
+        padding=True,
+        truncation=True,
+        max_length=config.data_processing.sequence_length,
     )
 
 

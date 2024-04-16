@@ -5,8 +5,8 @@ import pandas as pd
 from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
-# DATA SOURCE ICD10GM: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html
-# DATA SOURCE ICD10GM: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-WHO/_node.html
+# DATA SOURCE: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html
+# DATA SOURCE: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-WHO/_node.html
 
 icd10who_alphabet_csv_path1 = "icd10who2019alpha_edvtxt_teil1_20180824.txt"
 icd10who_alphabet_csv_path2 = "icd10who2019alpha_edvtxt_teil2_20180824.txt"

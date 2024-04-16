@@ -95,4 +95,5 @@ def create_snomed_db():
     upload_data_to_mongodb(data, "catalog", "snomed_core", True, ["cid"])
 
 
+# TODO: translate to german
 create_snomed_db()

@@ -3,6 +3,8 @@ import os.path
 from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
+# DATA SOURCE: https://www2.informatik.hu-berlin.de/~leser/bronco/index.html
+
 path_text = "Bachelorarbeit\\datensets\\bronco\\textFiles"
 path_annotation_brat = "Bachelorarbeit\\datensets\\bronco\\bratFiles"
 path_annotation_conll = "Bachelorarbeit\\datensets\\bronco\\conllIOBTags"
