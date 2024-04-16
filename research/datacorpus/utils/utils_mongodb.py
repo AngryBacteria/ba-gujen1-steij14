@@ -31,3 +31,10 @@ def upload_data_to_mongodb(
     logger.debug(
         f"Uploaded {len(data)} rows to MongoDB database {database_name} collection {collection_name}"
     )
+
+
+def rename_dict_keys(data_list, old_key, new_key):
+    """Rename a key in a list of dictionaries."""
+    for item in data_list:
+        if old_key in item:
+            item[new_key] = item.pop(old_key)

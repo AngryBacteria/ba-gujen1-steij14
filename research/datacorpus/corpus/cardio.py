@@ -14,8 +14,9 @@ def parse_annotations():
     tsv_files = [file for file in os.listdir(TSV_FOLDER_PATH) if file.endswith(".tsv")]
 
     annotations = []
+
     current_words = []
-    current_annotations = []
+    current_ner_tags = []
     current_offsets = []
     current_text = []
     current_in_narrative = []
@@ -39,7 +40,7 @@ def parse_annotations():
                         annotations_file.append(
                             {
                                 "words": current_words,
-                                "annotations": current_annotations,
+                                "ner_tags": current_ner_tags,
                                 "offsets": current_offsets,
                                 "in_narrative": current_in_narrative,
                                 "relations": current_relations,
@@ -49,7 +50,7 @@ def parse_annotations():
                         )
                     current_text = line.split("#Text=")[1]
                     current_words = []
-                    current_annotations = []
+                    current_ner_tags = []
                     current_offsets = []
                     current_in_narrative = []
                     current_relations = []
@@ -67,7 +68,7 @@ def parse_annotations():
 
                 # save the values
                 current_words.append(word)
-                current_annotations.append(annotation)
+                current_ner_tags.append(annotation)
                 current_offsets.append(offset)
                 current_in_narrative.append(in_narrative)
                 current_relations.append(relation)
@@ -82,7 +83,11 @@ def parse_annotations():
 
         # save the last file annotation
         annotations.append(
-            {"file": tsv_file, "annotations": annotations_file, "full_text": full_text}
+            {
+                "document": tsv_file,
+                "annotations": annotations_file,
+                "full_text": full_text,
+            }
         )
         logger.debug(f"Processed {len(annotations)} annotations from the {tsv_file}")
 
@@ -91,8 +96,8 @@ def parse_annotations():
 
 def build_cardio_db():
     annotations = parse_annotations()
-    upload_data_to_mongodb(annotations, "corpus", "cardio_de", True, [])
+    upload_data_to_mongodb(annotations, "corpus", "cardio", True, [])
 
 
-# TODO: remove the psuedo text parts (problem is in the annotations)
+# TODO: remove the psuedo text parts (problem is in the annotations) <pseudo> and <B-PER>
 build_cardio_db()

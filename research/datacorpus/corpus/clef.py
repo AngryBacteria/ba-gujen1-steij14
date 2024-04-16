@@ -32,7 +32,7 @@ for filename in os.listdir(text_files_folder_path):
             "text": content,
             "icd10_block_codes": [],
             "icd10_chapter_codes": [],
-            "document_id": file_id,
+            "document": f"{file_id}.txt",
         }
         for code in ann_codes:
             if "-" in code:

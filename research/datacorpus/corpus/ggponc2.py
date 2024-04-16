@@ -2,7 +2,10 @@ import json
 import os.path
 
 from research.datacorpus.utils.utils_ner import parse_ner_dataset
-from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
+from research.datacorpus.utils.utils_mongodb import (
+    upload_data_to_mongodb,
+    rename_dict_keys,
+)
 from research.logger import logger
 
 # DATA SOURCE: https://www.leitlinienprogramm-onkologie.de/projekte/ggponc-deutsch
@@ -23,7 +26,10 @@ def get_ggponc_json():
     """Load the GGPONC json data from the fine annotations folder and return the short and long documents."""
     # Load data from both files
     data_short = load_json(os.path.join(fine_annotations_folder, "short", "all.json"))
+    rename_dict_keys(data_short, "document_id", "document")
+
     data_long = load_json(os.path.join(fine_annotations_folder, "long", "all.json"))
+    rename_dict_keys(data_long, "document_id", "document")
     return data_short, data_long
 
 
