@@ -1,6 +1,7 @@
 import re
 
 import pandas as pd
+from pandas import DataFrame
 
 from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
@@ -8,7 +9,6 @@ from research.logger import logger
 # DATA SOURCE: https://www.nlm.nih.gov/research/umls/Snomed/core_subset.html
 
 CORE_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\snomed\\SNOMEDCT_CORE_SUBSET_202311.txt"
-
 snomed_classes = [
     "situation",
     "person",
@@ -22,7 +22,7 @@ snomed_classes = [
 ]
 
 
-def extract_and_remove_class(row: str):
+def extract_and_remove_class(row: str) -> tuple[str, str]:
     """Extracts the class from the SNOMED_FSN column and removes it from the row."""
     matches = re.findall(r"\(([^)]+)\)", row)
     if matches:
@@ -33,7 +33,7 @@ def extract_and_remove_class(row: str):
     return "", row.strip()
 
 
-def load_snomed_core(print_unique_classes=False):
+def load_snomed_core(print_unique_classes=False) -> DataFrame:
     """Loads the SNOMED core subset and extracts the class as a new column."""
     headers = [
         "SNOMED_CID",
@@ -48,6 +48,7 @@ def load_snomed_core(print_unique_classes=False):
         "REPLACED_BY_SNOMED_CID",
     ]
     data = pd.read_csv(CORE_PATH, sep="|", header=1, names=headers)
+    data = data.map(lambda x: x.strip() if isinstance(x, str) else x)
 
     # used for creating the snomed_classes list
     if print_unique_classes:
@@ -89,7 +90,7 @@ def load_snomed_core(print_unique_classes=False):
     return filtered_data
 
 
-def create_snomed_db():
+def create_snomed_db() -> None:
     # Upload to MongoDB
     data = load_snomed_core().to_dict(orient="records")
     upload_data_to_mongodb(data, "catalog", "snomed_core", True, ["cid"])

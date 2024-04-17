@@ -1,6 +1,8 @@
 import json
 import os.path
 
+import pandas as pd
+
 from research.datacorpus.utils.utils_ner import parse_ner_dataset
 from research.datacorpus.utils.utils_mongodb import (
     upload_data_to_mongodb,
@@ -14,7 +16,8 @@ fine_annotations_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fin
 fine_annotations_ner_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\conll\\fine"
 
 
-def load_json(filename):
+def load_json(filename) -> dict:
+    """Load json file."""
     with open(filename, "r", encoding="utf-8") as file:
         data = json.load(file)
 
@@ -22,15 +25,86 @@ def load_json(filename):
     return data
 
 
+def transform_ggponc_annotations(data):
+    """Transform annotations into unified format."""
+    output = []
+    for document in data:
+        annotations = []
+        passage_text = ""
+        # loop over passages and find all related entities
+        for passage in document["passages"]:
+            passage_start = passage["offsets"][0][0]
+            passage_end = passage["offsets"][0][1]
+            passage_text += passage["text"].strip() + " "
+
+            # for all related entities save annotations into passage_annotations
+            passage_annotations = []
+            for entity in document["entities"]:
+                entity_start = entity["offsets"][0][0]
+                entity_end = entity["offsets"][0][1]
+                if entity_start >= passage_start and entity_end <= passage_end:
+                    passage_annotations.append(
+                        {
+                            "type": entity["type"].strip(),
+                            "origin": passage["text"].strip(),
+                            "text": entity["text"][0].strip(),
+                            "start": entity["offsets"][0][0],
+                            "end": entity["offsets"][0][1],
+                        }
+                    )
+
+            if len(passage_annotations) == 0:
+                annotations.append(
+                    {
+                        "type": "None",
+                        "origin": passage["text"].strip(),
+                        "text": [],
+                        "start": [],
+                        "end": [],
+                    }
+                )
+            else:
+                annotations.extend(passage_annotations)
+
+        # group annotations by type and origin. Takes a long time...
+        df = pd.DataFrame(annotations)
+        grouped_df = (
+            df.groupby(["type", "origin"])
+            .agg(
+                {
+                    "text": lambda x: x.tolist(),
+                    "start": lambda x: x.tolist(),
+                    "end": lambda x: x.tolist(),
+                }
+            )
+            .reset_index()
+        )
+        grouped_df = grouped_df.to_dict(orient="records")
+        output.append(
+            {
+                "document": document["document"],
+                "annotations": grouped_df,
+                "full_text": passage_text.strip(),
+            }
+        )
+
+    return output
+
+
 # TODO: refactor data to resemble bronco
-def get_ggponc_json():
+def get_ggponc_json(refactor=True):
     """Load the GGPONC json data from the fine annotations folder and return the short and long documents."""
     # Load data from both files
     data_short = load_json(os.path.join(fine_annotations_folder, "short", "all.json"))
-    rename_dict_keys(data_short, "document_id", "document")
+    data_short = rename_dict_keys(data_short, "document_id", "document")
 
     data_long = load_json(os.path.join(fine_annotations_folder, "long", "all.json"))
-    rename_dict_keys(data_long, "document_id", "document")
+    data_long = rename_dict_keys(data_long, "document_id", "document")
+
+    if refactor:
+        data_short = transform_ggponc_annotations(data_short)
+        data_long = transform_ggponc_annotations(data_long)
+
     return data_short, data_long
 
 
@@ -47,6 +121,7 @@ def get_ggponc_ner():
         os.path.join(fine_annotations_ner_folder, "short", "train_fine_short.conll")
     )
     data_short_ner = data_short_dev + data_short_test + data_short_train
+
     # get and combine long data
     data_long_dev = parse_ner_dataset(
         os.path.join(fine_annotations_ner_folder, "long", "dev_fine_long.conll")

@@ -7,7 +7,8 @@ from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 EXCEL_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\atc\\Medication_Pharmacode_ATC.xlsx"
 
 
-def read_atc_data():
+def create_atc_db() -> None:
+    """Parse the Excel file and create a MongoDB collection with the ATC codes."""
     column_names = [
         "pharmacode",
         "productcode",
@@ -53,7 +54,6 @@ def read_atc_data():
         )
         .reset_index()
     )
-
     grouped_df = grouped_df.to_dict(orient="records")
 
     # Upload to MongoDB
@@ -61,4 +61,4 @@ def read_atc_data():
 
 
 # TODO: normalize the package type and doses
-read_atc_data()
+create_atc_db()

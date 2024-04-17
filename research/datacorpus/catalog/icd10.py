@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as et
 
 import pandas as pd
+from pandas import DataFrame
 
 from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
@@ -16,7 +17,7 @@ icd10gm_alphabet_csv_path1 = "icd10gm2024alpha_edvtxt_20230929.txt"
 icd10gm_xml_path = "icd10gm2024syst_claml_20230915.xml"
 
 
-def parse_csv_icd10_alphabet(icd10gm=False):
+def parse_csv_icd10_alphabet(icd10gm=False) -> DataFrame:
     """Parse an ICD-10 alphabet files and return a dataframe"""
     if icd10gm:
         columns = [
@@ -35,6 +36,7 @@ def parse_csv_icd10_alphabet(icd10gm=False):
             names=columns,
             sep="|",
         )
+        data = data.map(lambda x: x.strip() if isinstance(x, str) else x)
     else:
         columns = [
             "coding_type",
@@ -58,6 +60,7 @@ def parse_csv_icd10_alphabet(icd10gm=False):
             sep="|",
         )
         data = pd.concat([alphabet1, alphabet2])
+        data = data.map(lambda x: x.strip() if isinstance(x, str) else x)
     data = data[data["code"].notnull()]
 
     if icd10gm:
@@ -88,7 +91,7 @@ def get_super_class_from_xml(element: et.Element) -> str | None:
     return super_class_code
 
 
-def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False):
+def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False) -> list[dict]:
     """Parse the ICD-10 XML file and return a list of dictionaries with category data."""
     if icd10gm:
         tree = et.parse(icd10gm_xml_path)
@@ -170,7 +173,8 @@ def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False):
     return icd10_categories
 
 
-def parse_xml_icd10_blocks(icd10gm=False):
+def parse_xml_icd10_blocks(icd10gm=False) -> list[dict]:
+    """Parse the ICD-10 XML file and return a list of dictionaries with the icd block data."""
     if icd10gm:
         tree = et.parse(icd10gm_xml_path)
     else:
@@ -222,7 +226,8 @@ def parse_xml_icd10_blocks(icd10gm=False):
 # todo: parse introduction text
 # todo: parse note text
 # todo: parse text text
-def parse_xml_icd10_chapters(icd10gm=False):
+def parse_xml_icd10_chapters(icd10gm=False) -> list[dict]:
+    """Parse the ICD-10 XML file and return a list of dictionaries with the icd chapter data."""
     if icd10gm:
         tree = et.parse(icd10gm_xml_path)
     else:
@@ -267,7 +272,8 @@ def parse_xml_icd10_chapters(icd10gm=False):
 
 
 # TODO: icd10gm : parse subcategory, for example M08.4 --> M08.43
-def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False):
+def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False) -> None:
+    """Parse the ICD-10 XML files and create a MongoDB collection with the data."""
     # parse xml files and combine
     categories = parse_xml_icd10_categories(add_alphabet=add_alphabet, icd10gm=icd10gm)
     blocks = parse_xml_icd10_blocks(icd10gm=icd10gm)

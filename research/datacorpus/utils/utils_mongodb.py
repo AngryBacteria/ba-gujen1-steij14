@@ -38,3 +38,4 @@ def rename_dict_keys(data_list, old_key, new_key):
     for item in data_list:
         if old_key in item:
             item[new_key] = item.pop(old_key)
+    return data_list

@@ -21,6 +21,7 @@ def clean_cardio_string(text: str):
 
 # TODO: also parse the duration, form, frequency, strength
 def transform_cardio_annotation(annotation: dict):
+    """Transform annotations into unified format."""
     drugs = []
     # get drugs and active ingredients
     for index, tag in enumerate(annotation["ner_tags"]):
