@@ -1,13 +1,14 @@
 import os
 
 from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
+from research.logger import logger
 
 # DATA SOURCE: https://clefehealth.imag.fr/?page_id=215
 
 # path of the file containing the id and annotations
-annotation_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\clef ehealth\\anns_train_dev.txt"
+annotation_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\clef ehealth\\anns_train_dev.txt"
 # path of the folder containing the text files
-text_files_folder_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\clef ehealth\\docs-training"
+text_files_folder_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\clef ehealth\\docs-training"
 
 # Read the annotations. Split by id and codes
 with open(annotation_path, "r") as f:
@@ -46,6 +47,8 @@ for filename in os.listdir(text_files_folder_path):
         ):
             data.append(file_data)
 
+        logger.debug(f"Parsed {file_id} from CLEF eHealth corpus.")
+    logger.debug(f"Parsed {len(data)} documents from CLEF eHealth corpus.")
 
 # Upload to MongoDB
-upload_data_to_mongodb(data, "corpus", "clef2019", True, ["document_id"])
+upload_data_to_mongodb(data, "corpus", "clef2019", True, ["document"])

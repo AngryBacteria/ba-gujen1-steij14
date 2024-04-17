@@ -22,6 +22,7 @@ def load_json(filename):
     return data
 
 
+# TODO: refactor data to resemble bronco
 def get_ggponc_json():
     """Load the GGPONC json data from the fine annotations folder and return the short and long documents."""
     # Load data from both files

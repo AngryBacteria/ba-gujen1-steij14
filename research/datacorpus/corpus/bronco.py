@@ -1,18 +1,21 @@
 import os.path
 
+import pandas as pd
+
 from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 # DATA SOURCE: https://www2.informatik.hu-berlin.de/~leser/bronco/index.html
 
-path_text = "Bachelorarbeit\\datensets\\bronco\\textFiles"
-path_annotation_brat = "Bachelorarbeit\\datensets\\bronco\\bratFiles"
-path_annotation_conll = "Bachelorarbeit\\datensets\\bronco\\conllIOBTags"
+path_text = "Bachelorarbeit\\datensets\\corpus\\bronco\\textFiles"
+path_annotation_brat = "Bachelorarbeit\\datensets\\corpus\\bronco\\bratFiles"
+path_annotation_conll = "Bachelorarbeit\\datensets\\corpus\\bronco\\conllIOBTags"
 
 
 def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -> str:
     """
-    Find the sentence in which the given positions are located
+    Find the sentence in which the given positions are located.
+    Used for finding the sentence of an annotation
     :param start_pos: start position
     :param end_pos: end position
     :param content: the text to search
@@ -48,7 +51,7 @@ def read_text_file(file_number: int):
     """
     with open(os.path.join(path_text, f"randomSentSet{file_number}.txt"), "r") as file:
         annotation_text = file.read()
-        return annotation_text
+        return annotation_text.strip()
 
 
 # parse the annotation data. The id starts either with N, T OR A
@@ -61,13 +64,15 @@ def parse_annotation_data_general(file_number: int) -> list[dict]:
     with open(
         os.path.join(path_annotation_brat, f"randomSentSet{file_number}.ann"), "r"
     ) as file:
-        annotations_text = file.read()
-        annotation_entries = annotations_text.strip().split("\n")
-        sentences_text = read_text_file(file_number)
+        annotations_text = file.read()  # all the annotations
+        annotation_entries = annotations_text.strip().split(
+            "\n"
+        )  # individual annotations
+        sentences_text = read_text_file(file_number)  # the sentences of the annotations
 
         output = []
         for entry in annotation_entries:
-            parts = entry.split()
+            parts = [part.strip() for part in entry.split()]
             entry_id = parts[0]
             # Entity labels start with T
             try:
@@ -88,9 +93,9 @@ def parse_annotation_data_general(file_number: int) -> list[dict]:
                     output.append(
                         {
                             "id": f"{file_number}_" + entry_id,
-                            "type": type_string.strip(),
-                            "text": text_part.strip(),
-                            "origin": origin.strip(),
+                            "type": type_string,
+                            "text": text_part,
+                            "origin": origin,
                             "normalizations": [],
                             "attributes": [],
                             "start": start,
@@ -157,7 +162,44 @@ def parse_annotation_data_general(file_number: int) -> list[dict]:
         logger.debug(
             f"Parsed {len(output)} entries from file randomSentSet{file_number}.ann"
         )
-        return output
+
+    # group the data by type and origin. Every sentence can have multiple annotations of the same type
+    df = pd.DataFrame(output)
+    grouped_df = (
+        df.groupby(["type", "origin"])
+        .agg(
+            {
+                "id": lambda x: x.tolist(),
+                "text": lambda x: x.tolist(),
+                "normalizations": lambda x: x.tolist(),
+                "attributes": lambda x: x.tolist(),
+                "start": lambda x: x.tolist(),
+                "end": lambda x: x.tolist(),
+            }
+        )
+        .reset_index()
+    )
+
+    # get sentences without annotations
+    sentences = sentences_text.split("\n")
+    for sentence in sentences:
+        if sentence.strip() not in grouped_df["origin"].tolist():
+            new_rows = [
+                {
+                    "type": "None",
+                    "origin": sentence.strip(),
+                    "id": [],
+                    "text": [],
+                    "normalizations": [],
+                    "attributes": [],
+                    "start": [],
+                    "end": [],
+                }
+            ]
+            new_rows = pd.DataFrame(new_rows)
+            grouped_df = pd.concat([grouped_df, new_rows], ignore_index=True)
+
+    return grouped_df.to_dict(orient="records")
 
 
 def parse_annotation_data_ner(file_number: int) -> list[dict[str, list]]:
@@ -197,7 +239,7 @@ def parse_annotation_data_ner(file_number: int) -> list[dict[str, list]]:
     return sentences
 
 
-def create_bronco_db():
+def create_bronco_db() -> None:
     """
     Create the bronco database in MongoDB
     """
@@ -206,14 +248,14 @@ def create_bronco_db():
     for i in range(1, 6):
         data.extend(parse_annotation_data_general(i))
     logger.debug(f"Parsed {len(data)} entries in total")
-    upload_data_to_mongodb(data, "corpus", "bronco", True, ["id"])
+    upload_data_to_mongodb(data, "corpus", "bronco", True, [])
 
     # NER bronco collection
     data_ner = []
     for i in range(1, 6):
         data_ner.extend(parse_annotation_data_ner(i))
     logger.debug(f"Parsed {len(data_ner)} NER entries in total")
-    upload_data_to_mongodb(data, "corpus", "bronco_ner", True, [])
+    upload_data_to_mongodb(data_ner, "corpus", "bronco_ner", True, [])
 
 
 create_bronco_db()
