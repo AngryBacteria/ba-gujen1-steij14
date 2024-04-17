@@ -30,7 +30,7 @@ for filename in os.listdir(text_files_folder_path):
         ann_codes = annotations.get(file_id, [])
 
         file_data = {
-            "text": content,
+            "text": content.strip(),
             "icd10_block_codes": [],
             "icd10_chapter_codes": [],
             "document": f"{file_id}.txt",

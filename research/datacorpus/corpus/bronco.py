@@ -12,6 +12,7 @@ path_annotation_brat = "Bachelorarbeit\\datensets\\corpus\\bronco\\bratFiles"
 path_annotation_conll = "Bachelorarbeit\\datensets\\corpus\\bronco\\conllIOBTags"
 
 
+# TODO: unify anonymization (PATIENT, etc...) and labels / types
 def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -> str:
     """
     Find the sentence in which the given positions are located.
@@ -22,6 +23,7 @@ def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -
     :return: the string of the sentence
     """
     # Find the start of the sentence. Finds the last newline before start_pos
+    content = content.strip()
     start_of_sentence = content.rfind("\n", 0, start_pos)
     if (
         start_of_sentence == -1
@@ -43,7 +45,7 @@ def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -
 
 
 # read the text data
-def read_text_file(file_number: int):
+def read_text_file(file_number: int) -> str:
     """
     Read the .txt file that containing raw sentences
     :param file_number: number of the file to read
@@ -220,7 +222,7 @@ def parse_annotation_data_ner(file_number: int) -> list[dict[str, list]]:
     ner_tags = []
     for line in lines:
         if line.strip():  # This skips empty lines, they are used to separate sentences
-            word, word_type, ner_tag = line.split()
+            word, word_type, ner_tag = line.strip().split()
             words.append(word)
             word_types.append(word_type)
             ner_tags.append(ner_tag)

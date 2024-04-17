@@ -16,6 +16,7 @@ fine_annotations_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fin
 fine_annotations_ner_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\conll\\fine"
 
 
+# TODO: unify anonymization (PATIENT, etc...) and labels / types
 def load_json(filename) -> dict:
     """Load json file."""
     with open(filename, "r", encoding="utf-8") as file:

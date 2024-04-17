@@ -96,6 +96,7 @@ if tokenizer.pad_token is None:
 
 
 # Dataset
+# TODO: maybe remove the data collator does already padding
 def preprocess_function(examples):
     inputs = [
         text * 100 for text in examples["text"]

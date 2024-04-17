@@ -8,7 +8,7 @@ corpus_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarb
 # DATA SOURCE: https://github.com/JULIELab/jsyncc
 
 
-def find_with_default(element, tag, default_value=""):
+def find_with_default(element, tag, default_value="") -> str:
     """Attempt to find the tag in the element, return text or a default value if not found or empty."""
     found_element = element.find(tag)
     if (
@@ -20,7 +20,7 @@ def find_with_default(element, tag, default_value=""):
     return default_value
 
 
-def get_jsyncc_data():
+def get_jsyncc_data() -> list[dict[str, str]]:
     tree = ET.parse(corpus_path)
     root = tree.getroot()
     documents = root.findall(".//document")
@@ -48,7 +48,7 @@ def get_jsyncc_data():
     return corpus
 
 
-def build_jsyncc_db():
+def build_jsyncc_db() -> None:
     corpus = get_jsyncc_data()
     upload_data_to_mongodb(corpus, "corpus", "jsyncc", True, [])
 

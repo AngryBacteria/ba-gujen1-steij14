@@ -2,7 +2,7 @@ import pandas as pd
 
 from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 
-# DATA SOURCE: Unknwon (Medication_Pharmacode_ATC.xlsx)
+# DATA SOURCE: Unknown (Medication_Pharmacode_ATC.xlsx)
 
 EXCEL_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\atc\\Medication_Pharmacode_ATC.xlsx"
 
@@ -60,5 +60,4 @@ def create_atc_db() -> None:
     upload_data_to_mongodb(grouped_df, "catalog", "atc", True, [])
 
 
-# TODO: normalize the package type and doses
 create_atc_db()

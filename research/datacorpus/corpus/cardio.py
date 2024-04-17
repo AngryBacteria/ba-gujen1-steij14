@@ -13,8 +13,9 @@ TXT_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\txt"
 TXT_HELDOUT_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_heldout"
 
 
+# TODO: unify anonymization (PATIENT, etc...) and labels / types
 # TODO: remove the pseudo text parts <B-PER> etc...
-def clean_cardio_string(text: str):
+def clean_cardio_string(text: str) -> str:
     cleaned_text = re.sub(r"<\[Pseudo] ([^>]*)>", r"\1", text)
     return cleaned_text.strip()
 
@@ -30,9 +31,9 @@ def transform_cardio_annotation(annotation: dict):
             drugs.append(
                 {
                     "type": "MEDICATION",
-                    "origin": annotation["text"],
-                    "id": annotation["ids"][index],
-                    "text": annotation["words"][index],
+                    "origin": annotation["text"].strip(),
+                    "id": annotation["ids"][index].strip(),
+                    "text": annotation["words"][index].strip(),
                     "in_narrative": annotation["in_narrative"][index],
                     "start": int(offsets[0]),
                     "end": int(offsets[1]),
@@ -43,7 +44,7 @@ def transform_cardio_annotation(annotation: dict):
         return {
             "id": [],
             "text": [],
-            "origin": annotation["text"],
+            "origin": annotation["text"].strip(),
             "type": "None",
             "end": [],
             "start": [],
@@ -66,7 +67,7 @@ def transform_cardio_annotation(annotation: dict):
         return grouped_df.to_dict(orient="records")[0]
 
 
-def transform_ner_cardio_annotations(annotations: list[str]):
+def transform_ner_cardio_annotations(annotations: list[str]) -> list[str]:
     # remove the ids from the annotations
     cleaned = []
     for anno in annotations:
@@ -128,7 +129,7 @@ def parse_ner_annotations():
                     continue
 
                 # get the values from the line
-                parts = line.split("\t")
+                parts = [part.strip() for part in line.split("\t")]
                 word = parts[2]
                 annotation = parts[3]
                 in_narrative = parts[4]
@@ -158,9 +159,9 @@ def parse_annotations():
     current_words = []
     current_ner_tags = []
     current_offsets = []
-    current_text = []
     current_in_narrative = []
     current_relations = []
+    current_text = []
     for tsv_file in tsv_files:
         annotations_file = []
         with open(
@@ -190,17 +191,17 @@ def parse_annotations():
                             )
                         )
 
-                    current_text = line.split("#Text=")[1]
                     current_ids = []
                     current_words = []
                     current_ner_tags = []
                     current_offsets = []
                     current_in_narrative = []
                     current_relations = []
+                    current_text = line.split("#Text=")[1].strip()
                     continue
 
                 # get the values from the line
-                parts = line.split("\t")
+                parts = [part.strip() for part in line.split("\t")]
                 anno_id = parts[0]
                 offset = parts[1]
                 word = parts[2]
