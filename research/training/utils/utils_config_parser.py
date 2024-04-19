@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 
-class ModelConfig(BaseModel):
+class ModelConfigCLM(BaseModel):
     id_model: str
     lower_precision: bool
     attention_implementation: str
@@ -15,12 +15,12 @@ class ModelConfig(BaseModel):
     galore: bool
 
 
-class DataProcessingConfig(BaseModel):
+class DataProcessingConfigCLM(BaseModel):
     sequence_length: int
     processing_threads: int
 
 
-class TrainerConfig(BaseModel):
+class TrainerConfigCLM(BaseModel):
     epochs: int
     batch_size: int
     optimizer: str
@@ -32,7 +32,7 @@ class TrainerConfig(BaseModel):
     eval_steps: int
 
 
-class GeneralConfig(BaseModel):
+class GeneralConfigCLM(BaseModel):
     debug: bool
     wandb_logging: bool
     disable_annoying_warnings: bool
@@ -41,11 +41,11 @@ class GeneralConfig(BaseModel):
     save_model: bool
 
 
-class TrainConfig(BaseModel):
-    general: GeneralConfig
-    model: ModelConfig
-    data_processing: DataProcessingConfig
-    trainer: TrainerConfig
+class TrainConfigCLM(BaseModel):
+    general: GeneralConfigCLM
+    model: ModelConfigCLM
+    data_processing: DataProcessingConfigCLM
+    trainer: TrainerConfigCLM
 
 
 def parse_training_config():
@@ -65,13 +65,13 @@ def parse_training_config():
     # Load config file
     with open(args.config, "r") as file:
         config_json = json.loads(file.read())
-        config = TrainConfig(**config_json)
+        config = TrainConfigCLM(**config_json)
 
     config = normalize_config(config)
     return config
 
 
-def normalize_config(config: TrainConfig):
+def normalize_config(config: TrainConfigCLM):
     if config.model.qlora and not config.model.lora:
         raise ValueError("QLORA can only be used in combination with LORA.")
     if config.model.galore and (config.model.lora or config.model.qlora):
