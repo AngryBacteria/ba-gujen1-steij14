@@ -8,9 +8,9 @@ from research.logger import logger
 
 # DATA SOURCE: https://heidata.uni-heidelberg.de/dataset.xhtml?persistentId=doi:10.11588/data/AFYQDY
 
-TSV_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\tsv"
-TXT_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\txt"
-TXT_HELDOUT_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_heldout"
+TSV_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\tsv"
+TXT_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt"
+TXT_HELDOUT_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_heldout"
 
 
 # TODO: unify anonymization (PATIENT, etc...) and labels / types
@@ -18,6 +18,23 @@ TXT_HELDOUT_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_held
 def clean_cardio_string(text: str) -> str:
     cleaned_text = re.sub(r"<\[Pseudo] ([^>]*)>", r"\1", text)
     return cleaned_text.strip()
+
+
+def print_unique_anonymization():
+    tsv_files = [file for file in os.listdir(TSV_FOLDER_PATH) if file.endswith(".tsv")]
+
+    unique_matches = set()
+    for tsv_file in tsv_files:
+        with open(
+                os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
+        ) as file:
+            pattern = r'[BI]-[A-Z]{3,}'
+            matches = re.findall(pattern, file.read())
+            unique_matches.update(matches)
+
+    unique_matches = sorted(unique_matches)
+    for match in unique_matches:
+        print(match)
 
 
 # TODO: also parse the duration, form, frequency, strength
@@ -101,7 +118,7 @@ def parse_ner_annotations():
     for tsv_file in tsv_files:
         annotations_file_ner = []
         with open(
-            os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
+                os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
         ) as file:
             for line in file:
                 line = line.strip()
@@ -165,7 +182,7 @@ def parse_annotations():
     for tsv_file in tsv_files:
         annotations_file = []
         with open(
-            os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
+                os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
         ) as file:
             for line in file:
                 line = line.strip()
@@ -220,7 +237,7 @@ def parse_annotations():
         # read the txt file to get the full text
         txt_file = tsv_file.replace(".tsv", ".txt")
         with open(
-            os.path.join(TXT_FOLDER_PATH, txt_file), "r", encoding="utf-8"
+                os.path.join(TXT_FOLDER_PATH, txt_file), "r", encoding="utf-8"
         ) as file:
             full_text = file.read().strip()
 
@@ -248,7 +265,7 @@ def parse_cardio_heldout_text():
     heldout_text = []
     for filename in txt_files:
         with open(
-            os.path.join(TXT_HELDOUT_FOLDER_PATH, filename), "r", encoding="utf-8"
+                os.path.join(TXT_HELDOUT_FOLDER_PATH, filename), "r", encoding="utf-8"
         ) as file:
             full_text = file.read().strip()
             heldout_text.append({"document": filename, "full_text": full_text})
@@ -267,3 +284,5 @@ def build_cardio_db():
 
 
 build_cardio_db()
+
+# print_unique_anonymization()

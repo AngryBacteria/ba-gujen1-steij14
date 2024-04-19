@@ -56,7 +56,7 @@ def parse_training_config():
     parser.add_argument(
         "--config",
         type=str,
-        default="research/training/configs/base.json",
+        default="research/training/configs/clm_base.json",
         required=False,
         help="Path to the configuration file.",
     )

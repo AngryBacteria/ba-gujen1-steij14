@@ -8,3 +8,6 @@ wandb
 peft
 pydantic
 galore-torch
+
+scikit-learn
+evaluate
