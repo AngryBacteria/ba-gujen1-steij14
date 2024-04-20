@@ -24,7 +24,7 @@ import evaluate
 id2label = {0: "NEGATIVE", 1: "POSITIVE"}
 label2id = {"NEGATIVE": 0, "POSITIVE": 1}
 NUM_LABELS = 2
-EPOCHS = 2
+EPOCHS = 5
 BATCH_SIZE = 64
 
 
@@ -78,8 +78,8 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=test_dataset,
-    eval_dataset=test_dataset,
+    train_dataset=tokenized_train_dataset,
+    eval_dataset=tokenized_test_dataset,
     tokenizer=tokenizer,
     data_collator=data_collator,
     compute_metrics=compute_metrics,
