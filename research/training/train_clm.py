@@ -1,15 +1,12 @@
 import os
 import setproctitle
 
-from research.training.utils.utils_config_parser import parse_training_config
+from research.training.utils.utils_config import parse_training_config
 
 config = parse_training_config()
 # Setup gpu environment (needs to happen before importing huggingface library)
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{config.general.gpu}"
-os.environ["TOKENIZERS_PARALLELISM"] = (
-    "false"  # https://github.com/huggingface/transformers/issues/5486
-)
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 import torch
