@@ -83,7 +83,7 @@ trainer = Trainer(
     tokenizer=tokenizer,
     data_collator=data_collator,
     compute_metrics=compute_metrics,
-    custom_callbacks=[GPUMemoryUsageCallback(0, True)],
+    callbacks=[GPUMemoryUsageCallback(0, True)],
 )
 
 trainer.train()
