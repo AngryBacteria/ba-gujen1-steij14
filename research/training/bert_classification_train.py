@@ -3,6 +3,8 @@ import os
 import setproctitle
 
 from research.training.utils.custom_callbacks import GPUMemoryUsageCallback
+from research.training.utils.printing_utils import print_welcome_message
+from research.training.utils.utils_gpu import print_gpu_support
 
 GPU = 0
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -26,10 +28,15 @@ id2label = {0: "NEGATIVE", 1: "POSITIVE"}
 label2id = {"NEGATIVE": 0, "POSITIVE": 1}
 NUM_LABELS = 2
 EPOCHS = 5
-BATCH_SIZE = 64
+BATCH_SIZE = 8
+LOGGING_STEPS = 16
 DEBUG = True
 WANDB = False
 RUN_NAME = ""
+SAVE_MODEL = False
+
+print_welcome_message()
+print_gpu_support(f"{GPU}")
 
 
 def preprocess_function(examples):
@@ -71,7 +78,7 @@ def compute_metrics(eval_pred: EvalPrediction):
 print(f"{30 * '='} Start Training {30 * '='}")
 training_args = TrainingArguments(
     optim="adamw_torch_fused",
-    output_dir="my_awesome_model",
+    output_dir="bert_classification_model",
     learning_rate=2e-5,
     per_device_train_batch_size=BATCH_SIZE,
     per_device_eval_batch_size=BATCH_SIZE,
@@ -80,7 +87,7 @@ training_args = TrainingArguments(
     evaluation_strategy="epoch",
     report_to=["none"],
     logging_strategy="steps",
-    logging_steps=16,
+    logging_steps=LOGGING_STEPS,
 )
 
 if DEBUG:  # setup logging and debugging
@@ -107,3 +114,6 @@ trainer = Trainer(
 )
 
 trainer.train()
+
+if SAVE_MODEL:
+    trainer.save_model("bert_classification_model")

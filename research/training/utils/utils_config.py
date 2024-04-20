@@ -29,7 +29,6 @@ class TrainerConfigCLM(BaseModel):
     gradient_checkpointing: bool
     use_reentrant: bool
     mixed_precision: bool
-    eval_steps: int
 
 
 class GeneralConfigCLM(BaseModel):
@@ -39,6 +38,7 @@ class GeneralConfigCLM(BaseModel):
     run_name: Optional[str] = ""
     gpu: int
     save_model: bool
+    logging_steps: int
 
 
 class TrainConfigCLM(BaseModel):

@@ -5,13 +5,15 @@ import setproctitle
 import torch
 from pynvml import NVMLError
 
+from research.training.utils.printing_utils import print_with_heading
 
-def check_gpu_support(gpu_id: str):
+
+def print_gpu_support(gpu_id: str):
     setproctitle.setproctitle("gujen1 - ba-mistralai - testing.py")
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
 
-    print(f"{30 * '='} GPU Information {30 * '='}")
+    print_with_heading("GPU Information")
     print(f"Is CUDA available: {torch.cuda.is_available()}")
     print(f"Number of GPUs: {torch.cuda.device_count()}")
 
@@ -25,7 +27,7 @@ def check_gpu_support(gpu_id: str):
     print(f"Memory allocated: {memory_allocated / 1e6} MB")
     print(f"Memory reserved: {memory_reserved / 1e6} MB")
     print(f"Total memory: {total_memory / 1e6} MB")
-    print(f"{47 * '='}")
+    print_with_heading()
 
 
 def get_gpu_memory_usage(gpu_id: int) -> tuple[float, float]:

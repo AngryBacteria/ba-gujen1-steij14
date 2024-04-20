@@ -1,7 +1,9 @@
 import os
 import setproctitle
 
+from research.training.utils.printing_utils import print_welcome_message
 from research.training.utils.utils_config import parse_clm_config
+from research.training.utils.utils_gpu import print_gpu_support
 
 config = parse_clm_config()
 # Setup gpu environment (needs to happen before importing huggingface library)
@@ -28,6 +30,9 @@ from transformers import (
     MistralForCausalLM,
 )
 from transformers.training_args import OptimizerNames
+
+print_welcome_message()
+print_gpu_support(f"{config.general.gpu}")
 
 # MODEL
 if config.model.lower_precision:
@@ -140,12 +145,13 @@ print(
     f"{30 * '='}"
 )
 training_args = TrainingArguments(
-    output_dir="my_awesome_new_model",
+    output_dir="mistral_prompt_instructed",
     learning_rate=config.trainer.learning_rate,
     num_train_epochs=config.trainer.epochs,
     report_to=["none"],
     logging_strategy="steps",
     logging_steps=1,
+    evaluation_strategy="epoch",
     lr_scheduler_type="cosine",  # axolotl does this
     # optimizations
     per_device_train_batch_size=config.trainer.batch_size,
@@ -157,12 +163,6 @@ training_args = TrainingArguments(
     },  # https://github.com/huggingface/transformers/issues/26969
     optim=config.trainer.optimizer,
 )
-
-if config.trainer.eval_steps > 0:
-    training_args.evaluation_strategy = "steps"
-    training_args.eval_steps = config.trainer.eval_steps
-else:
-    training_args.evaluation_strategy = "epoch"
 
 if config.model.galore:  # setup GaLore
     print(f"{30 * '='} Setup GaLore [rank 1024, proj_gap 200, scale 2] {30 * '='}")
@@ -203,7 +203,7 @@ trainer = Trainer(
 )
 trainer.train()
 if config.general.save_model:
-    trainer.save_model()
+    trainer.save_model("mistral_prompt_instructed")
 
 # cleanup
 wandb.finish()
