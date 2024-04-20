@@ -48,7 +48,7 @@ class TrainConfigCLM(BaseModel):
     trainer: TrainerConfigCLM
 
 
-def parse_training_config():
+def parse_clm_config():
     # Parse arguments (config file location)
     parser = argparse.ArgumentParser(
         description="Run the training script with a specified config file."
@@ -67,11 +67,11 @@ def parse_training_config():
         config_json = json.loads(file.read())
         config = TrainConfigCLM(**config_json)
 
-    config = normalize_config(config)
+    config = normalize_clm_config(config)
     return config
 
 
-def normalize_config(config: TrainConfigCLM):
+def normalize_clm_config(config: TrainConfigCLM):
     if config.model.qlora and not config.model.lora:
         raise ValueError("QLORA can only be used in combination with LORA.")
     if config.model.galore and (config.model.lora or config.model.qlora):

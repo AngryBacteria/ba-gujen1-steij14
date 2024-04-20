@@ -1,9 +1,9 @@
 import os
 import setproctitle
 
-from research.training.utils.utils_config import parse_training_config
+from research.training.utils.utils_config import parse_clm_config
 
-config = parse_training_config()
+config = parse_clm_config()
 # Setup gpu environment (needs to happen before importing huggingface library)
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{config.general.gpu}"
@@ -52,8 +52,6 @@ if config.model.qlora and config.model.lora:
     )
     model = prepare_model_for_kbit_training(
         model,
-        use_gradient_checkpointing=config.trainer.gradient_checkpointing,
-        gradient_checkpointing_kwargs={"use_reentrant": config.trainer.use_reentrant},
     )
 else:
     print(f"{30 * '='} Load model [{MODEL_PRECISION}] {30 * '='}")
@@ -171,13 +169,6 @@ if config.model.galore:  # setup GaLore
     training_args.optim = OptimizerNames.GALORE_ADAMW
     training_args.optim_target_modules = (["attn", "mlp"],)
     training_args.optim_args = ("rank=1024, update_proj_gap=200, scale=2",)
-
-if (
-    config.trainer.gradient_checkpointing
-):  # re-enable gradient checkpointing just to be sure :)
-    model.gradient_checkpointing_enable(
-        gradient_checkpointing_kwargs={"use_reentrant": config.trainer.use_reentrant}
-    )
 
 if config.general.debug:  # setup logging and debugging
     training_args.include_tokens_per_second = True
