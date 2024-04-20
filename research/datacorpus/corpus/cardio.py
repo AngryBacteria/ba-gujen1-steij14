@@ -8,13 +8,12 @@ from research.logger import logger
 
 # DATA SOURCE: https://heidata.uni-heidelberg.de/dataset.xhtml?persistentId=doi:10.11588/data/AFYQDY
 
-TSV_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\tsv"
-TXT_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt"
-TXT_HELDOUT_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_heldout"
+TSV_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\tsv"
+TXT_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\txt"
+TXT_HELDOUT_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_heldout"
 
 
-# TODO: unify anonymization (PATIENT, etc...) and labels / types
-# TODO: remove the pseudo text parts <B-PER> etc...
+# TODO: unify anonymization (PATIENT, etc...)
 def clean_cardio_string(text: str) -> str:
     cleaned_text = re.sub(r"<\[Pseudo] ([^>]*)>", r"\1", text)
     return cleaned_text.strip()
@@ -26,9 +25,9 @@ def print_unique_anonymization():
     unique_matches = set()
     for tsv_file in tsv_files:
         with open(
-                os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
+            os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
         ) as file:
-            pattern = r'[BI]-[A-Z]{3,}'
+            pattern = r"[BI]-[A-Z]{3,}"
             matches = re.findall(pattern, file.read())
             unique_matches.update(matches)
 
@@ -37,51 +36,13 @@ def print_unique_anonymization():
         print(match)
 
 
-# TODO: also parse the duration, form, frequency, strength
-def transform_cardio_annotation(annotation: dict):
-    """Transform annotations into unified format."""
-    drugs = []
-    # get drugs and active ingredients
-    for index, tag in enumerate(annotation["ner_tags"]):
-        if tag == "DRUG" or tag == "ACTIVEING":
-            offsets = annotation["offsets"][index].split("-")
-            drugs.append(
-                {
-                    "type": "MEDICATION",
-                    "origin": annotation["text"].strip(),
-                    "id": annotation["ids"][index].strip(),
-                    "text": annotation["words"][index].strip(),
-                    "in_narrative": annotation["in_narrative"][index],
-                    "start": int(offsets[0]),
-                    "end": int(offsets[1]),
-                }
-            )
-
-    if len(drugs) == 0:
-        return {
-            "id": [],
-            "text": [],
-            "origin": annotation["text"].strip(),
-            "type": "None",
-            "end": [],
-            "start": [],
-        }
+def get_normalized_ner_tag(ner_tag: str):
+    if ner_tag == "B-DRUG" or ner_tag == "B-ACTIVEING":
+        return "B-MED"
+    elif ner_tag == "I-DRUG" or ner_tag == "I-ACTIVEING":
+        return "I-MED"
     else:
-        df = pd.DataFrame(drugs)
-        grouped_df = (
-            df.groupby(["type", "origin"])
-            .agg(
-                {
-                    "id": lambda x: x.tolist(),
-                    "text": lambda x: x.tolist(),
-                    "in_narrative": lambda x: x.tolist(),
-                    "start": lambda x: x.tolist(),
-                    "end": lambda x: x.tolist(),
-                }
-            )
-            .reset_index()
-        )
-        return grouped_df.to_dict(orient="records")[0]
+        return ner_tag.strip()
 
 
 def transform_ner_cardio_annotations(annotations: list[str]) -> list[str]:
@@ -98,10 +59,10 @@ def transform_ner_cardio_annotations(annotations: list[str]) -> list[str]:
             transformed.append("O")
         elif anno == last_seen:
             # If same type, it's inside a sequence
-            transformed.append(f"I-{anno}")
+            transformed.append(get_normalized_ner_tag(f"I-{anno}"))
         else:
             # If different type, it's the beginning of a sequence
-            transformed.append(f"B-{anno}")
+            transformed.append(get_normalized_ner_tag(f"B-{anno}"))
             last_seen = anno
 
     return transformed
@@ -118,7 +79,7 @@ def parse_ner_annotations():
     for tsv_file in tsv_files:
         annotations_file_ner = []
         with open(
-                os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
+            os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
         ) as file:
             for line in file:
                 line = line.strip()
@@ -166,6 +127,53 @@ def parse_ner_annotations():
     return annotations_ner
 
 
+# TODO: also parse the duration, form, frequency, strength
+def transform_cardio_annotation(annotation: dict):
+    """Transform annotations into unified format."""
+    drugs = []
+    # get drugs and active ingredients
+    for index, tag in enumerate(annotation["ner_tags"]):
+        if tag == "DRUG" or tag == "ACTIVEING":
+            offsets = annotation["offsets"][index].split("-")
+            drugs.append(
+                {
+                    "type": "MEDICATION",
+                    "origin": clean_cardio_string(annotation["text"]),
+                    "id": annotation["ids"][index].strip(),
+                    "text": annotation["words"][index].strip(),
+                    "in_narrative": annotation["in_narrative"][index],
+                    "start": int(offsets[0]),
+                    "end": int(offsets[1]),
+                }
+            )
+
+    if len(drugs) == 0:
+        return {
+            "id": [],
+            "text": [],
+            "origin": clean_cardio_string(annotation["text"]),
+            "type": "None",
+            "end": [],
+            "start": [],
+        }
+    else:
+        df = pd.DataFrame(drugs)
+        grouped_df = (
+            df.groupby(["type", "origin"])
+            .agg(
+                {
+                    "id": lambda x: x.tolist(),
+                    "text": lambda x: x.tolist(),
+                    "in_narrative": lambda x: x.tolist(),
+                    "start": lambda x: x.tolist(),
+                    "end": lambda x: x.tolist(),
+                }
+            )
+            .reset_index()
+        )
+        return grouped_df.to_dict(orient="records")[0]
+
+
 def parse_annotations():
     # get all filenames in the folder TSV_FOLDER_PATH
     tsv_files = [file for file in os.listdir(TSV_FOLDER_PATH) if file.endswith(".tsv")]
@@ -182,7 +190,7 @@ def parse_annotations():
     for tsv_file in tsv_files:
         annotations_file = []
         with open(
-                os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
+            os.path.join(TSV_FOLDER_PATH, tsv_file), "r", encoding="utf-8"
         ) as file:
             for line in file:
                 line = line.strip()
@@ -237,7 +245,7 @@ def parse_annotations():
         # read the txt file to get the full text
         txt_file = tsv_file.replace(".tsv", ".txt")
         with open(
-                os.path.join(TXT_FOLDER_PATH, txt_file), "r", encoding="utf-8"
+            os.path.join(TXT_FOLDER_PATH, txt_file), "r", encoding="utf-8"
         ) as file:
             full_text = file.read().strip()
 
@@ -246,7 +254,7 @@ def parse_annotations():
             {
                 "document": tsv_file,
                 "annotations": annotations_file,
-                "full_text": full_text,
+                "full_text": clean_cardio_string(full_text),
             }
         )
 
@@ -265,10 +273,12 @@ def parse_cardio_heldout_text():
     heldout_text = []
     for filename in txt_files:
         with open(
-                os.path.join(TXT_HELDOUT_FOLDER_PATH, filename), "r", encoding="utf-8"
+            os.path.join(TXT_HELDOUT_FOLDER_PATH, filename), "r", encoding="utf-8"
         ) as file:
             full_text = file.read().strip()
-            heldout_text.append({"document": filename, "full_text": full_text})
+            heldout_text.append(
+                {"document": filename, "full_text": clean_cardio_string(full_text)}
+            )
 
     logger.debug(f"Processed {len(heldout_text)} heldout texts")
     return heldout_text

@@ -16,7 +16,7 @@ fine_annotations_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fin
 fine_annotations_ner_folder = "Bachelorarbeit\\datensets\\corpus\\ggponc2\\conll\\fine"
 
 
-# TODO: unify anonymization (PATIENT, etc...) and labels / types
+# TODO: unify anonymization (PATIENT, etc...)
 def load_json(filename) -> dict:
     """Load json file."""
     with open(filename, "r", encoding="utf-8") as file:
@@ -24,6 +24,17 @@ def load_json(filename) -> dict:
 
     logger.debug(f"Parsed {len(data)} GGPONC json annotations from file {filename}")
     return data
+
+
+def get_normalized_entity_type(entity_type: str) -> str:
+    if entity_type == "Diagnosis_or_Pathology":
+        return "DIAGNOSIS"
+    elif entity_type == "Clinical_Drug":
+        return "MEDICATION"
+    elif entity_type == "Therapeutic":
+        return " TREATMENT"
+    else:
+        return entity_type.strip()
 
 
 def transform_ggponc_annotations(data):
@@ -46,7 +57,7 @@ def transform_ggponc_annotations(data):
                 if entity_start >= passage_start and entity_end <= passage_end:
                     passage_annotations.append(
                         {
-                            "type": entity["type"].strip(),
+                            "type": get_normalized_entity_type(entity["type"]),
                             "origin": passage["text"].strip(),
                             "text": entity["text"][0].strip(),
                             "start": entity["offsets"][0][0],
@@ -92,7 +103,6 @@ def transform_ggponc_annotations(data):
     return output
 
 
-# TODO: refactor data to resemble bronco
 def get_ggponc_json(refactor=True):
     """Load the GGPONC json data from the fine annotations folder and return the short and long documents."""
     # Load data from both files
@@ -109,7 +119,28 @@ def get_ggponc_json(refactor=True):
     return data_short, data_long
 
 
-def get_ggponc_ner():
+def get_normalized_ner_tags(ner_tags: list[str]):
+    new_tags = []
+    for tag in ner_tags:
+        if tag == "B-Diagnosis_or_Pathology":
+            new_tags.append("B-DIAG")
+        elif tag == "I-Diagnosis_or_Pathology":
+            new_tags.append("I-DIAG")
+        elif tag == "B-Therapeutic":
+            new_tags.append("B-TREAT")
+        elif tag == "I-Therapeutic":
+            new_tags.append("I-TREAT")
+        elif tag == "B-Clinical_Drug":
+            new_tags.append("B-MED")
+        elif tag == "I-Clinical_Drug":
+            new_tags.append("I-MED")
+        else:
+            new_tags.append(tag.strip())
+
+    return new_tags
+
+
+def get_ggponc_ner(refactor=True):
     """Load the GGPOC NER data from the fine annotations folder and return the short and long documents."""
     # get and combine short data
     data_short_dev = parse_ner_dataset(
@@ -122,6 +153,9 @@ def get_ggponc_ner():
         os.path.join(fine_annotations_ner_folder, "short", "train_fine_short.conll")
     )
     data_short_ner = data_short_dev + data_short_test + data_short_train
+    if refactor:
+        for entry in data_short_ner:
+            entry["ner_tags"] = get_normalized_ner_tags(entry["ner_tags"])
 
     # get and combine long data
     data_long_dev = parse_ner_dataset(
@@ -134,6 +168,9 @@ def get_ggponc_ner():
         os.path.join(fine_annotations_ner_folder, "long", "train_fine_long.conll")
     )
     data_long_ner = data_long_dev + data_long_test + data_long_train
+    if refactor:
+        for entry in data_long_ner:
+            entry["ner_tags"] = get_normalized_ner_tags(entry["ner_tags"])
 
     return data_short_ner, data_long_ner
 

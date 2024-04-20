@@ -8,8 +8,14 @@ setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 import numpy as np
 from datasets import load_dataset
-from transformers import AutoTokenizer, DataCollatorWithPadding, Trainer, \
-    TrainingArguments, EvalPrediction, AutoModelForSequenceClassification
+from transformers import (
+    AutoTokenizer,
+    DataCollatorWithPadding,
+    Trainer,
+    TrainingArguments,
+    EvalPrediction,
+    AutoModelForSequenceClassification,
+)
 import evaluate
 
 
@@ -30,7 +36,10 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 id2label = {0: "NEGATIVE", 1: "POSITIVE"}
 label2id = {"NEGATIVE": 0, "POSITIVE": 1}
 model = AutoModelForSequenceClassification.from_pretrained(
-    "distilbert/distilbert-base-uncased", num_labels=2, id2label=id2label, label2id=label2id
+    "distilbert/distilbert-base-uncased",
+    num_labels=2,
+    id2label=id2label,
+    label2id=label2id,
 )
 
 # Load metric
