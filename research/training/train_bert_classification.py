@@ -18,6 +18,15 @@ from transformers import (
 )
 import evaluate
 
+# Config
+id2label = {0: "NEGATIVE", 1: "POSITIVE"}
+label2id = {"NEGATIVE": 0, "POSITIVE": 1}
+NUM_LABELS = 2
+EPOCHS = 2
+WANDB = False
+BATCH_SIZE = 64
+LOGGING_STEPS = 4
+
 
 def preprocess_function(examples):
     return tokenizer(examples["text"], truncation=True)
@@ -33,11 +42,9 @@ tokenized_imdb = imdb.map(preprocess_function, batched=True)
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
 # Load model
-id2label = {0: "NEGATIVE", 1: "POSITIVE"}
-label2id = {"NEGATIVE": 0, "POSITIVE": 1}
 model = AutoModelForSequenceClassification.from_pretrained(
     "distilbert/distilbert-base-uncased",
-    num_labels=2,
+    num_labels=NUM_LABELS,
     id2label=id2label,
     label2id=label2id,
 )
