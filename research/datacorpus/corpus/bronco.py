@@ -13,6 +13,7 @@ path_annotation_conll = "Bachelorarbeit\\datensets\\corpus\\bronco\\conllIOBTags
 
 
 # TODO: unify anonymization (PATIENT, etc...) and labels / types
+# TODO: duplication issue Aldactone 50 mg
 def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -> str:
     """
     Find the sentence in which the given positions are located.

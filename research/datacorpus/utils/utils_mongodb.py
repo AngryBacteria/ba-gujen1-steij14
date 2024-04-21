@@ -33,6 +33,14 @@ def upload_data_to_mongodb(
     )
 
 
+def get_collection(database_name: str, collection_name: str):
+    """Get a collection from MongoDB."""
+    client = MongoClient(os.getenv("MONGO_URL"))
+    db = client.get_database(database_name)
+    collection = db.get_collection(collection_name)
+    return collection
+
+
 def rename_dict_keys(data_list, old_key, new_key):
     """Rename a key in a list of dictionaries."""
     for item in data_list:
