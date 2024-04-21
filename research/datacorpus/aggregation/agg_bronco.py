@@ -1,4 +1,4 @@
-from research.datacorpus.aggregation.aggregate import (
+from research.datacorpus.aggregation.prompts import (
     MEDICATION_PROMPT,
     DIAGNOSIS_PROMPT,
     TREATMENT_PROMPT,

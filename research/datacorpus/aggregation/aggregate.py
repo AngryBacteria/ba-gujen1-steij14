@@ -1,48 +1,24 @@
 # TODO: aggregation of all corpus datasets
-
-MEDICATION_PROMPT = """Extrahiere aus dem nachfolgenden Satz alle Medikamente und Wirkstoffe:
-# Satz:
-<<CONTEXT>>
-
-# Medikamente und Wirkstoffe:
-<<OUTPUT>>
-"""
-MEDICATION_NORMALIZATION_PROMPT = """Weise diesem Medikament den ATC-Code zu:
-# Medikament:
-<<CONTEXT>>
-
-# ATC-Code:
-<<OUTPUT>>
-"""
+from research.datacorpus.aggregation.agg_bronco import (
+    get_all_simple_bronco_prompts,
+    get_all_bronco_normalization_prompts,
+)
+from research.datacorpus.aggregation.agg_ggponc import get_all_simple_ggponc_prompts
+import pandas as pd
 
 
-DIAGNOSIS_PROMPT = """Extrahiere aus dem nachfolgenden Satz alle Diagnosen und Symptome:
-# Satz:
-<<CONTEXT>>
+def save_all_prompts(normalization=True):
+    prompts = []
+    ggponc_prompts = get_all_simple_ggponc_prompts()
+    simple_bronco_prompts = get_all_simple_bronco_prompts()
+    if normalization:
+        bronco_normalization_prompts = get_all_bronco_normalization_prompts()
+    else:
+        bronco_normalization_prompts = []
 
-# Diagnosen und Symptome:
-<<OUTPUT>>
-"""
-DIAGNOSIS_NORMALIZATION_PROMPT = """Weise dieser Krankheit oder diesem Symptom den ICD10-GM Code zu:
-# Diagnose oder Symptom:
-<<CONTEXT>>
+    prompts.extend(ggponc_prompts)
+    prompts.extend(simple_bronco_prompts)
+    prompts.extend(bronco_normalization_prompts)
 
-# ICD10-GM Code:
-<<OUTPUT>>
-"""
-
-
-TREATMENT_PROMPT = """Extrahiere aus dem nachfolgenden Satz alle medizinischen Behandlungen:
-# Satz:
-<<CONTEXT>>
-
-# Behandlungen:
-<<OUTPUT>>
-"""
-TREATMENT_NORMALIZATION_PROMPT = """Weise dieser Behandlung den OPS-2017 Code zu:
-# Behandlung:
-<<CONTEXT>>
-
-# ATC-Code:
-<<OUTPUT>>
-"""
+    prompts_df = pd.DataFrame(prompts)
+    prompts_df.to_csv("prompts.csv", index=False)
