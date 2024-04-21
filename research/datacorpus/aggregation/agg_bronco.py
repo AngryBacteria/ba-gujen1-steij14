@@ -11,11 +11,20 @@ from research.datacorpus.utils.utils_mongodb import get_collection
 bronco_collection = get_collection("corpus", "bronco")
 
 
-def get_bronco_prompts(document_type, simple_prompt, normalization_prompt):
+def get_bronco_prompts(
+    document_type: str,
+    simple_prompt: str,
+    normalization_prompt: str,
+    ignore_short: int,
+) -> tuple[list[str], list[str]]:
+
     simple_prompts = []
     normalization_prompts = []
     documents = bronco_collection.find({"type": document_type})
     for document in documents:
+        if ignore_short > 0 and len(document["origin"]) < ignore_short:
+            continue
+
         texts = "|".join(document["text"])
         simple_prompt_str = simple_prompt.replace("<<CONTEXT>>", document["origin"])
         simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", texts)
@@ -35,16 +44,16 @@ def get_bronco_prompts(document_type, simple_prompt, normalization_prompt):
     return simple_prompts, normalization_prompts
 
 
-def get_all_simple_bronco_prompts():
+def get_all_simple_bronco_prompts(ignore_short: int) -> list[str]:
     output = []
     medication_prompts, medication_norm_prompts = get_bronco_prompts(
-        "MEDICATION", MEDICATION_PROMPT, MEDICATION_NORMALIZATION_PROMPT
+        "MEDICATION", MEDICATION_PROMPT, MEDICATION_NORMALIZATION_PROMPT, ignore_short
     )
     diagnosis_prompts, diagnosis_norm_prompts = get_bronco_prompts(
-        "DIAGNOSIS", DIAGNOSIS_PROMPT, DIAGNOSIS_NORMALIZATION_PROMPT
+        "DIAGNOSIS", DIAGNOSIS_PROMPT, DIAGNOSIS_NORMALIZATION_PROMPT, ignore_short
     )
     treatment_prompts, treatment_norm_prompts = get_bronco_prompts(
-        "TREATMENT", TREATMENT_PROMPT, TREATMENT_NORMALIZATION_PROMPT
+        "TREATMENT", TREATMENT_PROMPT, TREATMENT_NORMALIZATION_PROMPT, ignore_short
     )
 
     output.extend(medication_prompts)
@@ -53,15 +62,15 @@ def get_all_simple_bronco_prompts():
     return output
 
 
-def get_all_bronco_normalization_prompts():
+def get_all_bronco_normalization_prompts(ignore_short: int) -> list[str]:
     medication_prompts, medication_norm_prompts = get_bronco_prompts(
-        "MEDICATION", MEDICATION_PROMPT, MEDICATION_NORMALIZATION_PROMPT
+        "MEDICATION", MEDICATION_PROMPT, MEDICATION_NORMALIZATION_PROMPT, ignore_short
     )
     diagnosis_prompts, diagnosis_norm_prompts = get_bronco_prompts(
-        "DIAGNOSIS", DIAGNOSIS_PROMPT, DIAGNOSIS_NORMALIZATION_PROMPT
+        "DIAGNOSIS", DIAGNOSIS_PROMPT, DIAGNOSIS_NORMALIZATION_PROMPT, ignore_short
     )
     treatment_prompts, treatment_norm_prompts = get_bronco_prompts(
-        "TREATMENT", TREATMENT_PROMPT, TREATMENT_NORMALIZATION_PROMPT
+        "TREATMENT", TREATMENT_PROMPT, TREATMENT_NORMALIZATION_PROMPT, ignore_short
     )
 
     output = []

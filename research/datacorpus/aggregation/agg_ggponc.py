@@ -9,12 +9,16 @@ from research.datacorpus.utils.utils_mongodb import get_collection
 bronco_collection = get_collection("corpus", "ggponc_short")
 
 
-def get_ggponc_prompts(document_type, simple_prompt):
+def get_ggponc_prompts(
+    document_type: str, simple_prompt: str, ignore_short: int
+) -> list[str]:
     simple_prompts = []
     documents = bronco_collection.find({"annotations.type": document_type})
     for document in documents:
         for anno in document["annotations"]:
             if anno["type"] != document_type:
+                continue
+            if ignore_short > 0 and len(anno["origin"]) < ignore_short:
                 continue
 
             texts = "|".join(anno["text"])
@@ -25,11 +29,13 @@ def get_ggponc_prompts(document_type, simple_prompt):
     return simple_prompts
 
 
-def get_all_simple_ggponc_prompts():
+def get_all_simple_ggponc_prompts(ignore_short: int) -> list[str]:
     output = []
-    medication_prompts = get_ggponc_prompts("MEDICATION", MEDICATION_PROMPT)
-    diagnosis_prompts = get_ggponc_prompts("DIAGNOSIS", DIAGNOSIS_PROMPT)
-    treatment_prompts = get_ggponc_prompts("TREATMENT", TREATMENT_PROMPT)
+    medication_prompts = get_ggponc_prompts(
+        "MEDICATION", MEDICATION_PROMPT, ignore_short
+    )
+    diagnosis_prompts = get_ggponc_prompts("DIAGNOSIS", DIAGNOSIS_PROMPT, ignore_short)
+    treatment_prompts = get_ggponc_prompts("TREATMENT", TREATMENT_PROMPT, ignore_short)
 
     output.extend(medication_prompts)
     output.extend(diagnosis_prompts)

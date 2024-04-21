@@ -9,22 +9,25 @@ from research.datacorpus.aggregation.agg_ggponc import get_all_simple_ggponc_pro
 import pandas as pd
 
 
-def save_all_prompts(bronco=True, ggponc=True, normalization=True):
+def save_all_prompts(bronco=True, ggponc=True, normalization=True, ignore_short=10):
     prompts = []
     if ggponc:
-        ggponc_prompts = get_all_simple_ggponc_prompts()
+        ggponc_prompts = get_all_simple_ggponc_prompts(ignore_short)
         prompts.extend(ggponc_prompts)
     if bronco:
-        simple_bronco_prompts = get_all_simple_bronco_prompts()
+        simple_bronco_prompts = get_all_simple_bronco_prompts(ignore_short)
         prompts.extend(simple_bronco_prompts)
         if normalization:
-            bronco_normalization_prompts = get_all_bronco_normalization_prompts()
+            bronco_normalization_prompts = get_all_bronco_normalization_prompts(
+                ignore_short
+            )
             prompts.extend(bronco_normalization_prompts)
 
-    prompts_df = pd.DataFrame(prompts)
-    prompts_df.to_csv("prompts.csv", index=False, header=["text"])
+    prompts_df = pd.DataFrame(prompts, columns=["text"])
+    prompts_df.to_csv("prompts.csv", index=False)
 
 
+save_all_prompts()
 dataset = load_dataset("csv", data_files={"data": "prompts.csv"})[
     "data"
 ].train_test_split(test_size=0.1, shuffle=True, seed=42)
