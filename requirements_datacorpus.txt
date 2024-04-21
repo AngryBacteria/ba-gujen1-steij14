@@ -8,3 +8,4 @@ markdownify==0.11.6
 tiktoken
 datasets=2.19.0
 openpyxl
+plotly

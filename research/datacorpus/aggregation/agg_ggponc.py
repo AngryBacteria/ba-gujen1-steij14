@@ -6,14 +6,14 @@ from research.datacorpus.aggregation.prompts import (
 )
 from research.datacorpus.utils.utils_mongodb import get_collection
 
-bronco_collection = get_collection("corpus", "ggponc_short")
+ggonc_collection = get_collection("corpus", "ggponc_short")
 
 
 def get_ggponc_prompts(
     document_type: str, simple_prompt: str, ignore_short: int
 ) -> list[str]:
     simple_prompts = []
-    documents = bronco_collection.find({"annotations.type": document_type})
+    documents = ggonc_collection.find({"annotations.type": document_type})
     for document in documents:
         for anno in document["annotations"]:
             if anno["type"] != document_type:
