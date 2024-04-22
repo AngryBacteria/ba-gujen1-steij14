@@ -1,15 +1,13 @@
 import os.path
 
-import pandas as pd
-
 from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 # DATA SOURCE: https://www2.informatik.hu-berlin.de/~leser/bronco/index.html
 
-path_text = "Bachelorarbeit\\datensets\\corpus\\bronco\\textFiles"
-path_annotation_brat = "Bachelorarbeit\\datensets\\corpus\\bronco\\bratFiles"
-path_annotation_conll = "Bachelorarbeit\\datensets\\corpus\\bronco\\conllIOBTags"
+path_text = "datensets\\corpus\\bronco\\textFiles"
+path_annotation_brat = "datensets\\corpus\\bronco\\bratFiles"
+path_annotation_conll = "datensets\\corpus\\bronco\\conllIOBTags"
 
 
 # TODO: unify anonymization (PATIENT, etc...) and labels / types
@@ -42,6 +40,7 @@ def find_sentence_by_word_position(content: str, start_pos: int, end_pos: int) -
 
     # Extract and return the sentence
     sentence = content[start_of_sentence:end_of_sentence]
+
     return sentence.strip()
 
 
@@ -167,42 +166,44 @@ def parse_annotation_data_general(file_number: int) -> list[dict]:
         )
 
     # group the data by type and origin. Every sentence can have multiple annotations of the same type
-    df = pd.DataFrame(output)
-    grouped_df = (
-        df.groupby(["type", "origin"])
-        .agg(
-            {
-                "id": lambda x: x.tolist(),
-                "text": lambda x: x.tolist(),
-                "normalizations": lambda x: x.tolist(),
-                "attributes": lambda x: x.tolist(),
-                "start": lambda x: x.tolist(),
-                "end": lambda x: x.tolist(),
+    grouped_data = {}
+    for item in output:
+        key = (item["type"], item["origin"])
+        if key not in grouped_data:
+            grouped_data[key] = {
+                "type": item["type"],
+                "origin": item["origin"],
+                "id": [],
+                "text": [],
+                "normalizations": [],
+                "attributes": [],
+                "start": [],
+                "end": [],
             }
-        )
-        .reset_index()
-    )
+        grouped_data[key]["id"].append(item["id"])
+        grouped_data[key]["text"].append(item["text"])
+        grouped_data[key]["normalizations"].append(item["normalizations"])
+        grouped_data[key]["attributes"].append(item["attributes"])
+        grouped_data[key]["start"].append(item["start"])
+        grouped_data[key]["end"].append(item["end"])
 
-    # get sentences without annotations
     sentences = sentences_text.split("\n")
-    for sentence in sentences:
-        if sentence.strip() not in grouped_df["origin"].tolist():
-            new_rows = [
-                {
-                    "type": "None",
-                    "origin": sentence.strip(),
-                    "id": [],
-                    "text": [],
-                    "normalizations": [],
-                    "attributes": [],
-                    "start": [],
-                    "end": [],
-                }
-            ]
-            new_rows = pd.DataFrame(new_rows)
-            grouped_df = pd.concat([grouped_df, new_rows], ignore_index=True)
+    sentences = [sentence.strip() for sentence in sentences]
 
-    return grouped_df.to_dict(orient="records")
+    for sentence in sentences:
+        if sentence not in [item["origin"] for item in grouped_data.values()]:
+            grouped_data[("None", sentence)] = {
+                "type": "None",
+                "origin": sentence,
+                "id": [],
+                "text": [],
+                "normalizations": [],
+                "attributes": [],
+                "start": [],
+                "end": [],
+            }
+
+    return list(grouped_data.values())
 
 
 def parse_annotation_data_ner(file_number: int) -> list[dict[str, list]]:

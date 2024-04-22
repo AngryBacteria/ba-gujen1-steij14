@@ -54,9 +54,7 @@ if config.model.qlora and config.model.lora:
         quantization_config=_bnb_quantization_config,
         attn_implementation=config.model.attention_implementation,
     )
-    model = prepare_model_for_kbit_training(
-        model
-    )
+    model = prepare_model_for_kbit_training(model)
 else:
     print(f"{30 * '='} Load model [{MODEL_PRECISION}] {30 * '='}")
     model = MistralForCausalLM.from_pretrained(
@@ -165,6 +163,7 @@ training_args = TrainingArguments(
 
 if config.model.galore:  # setup GaLore
     from transformers.training_args import OptimizerNames
+
     print(f"{30 * '='} Setup GaLore [rank 1024, proj_gap 200, scale 2] {30 * '='}")
     training_args.optim = OptimizerNames.GALORE_ADAMW
     training_args.optim_target_modules = (["attn", "mlp"],)
@@ -208,6 +207,7 @@ if config.general.save_model:
 # cleanup
 if config.general.wandb_logging:
     import wandb
+
     wandb.finish()
 del model
 del trainer

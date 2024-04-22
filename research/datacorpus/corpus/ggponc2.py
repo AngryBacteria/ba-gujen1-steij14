@@ -12,8 +12,8 @@ from research.logger import logger
 
 # DATA SOURCE: https://www.leitlinienprogramm-onkologie.de/projekte/ggponc-deutsch
 
-fine_annotations_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fine"
-fine_annotations_ner_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\conll\\fine"
+fine_annotations_folder = "datensets\\corpus\\ggponc2\\json\\fine"
+fine_annotations_ner_folder = "datensets\\corpus\\ggponc2\\conll\\fine"
 
 
 # TODO: unify anonymization (PATIENT, etc...)
@@ -48,23 +48,21 @@ def transform_ggponc_annotations(data):
             passage_start = passage["offsets"][0][0]
             passage_end = passage["offsets"][0][1]
             passage_text += passage["text"].strip() + " "
-
             # for all related entities save annotations into passage_annotations
-            passage_annotations = []
-            for entity in document["entities"]:
-                entity_start = entity["offsets"][0][0]
-                entity_end = entity["offsets"][0][1]
-                if entity_start >= passage_start and entity_end <= passage_end:
-                    passage_annotations.append(
-                        {
-                            "type": get_normalized_entity_type(entity["type"]),
-                            "origin": passage["text"].strip(),
-                            "text": entity["text"][0].strip(),
-                            "start": entity["offsets"][0][0],
-                            "end": entity["offsets"][0][1],
-                        }
-                    )
-
+            passage_annotations = [
+                {
+                    "type": get_normalized_entity_type(entity["type"]),
+                    "origin": passage["text"].strip(),
+                    "text": entity["text"][0].strip(),
+                    "start": entity["offsets"][0][0],
+                    "end": entity["offsets"][0][1],
+                }
+                for entity in document["entities"]
+                if passage_start
+                <= entity["offsets"][0][0]
+                <= entity["offsets"][0][1]
+                <= passage_end
+            ]
             if len(passage_annotations) == 0:
                 annotations.append(
                     {
@@ -76,30 +74,29 @@ def transform_ggponc_annotations(data):
                     }
                 )
             else:
-                annotations.extend(passage_annotations)
+                grouped_annotations = {}
+                for annotation in passage_annotations:
+                    key = (annotation["type"], annotation["origin"])
+                    if key not in grouped_annotations:
+                        grouped_annotations[key] = {
+                            "type": annotation["type"],
+                            "origin": annotation["origin"],
+                            "text": [],
+                            "start": [],
+                            "end": [],
+                        }
+                    grouped_annotations[key]["text"].append(annotation["text"])
+                    grouped_annotations[key]["start"].append(annotation["start"])
+                    grouped_annotations[key]["end"].append(annotation["end"])
+                annotations.extend(list(grouped_annotations.values()))
 
-        # group annotations by type and origin. Takes a long time...
-        df = pd.DataFrame(annotations)
-        grouped_df = (
-            df.groupby(["type", "origin"])
-            .agg(
-                {
-                    "text": lambda x: x.tolist(),
-                    "start": lambda x: x.tolist(),
-                    "end": lambda x: x.tolist(),
-                }
-            )
-            .reset_index()
-        )
-        grouped_df = grouped_df.to_dict(orient="records")
         output.append(
             {
                 "document": document["document"],
-                "annotations": grouped_df,
+                "annotations": annotations,
                 "full_text": passage_text.strip(),
             }
         )
-
     return output
 
 

@@ -33,7 +33,10 @@ def save_all_prompts(bronco=True, ggponc=True, normalization=True, ignore_short=
 
 def count_training_tokens():
     from transformers import AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained("LeoLM/leo-mistral-hessianai-7b", use_fast=True)
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        "LeoLM/leo-mistral-hessianai-7b", use_fast=True
+    )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 

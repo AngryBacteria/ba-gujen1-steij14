@@ -27,12 +27,10 @@ def get_ggponc_prompts(
             if minimal_length > 0 and len(anno["origin"]) < minimal_length:
                 continue
 
-            if annotation_type == "None":
+            texts = "|".join(anno["text"])
+            if texts == "":
                 texts = "Keine vorhanden"
-            else:
-                texts = "|".join(anno["text"])
-                if texts == "":
-                    texts = "Keine vorhanden"
+
             simple_prompt_str = extraction_prompt.replace("<<CONTEXT>>", anno["origin"])
             simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", texts)
             prompts.append(simple_prompt_str.strip())
