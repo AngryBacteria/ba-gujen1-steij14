@@ -10,6 +10,7 @@ from research.datacorpus.utils.utils_mongodb import get_collection
 
 bronco_collection = get_collection("corpus", "bronco")
 
+# TODO: add attribute prompts
 
 def get_bronco_prompts(
     annotation_type: str,

@@ -1,5 +1,3 @@
-from typing import Set, List
-
 from research.datacorpus.aggregation.prompts import (
     MEDICATION_PROMPT,
     TREATMENT_PROMPT,
