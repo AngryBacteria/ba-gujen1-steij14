@@ -9,7 +9,7 @@
     "logging_steps": 16
   },
   "model": {
-    "id_model": "mistralai/Mistral-7B-Instruct-v0.2",
+    "id_model": "LeoLM/leo-mistral-hessianai-7b",
     "lower_precision": true,
     "attention_implementation": "sdpa",
     "lora": true,
