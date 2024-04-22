@@ -1,27 +1,31 @@
 # TODO: aggregation of all corpus datasets
 from datasets import load_dataset
 
-from research.datacorpus.aggregation.agg_bronco import (
-    get_all_simple_bronco_prompts,
-    get_all_bronco_normalization_prompts,
-)
-from research.datacorpus.aggregation.agg_ggponc import get_all_simple_ggponc_prompts
+from research.datacorpus.aggregation.agg_bronco import get_all_bronco_prompts
+from research.datacorpus.aggregation.agg_ggponc import get_all_ggponc_prompts
 import pandas as pd
 
 
 def save_all_prompts(bronco=True, ggponc=True, normalization=True, ignore_short=10):
     prompts = []
     if ggponc:
-        ggponc_prompts = get_all_simple_ggponc_prompts(ignore_short)
+        ggponc_prompts = get_all_ggponc_prompts(ignore_short)
         prompts.extend(ggponc_prompts)
     if bronco:
-        simple_bronco_prompts = get_all_simple_bronco_prompts(ignore_short)
-        prompts.extend(simple_bronco_prompts)
         if normalization:
-            bronco_normalization_prompts = get_all_bronco_normalization_prompts(
-                ignore_short
+            bronco_normalization_prompts = get_all_bronco_prompts(
+                ignore_short,
+                extraction=True,
+                normalization=True,
             )
             prompts.extend(bronco_normalization_prompts)
+        else:
+            simple_bronco_prompts = get_all_bronco_prompts(
+                ignore_short,
+                extraction=True,
+                normalization=False,
+            )
+            prompts.extend(simple_bronco_prompts)
 
     prompts_df = pd.DataFrame(prompts, columns=["text"])
     prompts_df.to_csv("prompts.csv", index=False)

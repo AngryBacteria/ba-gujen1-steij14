@@ -39,6 +39,6 @@ TREATMENT_NORMALIZATION_PROMPT = """Weise dieser Behandlung den OPS-2017 Code zu
 # Behandlung:
 <<CONTEXT>>
 
-# ATC-Code:
+# OPS-2017-Code:
 <<OUTPUT>>
 """

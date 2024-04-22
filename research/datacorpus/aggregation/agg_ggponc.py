@@ -1,4 +1,5 @@
-# TODO: aggregation of ggponc2 corpus
+from typing import Set, List
+
 from research.datacorpus.aggregation.prompts import (
     MEDICATION_PROMPT,
     TREATMENT_PROMPT,
@@ -10,34 +11,70 @@ ggonc_collection = get_collection("corpus", "ggponc_short")
 
 
 def get_ggponc_prompts(
-    document_type: str, simple_prompt: str, ignore_short: int
+    annotation_type: str, extraction_prompt: str, minimal_length: int
 ) -> list[str]:
-    simple_prompts = []
-    documents = ggonc_collection.find({"annotations.type": document_type})
+    """
+    Generic function to get prompts from ggponc corpus
+    :param annotation_type: The type of annotation to get prompts for
+    :param extraction_prompt: The prompt format for the extraction
+    :param minimal_length: The minimal length of origin texts to include
+    :return: List of prompts
+    """
+    prompts = []
+    documents = ggonc_collection.find({"annotations.type": annotation_type})
     for document in documents:
         for anno in document["annotations"]:
-            if anno["type"] != document_type:
+            if anno["type"] != annotation_type:
                 continue
-            if ignore_short > 0 and len(anno["origin"]) < ignore_short:
+            if minimal_length > 0 and len(anno["origin"]) < minimal_length:
                 continue
 
-            texts = "|".join(anno["text"])
-            simple_prompt_str = simple_prompt.replace("<<CONTEXT>>", anno["origin"])
+            if annotation_type == "None":
+                texts = "Keine vorhanden"
+            else:
+                texts = "|".join(anno["text"])
+                if texts == "":
+                    texts = "Keine vorhanden"
+            simple_prompt_str = extraction_prompt.replace("<<CONTEXT>>", anno["origin"])
             simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", texts)
-            simple_prompts.append(simple_prompt_str)
+            prompts.append(simple_prompt_str.strip())
 
-    return simple_prompts
+    return prompts
 
 
-def get_all_simple_ggponc_prompts(ignore_short: int) -> list[str]:
-    output = []
+def get_all_ggponc_prompts(minimal_length: int) -> list[str]:
+    """
+    Get all prompts from ggponc corpus
+    :param minimal_length: The minimal length of origin texts to include
+    :return: List of prompts
+    """
+    prompts = set()
+    # prompts with annotations
     medication_prompts = get_ggponc_prompts(
-        "MEDICATION", MEDICATION_PROMPT, ignore_short
+        "MEDICATION", MEDICATION_PROMPT, minimal_length
     )
-    diagnosis_prompts = get_ggponc_prompts("DIAGNOSIS", DIAGNOSIS_PROMPT, ignore_short)
-    treatment_prompts = get_ggponc_prompts("TREATMENT", TREATMENT_PROMPT, ignore_short)
+    diagnosis_prompts = get_ggponc_prompts(
+        "DIAGNOSIS", DIAGNOSIS_PROMPT, minimal_length
+    )
+    treatment_prompts = get_ggponc_prompts(
+        "TREATMENT", TREATMENT_PROMPT, minimal_length
+    )
+    prompts.update(medication_prompts)
+    prompts.update(diagnosis_prompts)
+    prompts.update(treatment_prompts)
 
-    output.extend(medication_prompts)
-    output.extend(diagnosis_prompts)
-    output.extend(treatment_prompts)
-    return output
+    # prompts without annotations
+    empty_medication_prompts = get_ggponc_prompts(
+        "None", MEDICATION_PROMPT, minimal_length
+    )
+    empty_diagnosis_prompts = get_ggponc_prompts(
+        "None", DIAGNOSIS_PROMPT, minimal_length
+    )
+    empty_treatment_prompts = get_ggponc_prompts(
+        "None", TREATMENT_PROMPT, minimal_length
+    )
+    prompts.update(empty_medication_prompts)
+    prompts.update(empty_diagnosis_prompts)
+    prompts.update(empty_treatment_prompts)
+
+    return list(prompts)
