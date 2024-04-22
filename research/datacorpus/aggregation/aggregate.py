@@ -31,8 +31,22 @@ def save_all_prompts(bronco=True, ggponc=True, normalization=True, ignore_short=
     prompts_df.to_csv("prompts.csv", index=False)
 
 
-save_all_prompts()
-dataset = load_dataset("csv", data_files={"data": "prompts.csv"})[
-    "data"
-].train_test_split(test_size=0.1, shuffle=True, seed=42)
-print(dataset)
+def count_training_tokens():
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained("LeoLM/leo-mistral-hessianai-7b", use_fast=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    dataset = load_dataset("csv", data_files={"data": "prompts.csv"})[
+        "data"
+    ].train_test_split(test_size=0.1, shuffle=True, seed=42)
+    # iterate over dataset
+    token_count = 0
+    for i, example in enumerate(dataset["train"]):
+        token_count = token_count + len(tokenizer.tokenize(example["text"]))
+
+    print("Total number of tokens in training dataset: ", token_count)
+    return token_count
+
+
+count_training_tokens()

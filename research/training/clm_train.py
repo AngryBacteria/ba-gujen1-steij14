@@ -18,18 +18,14 @@ torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
 from research.training.utils.custom_callbacks import GPUMemoryUsageCallback
-import wandb
 from datasets import load_dataset
-from peft import prepare_model_for_kbit_training
 from transformers import (
     AutoTokenizer,
     DataCollatorForLanguageModeling,
     TrainingArguments,
     Trainer,
-    BitsAndBytesConfig,
     MistralForCausalLM,
 )
-from transformers.training_args import OptimizerNames
 
 print_welcome_message()
 print_gpu_support(f"{config.general.gpu}")
@@ -43,6 +39,9 @@ else:
     MODEL_PRECISION = torch.float
 
 if config.model.qlora and config.model.lora:
+    from transformers import BitsAndBytesConfig
+    from peft import prepare_model_for_kbit_training
+
     print(f"{30 * '='} Load 4bit QLora model {30 * '='}")
     _bnb_quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -56,7 +55,7 @@ if config.model.qlora and config.model.lora:
         attn_implementation=config.model.attention_implementation,
     )
     model = prepare_model_for_kbit_training(
-        model,
+        model
     )
 else:
     print(f"{30 * '='} Load model [{MODEL_PRECISION}] {30 * '='}")
@@ -165,6 +164,7 @@ training_args = TrainingArguments(
 )
 
 if config.model.galore:  # setup GaLore
+    from transformers.training_args import OptimizerNames
     print(f"{30 * '='} Setup GaLore [rank 1024, proj_gap 200, scale 2] {30 * '='}")
     training_args.optim = OptimizerNames.GALORE_ADAMW
     training_args.optim_target_modules = (["attn", "mlp"],)
@@ -206,7 +206,9 @@ if config.general.save_model:
     trainer.save_model("mistral_prompt_instructed")
 
 # cleanup
-wandb.finish()
+if config.general.wandb_logging:
+    import wandb
+    wandb.finish()
 del model
 del trainer
 del tokenizer
