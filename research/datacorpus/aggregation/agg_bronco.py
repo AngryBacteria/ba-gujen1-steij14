@@ -12,6 +12,7 @@ bronco_collection = get_collection("corpus", "bronco")
 
 # TODO: add attribute prompts
 
+
 def get_bronco_prompts(
     annotation_type: str,
     extraction: str,

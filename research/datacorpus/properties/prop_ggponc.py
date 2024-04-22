@@ -65,7 +65,7 @@ def text_barplot(df: DataFrame, desired_types=None) -> None:
 
     filtered_df = df[df["type"].isin(desired_types)]
     type_counts = filtered_df["text"].value_counts()
-    top_20_counts = type_counts.head(20)  # Get the top 20 counts
+    top_20_counts = type_counts.head(20)
     top_20_counts_df = pd.DataFrame(
         {"text": top_20_counts.index, "count": top_20_counts.values}
     )
