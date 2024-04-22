@@ -10,8 +10,8 @@ from research.logger import logger
 
 # DATA SOURCE: https://www.leitlinienprogramm-onkologie.de/projekte/ggponc-deutsch
 
-fine_annotations_folder = "datensets\\corpus\\ggponc2\\json\\fine"
-fine_annotations_ner_folder = "datensets\\corpus\\ggponc2\\conll\\fine"
+fine_annotations_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fine"
+fine_annotations_ner_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\conll\\fine"
 
 
 # TODO: unify anonymization (PATIENT, etc...)
@@ -19,7 +19,6 @@ def load_json(filename) -> dict:
     """Load json file."""
     with open(filename, "r", encoding="utf-8") as file:
         data = json.load(file)
-
     logger.debug(f"Parsed {len(data)} GGPONC json annotations from file {filename}")
     return data
 
@@ -56,15 +55,15 @@ def transform_ggponc_annotations(data):
                     "end": entity["offsets"][0][1],
                 }
                 for entity in document["entities"]
-                if passage_start
-                <= entity["offsets"][0][0]
-                <= entity["offsets"][0][1]
-                <= passage_end
+                if (
+                    passage_start <= entity["offsets"][0][0]
+                    and entity["offsets"][0][1] <= passage_end
+                )
             ]
             if len(passage_annotations) == 0:
                 annotations.append(
                     {
-                        "type": "None",
+                        "type": "NA",
                         "origin": passage["text"].strip(),
                         "text": [],
                         "start": [],

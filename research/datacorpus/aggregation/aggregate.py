@@ -52,4 +52,9 @@ def count_training_tokens():
     return token_count
 
 
-count_training_tokens()
+# count_training_tokens()
+# save_all_prompts()
+dataset = load_dataset("csv", data_files={"data": "prompts.csv"})[
+    "data"
+].train_test_split(test_size=0.1, shuffle=True, seed=42)
+print(dataset)

@@ -5,9 +5,9 @@ from research.logger import logger
 
 # DATA SOURCE: https://www2.informatik.hu-berlin.de/~leser/bronco/index.html
 
-path_text = "datensets\\corpus\\bronco\\textFiles"
-path_annotation_brat = "datensets\\corpus\\bronco\\bratFiles"
-path_annotation_conll = "datensets\\corpus\\bronco\\conllIOBTags"
+path_text = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\textFiles"
+path_annotation_brat = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\bratFiles"
+path_annotation_conll = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\conllIOBTags"
 
 
 # TODO: unify anonymization (PATIENT, etc...) and labels / types
@@ -192,8 +192,8 @@ def parse_annotation_data_general(file_number: int) -> list[dict]:
 
     for sentence in sentences:
         if sentence not in [item["origin"] for item in grouped_data.values()]:
-            grouped_data[("None", sentence)] = {
-                "type": "None",
+            grouped_data[("NA", sentence)] = {
+                "type": "NA",
                 "origin": sentence,
                 "id": [],
                 "text": [],

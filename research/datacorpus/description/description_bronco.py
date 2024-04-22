@@ -10,15 +10,20 @@ def save_to_csv() -> None:
     Save the ggponc mongodb to trimmed down csv file
     :return: None
     """
-    ggonc_collection = get_collection("corpus", "bronco")
-    ggonc_cursor = ggonc_collection.find({})
+    bronco_collection = get_collection("corpus", "bronco")
+    bronco_cursor = bronco_collection.find({})
 
     formatted_annotations = []
-    for doc in ggonc_cursor:
-        for text in doc["text"]:
+    for doc in bronco_cursor:
+        if doc["type"] == "NA":
             formatted_annotations.append(
-                {"type": doc["type"], "origin": doc["origin"], "text": text}
+                {"type": doc["type"], "origin": doc["origin"], "text": "NA"}
             )
+        else:
+            for text in doc["text"]:
+                formatted_annotations.append(
+                    {"type": doc["type"], "origin": doc["origin"], "text": text}
+                )
 
     df = pd.DataFrame(formatted_annotations)
     df.to_csv("bronco_description.csv", index=False, sep="|")
@@ -29,7 +34,7 @@ def read_from_csv() -> DataFrame:
     Read the ggponc properties csv file
     :return: ggponc properties dataframe
     """
-    df = pd.read_csv("bronco_properties.csv", sep="|")
+    df = pd.read_csv("bronco_description.csv", sep="|", na_filter=False)
     return df
 
 
@@ -135,7 +140,7 @@ def text_barplot(df: DataFrame, desired_types=None) -> None:
     :return: None (a plot is displayed)
     """
     if desired_types is None:
-        desired_types = ["TREATMENT", "DIAGNOSIS", "None", "MEDICATION"]
+        desired_types = ["TREATMENT", "DIAGNOSIS", "NA", "MEDICATION"]
     import plotly.express as px
 
     filtered_df = df[df["type"].isin(desired_types)]
@@ -156,6 +161,3 @@ def text_barplot(df: DataFrame, desired_types=None) -> None:
 save_to_csv()
 df_main = read_from_csv()
 type_pieplot(df_main)
-paragraph_lengths(df_main, tokenize=True)
-plot_lengths_boxplot(df_main, tokenize=True)
-text_barplot(df_main, desired_types=["TREATMENT", "DIAGNOSIS", "None", "MEDICATION"])

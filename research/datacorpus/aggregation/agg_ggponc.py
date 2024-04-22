@@ -61,14 +61,10 @@ def get_all_ggponc_prompts(minimal_length: int) -> list[str]:
 
     # prompts without annotations
     empty_medication_prompts = get_ggponc_prompts(
-        "None", MEDICATION_PROMPT, minimal_length
+        "NA", MEDICATION_PROMPT, minimal_length
     )
-    empty_diagnosis_prompts = get_ggponc_prompts(
-        "None", DIAGNOSIS_PROMPT, minimal_length
-    )
-    empty_treatment_prompts = get_ggponc_prompts(
-        "None", TREATMENT_PROMPT, minimal_length
-    )
+    empty_diagnosis_prompts = get_ggponc_prompts("NA", DIAGNOSIS_PROMPT, minimal_length)
+    empty_treatment_prompts = get_ggponc_prompts("NA", TREATMENT_PROMPT, minimal_length)
     prompts.update(empty_medication_prompts)
     prompts.update(empty_diagnosis_prompts)
     prompts.update(empty_treatment_prompts)

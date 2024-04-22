@@ -78,13 +78,13 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
     )
     # prompts without annotations
     empty_medication_prompts, empty_medication_norm_prompts = get_bronco_prompts(
-        "None", MEDICATION_PROMPT, MEDICATION_NORMALIZATION_PROMPT, minimal_length
+        "NA", MEDICATION_PROMPT, MEDICATION_NORMALIZATION_PROMPT, minimal_length
     )
     empty_diagnosis_prompts, empty_diagnosis_norm_prompts = get_bronco_prompts(
-        "None", DIAGNOSIS_PROMPT, DIAGNOSIS_NORMALIZATION_PROMPT, minimal_length
+        "NA", DIAGNOSIS_PROMPT, DIAGNOSIS_NORMALIZATION_PROMPT, minimal_length
     )
     empty_treatment_prompts, empty_treatment_norm_prompts = get_bronco_prompts(
-        "None", TREATMENT_PROMPT, TREATMENT_NORMALIZATION_PROMPT, minimal_length
+        "NA", TREATMENT_PROMPT, TREATMENT_NORMALIZATION_PROMPT, minimal_length
     )
 
     if extraction:

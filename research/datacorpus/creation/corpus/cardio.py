@@ -8,9 +8,9 @@ from research.logger import logger
 
 # DATA SOURCE: https://heidata.uni-heidelberg.de/dataset.xhtml?persistentId=doi:10.11588/data/AFYQDY
 
-TSV_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\tsv"
-TXT_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\txt"
-TXT_HELDOUT_FOLDER_PATH = "Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_heldout"
+TSV_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\tsv"
+TXT_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt"
+TXT_HELDOUT_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_heldout"
 
 
 # TODO: unify anonymization (PATIENT, etc...)
@@ -152,7 +152,7 @@ def transform_cardio_annotation(annotation: dict):
             "id": [],
             "text": [],
             "origin": clean_cardio_string(annotation["text"]),
-            "type": "None",
+            "type": "NA",
             "end": [],
             "start": [],
         }
