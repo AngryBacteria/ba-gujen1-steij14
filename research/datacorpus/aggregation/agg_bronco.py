@@ -11,6 +11,7 @@ from research.datacorpus.creation.utils.utils_mongodb import get_collection
 bronco_collection = get_collection("corpus", "bronco")
 
 # TODO: add attribute prompts
+# TODO: add prompts for sentences with not all 3 types of annotations?
 
 
 def get_bronco_prompts(
@@ -64,7 +65,7 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
     :param normalization: If normalization prompts should be included
     :return: List of prompts
     """
-    output_prompts = set()
+    prompts = set()
 
     # prompts with annotations
     medication_prompts, medication_norm_prompts = get_bronco_prompts(
@@ -88,15 +89,15 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
     )
 
     if extraction:
-        output_prompts.update(medication_prompts)
-        output_prompts.update(diagnosis_prompts)
-        output_prompts.update(treatment_prompts)
-        output_prompts.update(empty_medication_prompts)
-        output_prompts.update(empty_diagnosis_prompts)
-        output_prompts.update(empty_treatment_prompts)
+        prompts.update(medication_prompts)
+        prompts.update(diagnosis_prompts)
+        prompts.update(treatment_prompts)
+        prompts.update(empty_medication_prompts)
+        prompts.update(empty_diagnosis_prompts)
+        prompts.update(empty_treatment_prompts)
     if normalization:
-        output_prompts.update(medication_norm_prompts)
-        output_prompts.update(diagnosis_norm_prompts)
-        output_prompts.update(treatment_norm_prompts)
+        prompts.update(medication_norm_prompts)
+        prompts.update(diagnosis_norm_prompts)
+        prompts.update(treatment_norm_prompts)
 
-    return list(output_prompts)
+    return list(prompts)

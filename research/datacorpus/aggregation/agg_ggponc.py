@@ -8,6 +8,9 @@ from research.datacorpus.creation.utils.utils_mongodb import get_collection
 ggonc_collection = get_collection("corpus", "ggponc_short")
 
 
+# TODO: add prompts for sentences with not all 3 types of annotations?
+
+
 def get_ggponc_prompts(
     annotation_type: str, extraction_prompt: str, minimal_length: int
 ) -> list[str]:

@@ -239,9 +239,6 @@ def get_all_wiki_text(sections: ResultSet, full_text: bool) -> str:
     return text
 
 
-# TODO: also parse the following pattern: (https://de.wikipedia.org/wiki/Ver%C3%A4tzung)
-#  or M30-M36 (https://de.wikipedia.org/wiki/Kollagenose)
-# todo: also parse *!+†
 def parse_icd10_table(icd10_infos: ResultSet):
     """Parse the ICD-10 table data from a wikipedia article. The infobox component is used."""
     output_icd10_who = []

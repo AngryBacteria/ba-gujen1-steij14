@@ -223,9 +223,6 @@ def parse_xml_icd10_blocks(icd10gm=False) -> list[dict]:
     return icd10_blocks
 
 
-# todo: parse introduction text
-# todo: parse note text
-# todo: parse text text
 def parse_xml_icd10_chapters(icd10gm=False) -> list[dict]:
     """Parse the ICD-10 XML file and return a list of dictionaries with the icd chapter data."""
     if icd10gm:
@@ -271,7 +268,6 @@ def parse_xml_icd10_chapters(icd10gm=False) -> list[dict]:
     return icd10_chapters
 
 
-# TODO: icd10gm : parse subcategory, for example M08.4 --> M08.43
 def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False) -> None:
     """Parse the ICD-10 XML files and create a MongoDB collection with the data."""
     # parse xml files and combine
