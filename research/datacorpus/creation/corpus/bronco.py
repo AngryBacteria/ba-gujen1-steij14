@@ -1,6 +1,6 @@
 import os.path
 
-from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
+from research.datacorpus.creation.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 # DATA SOURCE: https://www2.informatik.hu-berlin.de/~leser/bronco/index.html

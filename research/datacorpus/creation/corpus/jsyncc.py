@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
+from research.datacorpus.creation.utils.utils_mongodb import upload_data_to_mongodb
 
 corpus_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\jsyncc\\corpus.xml"
 

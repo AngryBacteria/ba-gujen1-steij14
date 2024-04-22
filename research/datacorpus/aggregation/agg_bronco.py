@@ -6,7 +6,7 @@ from research.datacorpus.aggregation.prompts import (
     DIAGNOSIS_NORMALIZATION_PROMPT,
     TREATMENT_NORMALIZATION_PROMPT,
 )
-from research.datacorpus.utils.utils_mongodb import get_collection
+from research.datacorpus.creation.utils.utils_mongodb import get_collection
 
 bronco_collection = get_collection("corpus", "bronco")
 
@@ -98,8 +98,5 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
         output_prompts.update(medication_norm_prompts)
         output_prompts.update(diagnosis_norm_prompts)
         output_prompts.update(treatment_norm_prompts)
-        output_prompts.update(empty_medication_norm_prompts)
-        output_prompts.update(empty_diagnosis_norm_prompts)
-        output_prompts.update(empty_treatment_norm_prompts)
 
     return list(output_prompts)

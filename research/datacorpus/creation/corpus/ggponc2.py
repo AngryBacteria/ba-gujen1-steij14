@@ -1,10 +1,8 @@
 import json
 import os.path
 
-import pandas as pd
-
-from research.datacorpus.utils.utils_ner import parse_ner_dataset
-from research.datacorpus.utils.utils_mongodb import (
+from research.datacorpus.creation.utils.utils_ner import parse_ner_dataset
+from research.datacorpus.creation.utils.utils_mongodb import (
     upload_data_to_mongodb,
     rename_dict_keys,
 )

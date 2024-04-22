@@ -3,7 +3,7 @@ import xml.etree.ElementTree as et
 import pandas as pd
 from pandas import DataFrame
 
-from research.datacorpus.utils.utils_mongodb import upload_data_to_mongodb
+from research.datacorpus.creation.utils.utils_mongodb import upload_data_to_mongodb
 from research.logger import logger
 
 # DATA SOURCE: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html

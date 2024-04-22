@@ -3,7 +3,7 @@ from research.datacorpus.aggregation.prompts import (
     TREATMENT_PROMPT,
     DIAGNOSIS_PROMPT,
 )
-from research.datacorpus.utils.utils_mongodb import get_collection
+from research.datacorpus.creation.utils.utils_mongodb import get_collection
 
 ggonc_collection = get_collection("corpus", "ggponc_short")
 

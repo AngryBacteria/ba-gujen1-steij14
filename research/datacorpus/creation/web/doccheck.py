@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-from research.datacorpus.utils.utils_scraping import (
+from research.datacorpus.creation.utils.utils_scraping import (
     process_tags_to_text,
     remove_unwanted,
 )

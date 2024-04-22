@@ -2,7 +2,7 @@
 import pandas as pd
 from pandas import DataFrame
 
-from research.datacorpus.utils.utils_mongodb import get_collection
+from research.datacorpus.creation.utils.utils_mongodb import get_collection
 
 
 def save_to_csv() -> None:
@@ -22,7 +22,7 @@ def save_to_csv() -> None:
                 )
 
     df = pd.DataFrame(formatted_annotations)
-    df.to_csv("ggponc_properties.csv", index=False, sep="|")
+    df.to_csv("ggponc_description.csv", index=False, sep="|")
 
 
 def read_from_csv() -> DataFrame:
@@ -86,6 +86,7 @@ def paragraph_lengths(df, tokenize=False) -> tuple:
     :return: The max, min, average and median length of the paragraphs
     """
     lengths = []
+
     if tokenize:
         from transformers import AutoTokenizer
 
