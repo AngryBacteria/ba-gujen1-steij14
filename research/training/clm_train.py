@@ -1,19 +1,21 @@
 import os
 import setproctitle
 
-from research.training.utils.printing_utils import print_welcome_message
+from research.training.utils.printing_utils import (
+    print_welcome_message,
+    print_with_heading,
+)
 from research.training.utils.utils_config import parse_clm_config
 from research.training.utils.utils_gpu import print_gpu_support
 
 config = parse_clm_config()
-# Setup gpu environment (needs to happen before importing huggingface library)
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{config.general.gpu}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+import math
 import torch
 
-# The server is new enough to support the TF32 data type
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
@@ -27,10 +29,12 @@ from transformers import (
     MistralForCausalLM,
 )
 
+# Welcome messages
 print_welcome_message()
 print_gpu_support(f"{config.general.gpu}")
 
-# MODEL
+
+# Model
 if config.model.lower_precision:
     MODEL_PRECISION = (
         torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
@@ -42,7 +46,7 @@ if config.model.qlora and config.model.lora:
     from transformers import BitsAndBytesConfig
     from peft import prepare_model_for_kbit_training
 
-    print(f"{30 * '='} Load 4bit QLora model {30 * '='}")
+    print_with_heading("Load 4bit QLora model")
     _bnb_quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",  # theoretically better according to docs
@@ -56,14 +60,14 @@ if config.model.qlora and config.model.lora:
     )
     model = prepare_model_for_kbit_training(model)
 else:
-    print(f"{30 * '='} Load model [{MODEL_PRECISION}] {30 * '='}")
+    print_with_heading("Load model [{MODEL_PRECISION}]")
     model = MistralForCausalLM.from_pretrained(
         config.model.id_model,
         torch_dtype=MODEL_PRECISION,
         attn_implementation=config.model.attention_implementation,
     )
 if config.model.lora:
-    print(f"{30 * '='} Loading LORA [alpha 32, rank 8] {30 * '='}")
+    print_with_heading("Loading LORA [alpha 32, rank 8]")
     from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 
     _peft_config = LoraConfig(
@@ -85,8 +89,9 @@ if config.model.lora:
     model = get_peft_model(model, _peft_config)
     model.print_trainable_parameters()
 
+
 # Tokenizer
-print(f"{30 * '='} Load fast tokenizer {30 * '='}")
+print_with_heading("Load fast tokenizer")
 tokenizer = AutoTokenizer.from_pretrained(config.model.id_model, use_fast=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
@@ -106,7 +111,7 @@ def preprocess_function(examples):
     )
 
 
-print(f"{30 * '='} Load and prepare dataset {30 * '='}")
+print_with_heading("Load and prepare dataset")
 dataset = load_dataset(
     "tatsu-lab/alpaca",
     split="train[:100]",
@@ -129,9 +134,8 @@ tokenized_val_dataset = _val_dataset.map(
     remove_columns=["instruction", "input", "output", "text"],
 )
 
-# Training arguments
-print(
-    f"{30 * '='} "
+# Training setup
+print_with_heading(
     f"Train model [optim {config.trainer.optimizer}, "
     f"Precision {MODEL_PRECISION}, "
     f"Mixed Training {config.trainer.mixed_precision}, "
@@ -139,7 +143,6 @@ print(
     f"accumulation {config.trainer.gradient_accumulation_steps}, "
     f"checkpointing {config.trainer.gradient_checkpointing}, "
     f"sequence {config.data_processing.sequence_length}] "
-    f"{30 * '='}"
 )
 training_args = TrainingArguments(
     output_dir="mistral_prompt_instructed",
@@ -164,7 +167,7 @@ training_args = TrainingArguments(
 if config.model.galore:  # setup GaLore
     from transformers.training_args import OptimizerNames
 
-    print(f"{30 * '='} Setup GaLore [rank 1024, proj_gap 200, scale 2] {30 * '='}")
+    print_with_heading("Setup GaLore [rank 1024, proj_gap 200, scale 2]")
     training_args.optim = OptimizerNames.GALORE_ADAMW
     training_args.optim_target_modules = (["attn", "mlp"],)
     training_args.optim_args = ("rank=1024, update_proj_gap=200, scale=2",)
@@ -201,6 +204,9 @@ trainer = Trainer(
     callbacks=custom_callbacks,
 )
 trainer.train()
+eval_results = trainer.evaluate()
+print(f"Evaluation: {math.exp(eval_results['eval_loss']):.2f}")
+
 if config.general.save_model:
     trainer.save_model("mistral_prompt_instructed")
 

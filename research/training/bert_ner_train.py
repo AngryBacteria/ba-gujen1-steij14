@@ -6,6 +6,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+import math
 import evaluate
 import numpy as np
 from datasets import load_dataset
@@ -24,9 +25,9 @@ from research.training.utils.printing_utils import (
 )
 from research.training.utils.utils_gpu import print_gpu_support
 
-EPOCHS = 1
-BATCH_SIZE = 8
-LOGGING_STEPS = 16
+EPOCHS = 3
+BATCH_SIZE = 64
+LOGGING_STEPS = 200
 DEBUG = True
 WANDB = False
 RUN_NAME = ""
@@ -184,6 +185,8 @@ trainer = Trainer(
 )
 
 trainer.train()
+eval_results = trainer.evaluate()
+print(f"Evaluation: {math.exp(eval_results['eval_loss']):.2f}")
 
 if SAVE_MODEL:
-    trainer.save_model("bert_classification_model")
+    trainer.save_model("bert_ner_model")
