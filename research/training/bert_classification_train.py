@@ -1,16 +1,17 @@
 import os
-
 import setproctitle
-
-from research.training.utils.custom_callbacks import GPUMemoryUsageCallback
-from research.training.utils.printing_utils import print_welcome_message
-from research.training.utils.utils_gpu import print_gpu_support
 
 GPU = 0
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+from research.training.utils.custom_callbacks import GPUMemoryUsageCallback
+from research.training.utils.printing_utils import (
+    print_welcome_message,
+    print_with_heading,
+)
+from research.training.utils.utils_gpu import print_gpu_support
 import numpy as np
 from datasets import load_dataset
 from transformers import (
@@ -44,11 +45,11 @@ def preprocess_function(examples):
 
 
 # Load tokenizer
-print(f"{30 * '='} Load fast tokenizer {30 * '='}")
+print_with_heading("Load fast tokenizer")
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 # Load dataset
-print(f"{30 * '='} Load dataset {30 * '='}")
+print_with_heading("Load dataset")
 test_dataset = load_dataset("imdb", split="test[:5%]")
 train_dataset = load_dataset("imdb", split="train[:40%]")
 tokenized_test_dataset = test_dataset.map(preprocess_function, batched=True)
@@ -56,7 +57,7 @@ tokenized_train_dataset = train_dataset.map(preprocess_function, batched=True)
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
 # Load model
-print(f"{30 * '='} Load model {30 * '='}")
+print_with_heading("Load model")
 model = AutoModelForSequenceClassification.from_pretrained(
     "distilbert/distilbert-base-uncased",
     num_labels=NUM_LABELS,
@@ -75,7 +76,7 @@ def compute_metrics(eval_pred: EvalPrediction):
 
 
 # Train
-print(f"{30 * '='} Start Training {30 * '='}")
+print_with_heading("Training arguments")
 training_args = TrainingArguments(
     optim="adamw_torch_fused",
     output_dir="bert_classification_model",
@@ -93,7 +94,7 @@ training_args = TrainingArguments(
 if DEBUG:  # setup logging and debugging
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-    custom_callbacks = [GPUMemoryUsageCallback(GPU, True)]
+    custom_callbacks = [GPUMemoryUsageCallback(GPU, 16)]
 else:
     custom_callbacks = []
 if WANDB:
