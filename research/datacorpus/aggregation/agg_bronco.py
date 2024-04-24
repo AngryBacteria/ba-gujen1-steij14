@@ -7,8 +7,10 @@ from research.datacorpus.aggregation.prompts import (
     TREATMENT_NORMALIZATION_PROMPT,
 )
 from research.datacorpus.creation.utils.utils_mongodb import get_collection
+from research.logger import logger
 
 bronco_collection = get_collection("corpus", "bronco")
+
 
 # TODO: add attribute prompts
 # TODO: add prompts for sentences with not all 3 types of annotations?
@@ -99,5 +101,10 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
         prompts.update(medication_norm_prompts)
         prompts.update(diagnosis_norm_prompts)
         prompts.update(treatment_norm_prompts)
+
+    logger.debug(
+        f"Created {len(prompts)} prompts from the bronco corpus "
+        f"[minimal length: {minimal_length}, extraction {extraction}, normalization {normalization}]."
+    )
 
     return list(prompts)

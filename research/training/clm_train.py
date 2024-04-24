@@ -98,41 +98,27 @@ if tokenizer.pad_token is None:
 
 
 # Dataset
-# TODO: maybe remove the data collator does already padding
 def preprocess_function(examples):
-    inputs = [
-        text * 100 for text in examples["text"]
-    ]  # makes sure that whole context is used
     return tokenizer(
-        inputs,
-        padding=True,
+        examples,
         truncation=True,
         max_length=config.data_processing.sequence_length,
     )
 
 
 print_with_heading("Load and prepare dataset")
-dataset = load_dataset(
-    "tatsu-lab/alpaca",
-    split="train[:100]",
+_dataset = load_dataset("csv", data_files={"data": "prompts.csv"})[
+    "data"
+].train_test_split(test_size=0.1, shuffle=True, seed=42)
+tokenized_dataset = _dataset.map(
+    preprocess_function,
+    batched=True,
     num_proc=config.data_processing.processing_threads,
+    remove_columns=["text"],
 )
-_train_val_dataset = dataset.train_test_split(test_size=0.2, seed=42)
-_train_dataset = _train_val_dataset["train"]
-_val_dataset = _train_val_dataset["test"]
+# todo filter out too long sequences
+
 data_collator_fn = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
-tokenized_train_dataset = _train_dataset.map(
-    preprocess_function,
-    batched=True,
-    num_proc=config.data_processing.processing_threads,
-    remove_columns=["instruction", "input", "output", "text"],
-)
-tokenized_val_dataset = _val_dataset.map(
-    preprocess_function,
-    batched=True,
-    num_proc=config.data_processing.processing_threads,
-    remove_columns=["instruction", "input", "output", "text"],
-)
 
 # Training setup
 print_with_heading(
@@ -198,8 +184,8 @@ if config.trainer.mixed_precision:  # setup mixed precision training
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=tokenized_train_dataset,
-    eval_dataset=tokenized_val_dataset,
+    train_dataset=tokenized_dataset["train"],
+    eval_dataset=tokenized_dataset["test"],
     data_collator=data_collator_fn,
     callbacks=custom_callbacks,
 )
@@ -218,8 +204,5 @@ if config.general.wandb_logging:
 del model
 del trainer
 del tokenizer
-del tokenized_val_dataset
-del tokenized_train_dataset
-del _train_dataset
-del _val_dataset
+del tokenized_dataset
 torch.cuda.empty_cache()

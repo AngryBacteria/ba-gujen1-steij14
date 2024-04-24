@@ -4,6 +4,7 @@ from research.datacorpus.aggregation.prompts import (
     DIAGNOSIS_PROMPT,
 )
 from research.datacorpus.creation.utils.utils_mongodb import get_collection
+from research.logger import logger
 
 ggonc_collection = get_collection("corpus", "ggponc_short")
 
@@ -71,5 +72,9 @@ def get_all_ggponc_prompts(minimal_length: int) -> list[str]:
     prompts.update(empty_medication_prompts)
     prompts.update(empty_diagnosis_prompts)
     prompts.update(empty_treatment_prompts)
+
+    logger.debug(
+        f"Created {len(prompts)} prompts from the ggponc corpus [minimal length: {minimal_length}]."
+    )
 
     return list(prompts)

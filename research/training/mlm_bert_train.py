@@ -33,7 +33,7 @@ BLOCK_SIZE = 384
 
 # Welcome messages
 print_welcome_message()
-print_gpu_support(f"0")
+print_gpu_support(f"{GPU}")
 
 # Model
 print_with_heading("Load model")
@@ -68,18 +68,14 @@ def group_texts(examples):
 
 
 print_with_heading("Load dataset")
-imdb_dataset = load_dataset("imdb")
-imdb_dataset_train = imdb_dataset["train"].select(range(1000))
-imdb_dataset_test = imdb_dataset["test"].select(range(1000))
-
-imdb_dataset_train_tokenized = imdb_dataset_train.map(
-    tokenize_function, batched=True, remove_columns=["text", "label"]
+_dataset = load_dataset("csv", data_files={"data": "pretrain.csv"})[
+    "data"
+].train_test_split(test_size=0.1, shuffle=True, seed=42)
+_dataset_tokenizer = _dataset.map(
+    tokenize_function, batched=True, remove_columns=["text"]
 )
-imdb_dataset_test_tokenized = imdb_dataset_test.map(
-    tokenize_function, batched=True, remove_columns=["text", "label"]
-)
-imdb_dataset_train_mlm = imdb_dataset_train_tokenized.map(group_texts, batched=True)
-imdb_dataset_test_mlm = imdb_dataset_test_tokenized.map(group_texts, batched=True)
+dataset_mlm_train = _dataset_tokenizer["train"].map(group_texts, batched=True)
+dataset_mlm_test = _dataset_tokenizer["test"].map(group_texts, batched=True)
 
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer, mlm_probability=0.15, mlm=True
@@ -118,8 +114,8 @@ if WANDB:
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=imdb_dataset_train_mlm,
-    eval_dataset=imdb_dataset_test_mlm,
+    train_dataset=dataset_mlm_train,
+    eval_dataset=dataset_mlm_test,
     data_collator=data_collator,
     callbacks=custom_callbacks,
 )
