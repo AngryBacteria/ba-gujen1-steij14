@@ -86,17 +86,24 @@ data_collator = DataCollatorForLanguageModeling(
 # Setup training
 print_with_heading("Train model")
 training_args = TrainingArguments(
-    output_dir="bert_mlm_model",
-    optim="adamw_torch_fused",
+    # training setup
     per_device_train_batch_size=BATCH_SIZE,
     per_device_eval_batch_size=BATCH_SIZE,
     num_train_epochs=EPOCHS,
+    # optimization setup
+    optim="adamw_torch_fused",
     learning_rate=2e-5,
     weight_decay=0.01,
-    evaluation_strategy="epoch",
+    # logging
     report_to=["none"],
     logging_strategy="steps",
     logging_steps=LOGGING_STEPS,
+    # saving
+    output_dir="bert_mlm_model",
+    save_strategy="epoch",
+    save_total_limit=2,
+    # evaluation
+    evaluation_strategy="epoch",
 )
 
 if DEBUG:  # setup logging and debugging

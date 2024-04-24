@@ -6,6 +6,7 @@
     "run_name": "BaseConfig",
     "gpu": 0,
     "save_model": false,
+    "save_steps": 0,
     "logging_steps": 16
   },
   "model": {
@@ -18,16 +19,17 @@
   },
   "data_processing": {
     "sequence_length": 512,
-    "processing_threads": 1
+    "processing_threads": 1,
+    "test_size": 0.05
   },
   "trainer": {
     "epochs": 1,
     "batch_size": 1,
     "optimizer": "adamw_torch_fused",
     "learning_rate": 0.00005,
+    "warmup_ratio": 0.05,
     "gradient_accumulation_steps": 4,
     "gradient_checkpointing": true,
-    "use_reentrant": false,
     "mixed_precision": false
   }
 }

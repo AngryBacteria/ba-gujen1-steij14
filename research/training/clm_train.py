@@ -110,7 +110,7 @@ def preprocess_function(examples):
 print_with_heading("Load and prepare dataset")
 _dataset = load_dataset("json", data_files={"data": "prompts.json"})[
     "data"
-].train_test_split(test_size=0.1, shuffle=True, seed=42)
+].train_test_split(test_size=config.data_processing.test_size, shuffle=True, seed=42)
 tokenized_dataset = _dataset.map(
     preprocess_function,
     batched=True,
@@ -131,25 +131,43 @@ print_with_heading(
     f"checkpointing {config.trainer.gradient_checkpointing}, "
     f"sequence {config.data_processing.sequence_length}] "
 )
+
+# TODO: weight decay
+# TODO YAML
 training_args = TrainingArguments(
-    output_dir="mistral_prompt_instructed",
-    learning_rate=config.trainer.learning_rate,
+    # training setup
     num_train_epochs=config.trainer.epochs,
-    report_to=["none"],
-    logging_strategy="steps",
-    logging_steps=config.general.logging_steps,
-    evaluation_strategy="epoch",
-    lr_scheduler_type="cosine",  # axolotl does this
-    # optimizations
     per_device_train_batch_size=config.trainer.batch_size,
     per_device_eval_batch_size=config.trainer.batch_size,
     gradient_accumulation_steps=config.trainer.gradient_accumulation_steps,
     gradient_checkpointing=config.trainer.gradient_checkpointing,
     gradient_checkpointing_kwargs={
-        "use_reentrant": config.trainer.use_reentrant
+        "use_reentrant": False,
     },  # https://github.com/huggingface/transformers/issues/26969
+    group_by_length=True,  # should speed up training
+    # optimization setup
     optim=config.trainer.optimizer,
+    learning_rate=config.trainer.learning_rate,
+    lr_scheduler_type="cosine",  # axolotl does this
+    warmup_ratio=config.trainer.warmup_ratio,
+    # logging
+    report_to=["none"],
+    logging_strategy="steps",
+    logging_steps=config.general.logging_steps,
+    # saving
+    output_dir="mistral_prompt_instructed",
+    # evaluation
+    evaluation_strategy="epoch",
 )
+
+if config.general.save_model:  # setup saving
+    if config.general.save_steps > 0:
+        training_args.save_steps = config.general.save_steps
+        training_args.save_strategy = "steps"
+        training_args.save_total_limit = 2
+    else:
+        training_args.save_strategy = "epoch"
+        training_args.save_total_limit = 2
 
 if config.model.galore:  # setup GaLore
     from transformers.training_args import OptimizerNames
@@ -167,7 +185,8 @@ if config.general.debug:  # setup logging and debugging
     ]
 else:
     custom_callbacks = []
-if config.general.wandb_logging:
+
+if config.general.wandb_logging:  # setup wandb logging
     training_args.report_to = ["wandb"]
     os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
     if config.general.run_name != "":

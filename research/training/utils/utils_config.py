@@ -18,6 +18,7 @@ class ModelConfigCLM(BaseModel):
 class DataProcessingConfigCLM(BaseModel):
     sequence_length: int
     processing_threads: int
+    test_size: float
 
 
 class TrainerConfigCLM(BaseModel):
@@ -25,9 +26,9 @@ class TrainerConfigCLM(BaseModel):
     batch_size: int
     optimizer: str
     learning_rate: float
+    warmup_ratio: float
     gradient_accumulation_steps: int
     gradient_checkpointing: bool
-    use_reentrant: bool
     mixed_precision: bool
 
 
@@ -38,6 +39,7 @@ class GeneralConfigCLM(BaseModel):
     run_name: Optional[str] = ""
     gpu: int
     save_model: bool
+    save_steps: int
     logging_steps: int
 
 
