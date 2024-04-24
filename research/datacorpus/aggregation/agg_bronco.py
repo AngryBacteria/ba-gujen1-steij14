@@ -1,5 +1,3 @@
-from typing import Tuple, List, Dict
-
 from research.datacorpus.aggregation.prompts import (
     MEDICATION_PROMPT,
     DIAGNOSIS_PROMPT,
@@ -40,9 +38,14 @@ def get_bronco_prompts(
         if minimal_length > 0 and len(document["origin"]) < minimal_length:
             continue
 
+        # remove duplicates from text
+        document["text"] = list(set(document["text"]))
+
+        # concatenate
         texts = "|".join(document["text"])
         if texts == "":
             texts = "Keine vorhanden"
+
         simple_prompt_str = extraction.replace("<<CONTEXT>>", document["origin"])
         simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", texts)
         simple_prompts.append(
