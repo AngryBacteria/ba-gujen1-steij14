@@ -107,14 +107,14 @@ def preprocess_function(examples):
 
 
 print_with_heading("Load and prepare dataset")
-_dataset = load_dataset("csv", data_files={"data": "prompts.csv"})[
+_dataset = load_dataset("json", data_files={"data": "prompts.json"})[
     "data"
 ].train_test_split(test_size=0.1, shuffle=True, seed=42)
 tokenized_dataset = _dataset.map(
     preprocess_function,
     batched=True,
     num_proc=config.data_processing.processing_threads,
-    remove_columns=["text"],
+    remove_columns=["text", "type", "task", "source"],
 )
 # todo filter out too long sequences
 
@@ -161,7 +161,9 @@ if config.model.galore:  # setup GaLore
 if config.general.debug:  # setup logging and debugging
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-    custom_callbacks = [GPUMemoryUsageCallback(config.general.gpu, config.general.logging_steps)]
+    custom_callbacks = [
+        GPUMemoryUsageCallback(config.general.gpu, config.general.logging_steps)
+    ]
 else:
     custom_callbacks = []
 if config.general.wandb_logging:

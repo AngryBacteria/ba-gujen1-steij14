@@ -14,7 +14,7 @@ ggonc_collection = get_collection("corpus", "ggponc_short")
 
 def get_ggponc_prompts(
     annotation_type: str, extraction_prompt: str, minimal_length: int
-) -> list[str]:
+):
     """
     Generic function to get prompts from ggponc corpus
     :param annotation_type: The type of annotation to get prompts for
@@ -37,18 +37,25 @@ def get_ggponc_prompts(
 
             simple_prompt_str = extraction_prompt.replace("<<CONTEXT>>", anno["origin"])
             simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", texts)
-            prompts.append(simple_prompt_str.strip())
+            prompts.append(
+                {
+                    "text": simple_prompt_str.strip(),
+                    "type": annotation_type,
+                    "task": "extraction",
+                    "source": "ggponc",
+                }
+            )
 
     return prompts
 
 
-def get_all_ggponc_prompts(minimal_length: int) -> list[str]:
+def get_all_ggponc_prompts(minimal_length: int):
     """
     Get all prompts from ggponc corpus
     :param minimal_length: The minimal length of origin texts to include
     :return: List of prompts
     """
-    prompts = set()
+    prompts = []
     # prompts with annotations
     medication_prompts = get_ggponc_prompts(
         "MEDICATION", MEDICATION_PROMPT, minimal_length
@@ -59,9 +66,9 @@ def get_all_ggponc_prompts(minimal_length: int) -> list[str]:
     treatment_prompts = get_ggponc_prompts(
         "TREATMENT", TREATMENT_PROMPT, minimal_length
     )
-    prompts.update(medication_prompts)
-    prompts.update(diagnosis_prompts)
-    prompts.update(treatment_prompts)
+    prompts.extend(medication_prompts)
+    prompts.extend(diagnosis_prompts)
+    prompts.extend(treatment_prompts)
 
     # prompts without annotations
     empty_medication_prompts = get_ggponc_prompts(
@@ -69,12 +76,12 @@ def get_all_ggponc_prompts(minimal_length: int) -> list[str]:
     )
     empty_diagnosis_prompts = get_ggponc_prompts("NA", DIAGNOSIS_PROMPT, minimal_length)
     empty_treatment_prompts = get_ggponc_prompts("NA", TREATMENT_PROMPT, minimal_length)
-    prompts.update(empty_medication_prompts)
-    prompts.update(empty_diagnosis_prompts)
-    prompts.update(empty_treatment_prompts)
+    prompts.extend(empty_medication_prompts)
+    prompts.extend(empty_diagnosis_prompts)
+    prompts.extend(empty_treatment_prompts)
 
     logger.debug(
         f"Created {len(prompts)} prompts from the ggponc corpus [minimal length: {minimal_length}]."
     )
 
-    return list(prompts)
+    return prompts

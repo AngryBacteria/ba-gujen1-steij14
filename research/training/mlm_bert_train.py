@@ -68,11 +68,11 @@ def group_texts(examples):
 
 
 print_with_heading("Load dataset")
-_dataset = load_dataset("csv", data_files={"data": "pretrain.csv"})[
+_dataset = load_dataset("json", data_files={"data": "pretrain.json"})[
     "data"
 ].train_test_split(test_size=0.1, shuffle=True, seed=42)
 _dataset_tokenizer = _dataset.map(
-    tokenize_function, batched=True, remove_columns=["text"]
+    tokenize_function, batched=True, remove_columns=["text", "task", "source"]
 )
 dataset_mlm_train = _dataset_tokenizer["train"].map(group_texts, batched=True)
 dataset_mlm_test = _dataset_tokenizer["test"].map(group_texts, batched=True)

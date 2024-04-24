@@ -10,9 +10,13 @@ def get_cardio_pretrain_texts():
     Get all cardio pretrain texts
     :return: List of pretrain texts from cardio and cardio_heldout
     """
-    cardio_texts = [doc["full_text"] for doc in cardio.find({}, {"full_text": 1})]
+    cardio_texts = [
+        {"text": doc["full_text"], "task": "pretrain", "source": "cardio"}
+        for doc in cardio.find({}, {"full_text": 1})
+    ]
     cardio_heldout_texts = [
-        doc["full_text"] for doc in cardio_heldout.find({}, {"full_text": 1})
+        {"text": doc["full_text"], "task": "pretrain", "source": "cardio"}
+        for doc in cardio_heldout.find({}, {"full_text": 1})
     ]
     cardio_texts = cardio_texts + cardio_heldout_texts
     return cardio_texts

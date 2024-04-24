@@ -11,6 +11,21 @@ from research.datacorpus.aggregation.agg_jsyncc import get_jsyncc_pretrain_texts
 from research.logger import logger
 
 
+def get_unique_prompts(prompts: list[dict]) -> list[dict]:
+    """
+    Get unique prompts from a list of prompt dictionaries.
+    The text value is used as the unique identifier.
+    :param prompts: List of dictionaries with prompts
+    :return: List of unique prompts
+    """
+    unique_prompts = {}
+    for prompt in prompts:
+        text_value = prompt["text"]
+        if text_value not in unique_prompts:
+            unique_prompts[text_value] = prompt
+    return list(unique_prompts.values())
+
+
 def save_all_prompts(bronco=True, ggponc=True, normalization=True, ignore_short=10):
     prompts = []
     if ggponc:
@@ -32,9 +47,11 @@ def save_all_prompts(bronco=True, ggponc=True, normalization=True, ignore_short=
             )
             prompts.extend(simple_bronco_prompts)
 
-    prompts_df = pd.DataFrame(prompts, columns=["text"])
-    prompts_df.to_csv("prompts.csv", index=False)
-    logger.debug(f"Saved {len(prompts)} prompts to prompts.csv")
+    prompts = get_unique_prompts(prompts)
+
+    prompts_df = pd.DataFrame(prompts)
+    prompts_df.to_json("prompts.json", orient="records")
+    logger.debug(f"Saved {len(prompts)} prompts to prompts.json")
 
 
 def save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True):
@@ -55,9 +72,11 @@ def save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True):
         jsyncc_texts = get_jsyncc_pretrain_texts()
         texts.extend(jsyncc_texts)
 
-    prompts_df = pd.DataFrame(texts, columns=["text"])
-    prompts_df.to_csv("pretrain.csv", index=False)
-    logger.debug(f"Saved {len(texts)} prompts to prompts.csv")
+    texts = get_unique_prompts(texts)
+
+    pretrain_df = pd.DataFrame(texts)
+    pretrain_df.to_json("pretrain.json", orient="records")
+    logger.debug(f"Saved {len(texts)} prompts to pretrain.json")
 
 
 def count_training_tokens():
@@ -69,7 +88,7 @@ def count_training_tokens():
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    dataset = load_dataset("csv", data_files={"data": "prompts.csv"})[
+    dataset = load_dataset("json", data_files={"data": "prompts.json"})[
         "data"
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
     # iterate over dataset
@@ -82,5 +101,5 @@ def count_training_tokens():
 
 
 # count_training_tokens()
-# save_all_pretrain_texts()
-# save_all_prompts()
+save_all_pretrain_texts()
+save_all_prompts()

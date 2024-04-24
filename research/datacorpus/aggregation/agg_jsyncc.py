@@ -9,7 +9,11 @@ def get_jsyncc_pretrain_texts():
     :return: List of texts from jsyncc
     """
     jsyncc_texts = [
-        doc["heading"] + "\n" + doc["text"]
+        {
+            "text": doc["heading"] + "\n" + doc["text"],
+            "task": "pretrain",
+            "source": "jsyncc",
+        }
         for doc in jsyncc.find({}, {"text": 1, "heading": 1})
     ]
     return jsyncc_texts

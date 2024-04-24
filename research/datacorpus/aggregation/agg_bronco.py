@@ -1,3 +1,5 @@
+from typing import Tuple, List, Dict
+
 from research.datacorpus.aggregation.prompts import (
     MEDICATION_PROMPT,
     DIAGNOSIS_PROMPT,
@@ -21,7 +23,7 @@ def get_bronco_prompts(
     extraction: str,
     normalization_prompt: str,
     minimal_length: int,
-) -> tuple[list[str], list[str]]:
+):
     """
     Generic function to get prompts from bronco corpus
     :param annotation_type: The type of annotation to get prompts for
@@ -43,7 +45,14 @@ def get_bronco_prompts(
             texts = "Keine vorhanden"
         simple_prompt_str = extraction.replace("<<CONTEXT>>", document["origin"])
         simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", texts)
-        simple_prompts.append(simple_prompt_str.strip())
+        simple_prompts.append(
+            {
+                "text": simple_prompt_str.strip(),
+                "type": annotation_type,
+                "task": "extraction",
+                "source": "bronco",
+            }
+        )
 
         for index, text in enumerate(document["text"]):
             if document["normalizations"][index][0] is None:
@@ -54,7 +63,14 @@ def get_bronco_prompts(
                 norm_prompt_str = norm_prompt_str.replace(
                     "<<OUTPUT>>", normalization["normalization"].split(":")[1]
                 )
-                normalization_prompts.append(norm_prompt_str.strip())
+                normalization_prompts.append(
+                    {
+                        "text": norm_prompt_str.strip(),
+                        "type": annotation_type,
+                        "task": "normalization",
+                        "source": "bronco",
+                    }
+                )
 
     return simple_prompts, normalization_prompts
 
@@ -67,7 +83,7 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
     :param normalization: If normalization prompts should be included
     :return: List of prompts
     """
-    prompts = set()
+    prompts = []
 
     # prompts with annotations
     medication_prompts, medication_norm_prompts = get_bronco_prompts(
@@ -91,20 +107,20 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
     )
 
     if extraction:
-        prompts.update(medication_prompts)
-        prompts.update(diagnosis_prompts)
-        prompts.update(treatment_prompts)
-        prompts.update(empty_medication_prompts)
-        prompts.update(empty_diagnosis_prompts)
-        prompts.update(empty_treatment_prompts)
+        prompts.extend(medication_prompts)
+        prompts.extend(diagnosis_prompts)
+        prompts.extend(treatment_prompts)
+        prompts.extend(empty_medication_prompts)
+        prompts.extend(empty_diagnosis_prompts)
+        prompts.extend(empty_treatment_prompts)
     if normalization:
-        prompts.update(medication_norm_prompts)
-        prompts.update(diagnosis_norm_prompts)
-        prompts.update(treatment_norm_prompts)
+        prompts.extend(medication_norm_prompts)
+        prompts.extend(diagnosis_norm_prompts)
+        prompts.extend(treatment_norm_prompts)
 
     logger.debug(
         f"Created {len(prompts)} prompts from the bronco corpus "
         f"[minimal length: {minimal_length}, extraction {extraction}, normalization {normalization}]."
     )
 
-    return list(prompts)
+    return prompts
