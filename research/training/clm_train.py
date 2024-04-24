@@ -100,7 +100,7 @@ if tokenizer.pad_token is None:
 # Dataset
 def preprocess_function(examples):
     return tokenizer(
-        examples,
+        examples["text"],
         truncation=True,
         max_length=config.data_processing.sequence_length,
     )
@@ -136,7 +136,7 @@ training_args = TrainingArguments(
     num_train_epochs=config.trainer.epochs,
     report_to=["none"],
     logging_strategy="steps",
-    logging_steps=1,
+    logging_steps=config.general.logging_steps,
     evaluation_strategy="epoch",
     lr_scheduler_type="cosine",  # axolotl does this
     # optimizations
@@ -161,7 +161,7 @@ if config.model.galore:  # setup GaLore
 if config.general.debug:  # setup logging and debugging
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-    custom_callbacks = [GPUMemoryUsageCallback(config.general.gpu, True)]
+    custom_callbacks = [GPUMemoryUsageCallback(config.general.gpu, config.general.logging_steps)]
 else:
     custom_callbacks = []
 if config.general.wandb_logging:
