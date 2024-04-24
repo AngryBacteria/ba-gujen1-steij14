@@ -24,6 +24,7 @@ class DataProcessingConfigCLM(BaseModel):
 class TrainerConfigCLM(BaseModel):
     epochs: int
     batch_size: int
+    evals_per_epoch: int
     optimizer: str
     learning_rate: float
     warmup_ratio: float
@@ -39,8 +40,9 @@ class GeneralConfigCLM(BaseModel):
     run_name: Optional[str] = ""
     gpu: int
     save_model: bool
+    output_dir: str
     save_steps: int
-    logging_steps: int
+    logs_per_epoch: int
 
 
 class TrainConfigCLM(BaseModel):
@@ -89,5 +91,19 @@ def normalize_clm_config(config: TrainConfigCLM):
             "ignore", category=UserWarning, module="torch.utils.checkpoint"
         )
         warnings.filterwarnings("ignore", category=FutureWarning, module="accelerate")
+
+    if config.trainer.gradient_accumulation_steps < 1:
+        raise ValueError(
+            "Gradient accumulation steps must be at least 1. A value of 1 means it is disabled."
+        )
+
+    if config.trainer.batch_size < 1:
+        raise ValueError("Batch size must be at least 1.")
+
+    if config.general.logs_per_epoch < 1:
+        raise ValueError("Logs per epoch must be at least 1.")
+
+    if config.trainer.evals_per_epoch < 1:
+        raise ValueError("Evals per epoch must be at least 1.")
 
     return config

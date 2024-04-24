@@ -6,8 +6,9 @@
     "run_name": "LoraConfig",
     "gpu": 0,
     "save_model": false,
+    "output_dir": "mistral_instruction_lora",
     "save_steps": 0,
-    "logging_steps": 16
+    "logs_per_epoch": 16
   },
   "model": {
     "id_model": "LeoLM/leo-mistral-hessianai-7b",
@@ -25,6 +26,7 @@
   "trainer": {
     "epochs": 1,
     "batch_size": 1,
+    "evals_per_epoch": 2,
     "optimizer": "adamw_torch_fused",
     "learning_rate": 0.00005,
     "warmup_ratio": 0.05,

@@ -153,23 +153,33 @@ training_args = TrainingArguments(
     # logging
     report_to=["none"],
     logging_strategy="steps",
-    logging_steps=config.general.logging_steps,
     # saving
-    output_dir="mistral_prompt_instructed",
+    output_dir=config.general.output_dir,
     # evaluation
-    evaluation_strategy="epoch",
+    evaluation_strategy="steps",
 )
 
-if config.general.save_model:  # setup saving
+# setup steps for logging and evaluation
+_steps_per_epoch = len(tokenized_dataset["train"]) / (
+    config.trainer.batch_size * config.trainer.gradient_accumulation_steps
+)
+EVAL_STEPS = _steps_per_epoch / config.trainer.evals_per_epoch
+LOGGING_STEPS = _steps_per_epoch / config.general.logs_per_epoch
+training_args.eval_steps = EVAL_STEPS
+training_args.logging_steps = LOGGING_STEPS
+
+if config.general.save_model:  # Setup saving
+    # Bigger than one means save every x steps
     if config.general.save_steps > 0:
         training_args.save_steps = config.general.save_steps
         training_args.save_strategy = "steps"
         training_args.save_total_limit = 2
+    # Smaller than one means save every epoch
     else:
         training_args.save_strategy = "epoch"
         training_args.save_total_limit = 2
 
-if config.model.galore:  # setup GaLore
+if config.model.galore:  # Setup GaLore
     from transformers.training_args import OptimizerNames
 
     print_with_heading("Setup GaLore [rank 1024, proj_gap 200, scale 2]")
@@ -177,22 +187,20 @@ if config.model.galore:  # setup GaLore
     training_args.optim_target_modules = (["attn", "mlp"],)
     training_args.optim_args = ("rank=1024, update_proj_gap=200, scale=2",)
 
-if config.general.debug:  # setup logging and debugging
+if config.general.debug:  # Setup logging and debugging
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-    custom_callbacks = [
-        GPUMemoryUsageCallback(config.general.gpu, config.general.logging_steps)
-    ]
+    custom_callbacks = [GPUMemoryUsageCallback(config.general.gpu, LOGGING_STEPS)]
 else:
     custom_callbacks = []
 
-if config.general.wandb_logging:  # setup wandb logging
+if config.general.wandb_logging:  # Setup wandb logging
     training_args.report_to = ["wandb"]
     os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
     if config.general.run_name != "":
         training_args.run_name = config.general.run_name
 
-if config.trainer.mixed_precision:  # setup mixed precision training
+if config.trainer.mixed_precision:  # Setup mixed precision training
     if MODEL_PRECISION == torch.float16:
         training_args.fp16 = True
         training_args.fp16_full_eval = True
@@ -216,7 +224,7 @@ eval_results = trainer.evaluate()
 print(f"Evaluation: {math.exp(eval_results['eval_loss']):.2f}")
 
 if config.general.save_model:
-    trainer.save_model("mistral_prompt_instructed")
+    trainer.save_model(config.general.output_dir)
 
 # cleanup
 if config.general.wandb_logging:
