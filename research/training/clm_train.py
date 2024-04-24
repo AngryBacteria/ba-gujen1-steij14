@@ -160,11 +160,15 @@ training_args = TrainingArguments(
 )
 
 # setup steps for logging and evaluation
-_steps_per_epoch = len(tokenized_dataset["train"]) / (
-    config.trainer.batch_size * config.trainer.gradient_accumulation_steps
+_steps_per_epoch = max(
+    1,
+    round(
+        len(tokenized_dataset["train"])
+        / (config.trainer.batch_size * config.trainer.gradient_accumulation_steps)
+    ),
 )
-EVAL_STEPS = _steps_per_epoch / config.trainer.evals_per_epoch
-LOGGING_STEPS = _steps_per_epoch / config.general.logs_per_epoch
+EVAL_STEPS = max(1, round(_steps_per_epoch / config.trainer.evals_per_epoch))
+LOGGING_STEPS = max(1, round(_steps_per_epoch / config.general.logs_per_epoch))
 training_args.eval_steps = EVAL_STEPS
 training_args.logging_steps = LOGGING_STEPS
 
