@@ -4,6 +4,7 @@ from pandas import DataFrame
 
 from research.datacorpus.creation.utils.utils_mongodb import get_collection
 
+
 def save_to_csv() -> None:
     """
     Save the cardio mongodb to trimmed down csv file
@@ -31,6 +32,7 @@ def save_to_csv() -> None:
     df = pd.DataFrame(formatted_annotations)
     df.to_csv("cardio_description.csv", sep="|", index=False)
 
+
 def read_from_csv() -> DataFrame:
     """
     Read the cardio properties csv file
@@ -38,6 +40,7 @@ def read_from_csv() -> DataFrame:
     """
     df = pd.read_csv("cardio_description.csv", sep="|", na_filter=False)
     return df
+
 
 def type_pieplot(df: DataFrame) -> None:
     """
@@ -52,7 +55,10 @@ def type_pieplot(df: DataFrame) -> None:
         {"type": type_counts.index, "count": type_counts.values}
     )
     fig = px.pie(
-        type_counts_df, values="count", names="type", title="Distribution of Types in Cardio Corpus"
+        type_counts_df,
+        values="count",
+        names="type",
+        title="Distribution of Types in Cardio Corpus",
     )
     fig.show()
 
@@ -99,6 +105,7 @@ def paragraph_lengths(df, tokenize=False) -> tuple:
     )
     return max_length, min_length, avg_length, median
 
+
 def plot_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     """
     Plot the distribution of paragraph lengths
@@ -129,12 +136,9 @@ def plot_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
 
     # display the boxplot
     fig = px.box(y=lengths, title="Paragraph Lengths in Cardio Corpus")
-    fig.update_layout(
-        xaxis_title="",
-        yaxis_title="Length",
-        showlegend=False
-    )
+    fig.update_layout(xaxis_title="", yaxis_title="Length", showlegend=False)
     fig.show()
+
 
 save_to_csv()
 df_main = read_from_csv()

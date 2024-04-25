@@ -27,12 +27,15 @@ from research.training.utils.printing_utils import (
 from research.training.utils.utils_gpu import print_gpu_support
 
 EPOCHS = 3
-BATCH_SIZE = 64
-LOGGING_STEPS = 200
+BATCH_SIZE = 16
+LEARNING_RATE = 2e-5
 DEBUG = True
 WANDB = False
 RUN_NAME = ""
 SAVE_MODEL = False
+EVALS_PER_EPOCH = 2
+LOGS_PER_EPOCH = 2
+
 id2label = {
     0: "O",
     1: "B-corporation",
@@ -48,7 +51,6 @@ id2label = {
     11: "B-product",
     12: "I-product",
 }
-
 label2id = {
     "O": 0,
     "B-corporation": 1,
@@ -73,7 +75,7 @@ print_with_heading("Load fast tokenizer")
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 print_with_heading("Load fast tokenizer")
 model = AutoModelForTokenClassification.from_pretrained(
-    "distilbert/distilbert-base-uncased",
+    "google-bert/bert-base-uncased",
     num_labels=13,
     id2label=id2label,
     label2id=label2id,
@@ -83,15 +85,7 @@ model = AutoModelForTokenClassification.from_pretrained(
 print_with_heading("Load data")
 wnut = load_dataset("wnut_17")
 label_list = wnut["train"].features["ner_tags"].feature.names
-print("Label list: ", label_list)
 seqeval = evaluate.load("seqeval")
-
-example = wnut["train"][0]
-print("Example: ", example)
-tokenized_input = tokenizer(example["tokens"], is_split_into_words=True)
-print("Tokenized example: ", tokenized_input)
-tokens = tokenizer.convert_ids_to_tokens(tokenized_input["input_ids"])
-print("Tokenized example with characters: ", tokens)
 
 
 def tokenize_and_align_labels(examples):
@@ -144,7 +138,6 @@ def compute_metrics(p: EvalPrediction):
 
 tokenized_wnut = wnut.map(tokenize_and_align_labels, batched=True)
 data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
-print(tokenized_wnut["train"][0])
 
 print_with_heading("Train model")
 training_args = TrainingArguments(
@@ -155,23 +148,32 @@ training_args = TrainingArguments(
     num_train_epochs=EPOCHS,
     # optimization setup
     optim="adamw_torch_fused",
-    learning_rate=2e-5,
+    learning_rate=LEARNING_RATE,
     weight_decay=0.01,
     # logging
     report_to=["none"],
     logging_strategy="steps",
-    logging_steps=LOGGING_STEPS,
     # saving
     save_strategy="epoch",
     save_total_limit=2,
     # evaluation
-    evaluation_strategy="epoch",
+    evaluation_strategy="steps",
 )
+
+# setup steps for logging and evaluation
+_steps_per_epoch = max(
+    1,
+    round(len(tokenized_wnut["train"]) / BATCH_SIZE),
+)
+EVAL_STEPS = max(1, round(_steps_per_epoch / EVALS_PER_EPOCH))
+LOGGING_STEPS = max(1, round(_steps_per_epoch / LOGS_PER_EPOCH))
+training_args.eval_steps = EVAL_STEPS
+training_args.logging_steps = LOGGING_STEPS
 
 if DEBUG:  # setup logging and debugging
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-    custom_callbacks = [GPUMemoryUsageCallback(GPU, 16)]
+    custom_callbacks = [GPUMemoryUsageCallback(GPU, LOGGING_STEPS)]
 else:
     custom_callbacks = []
 if WANDB:
@@ -193,8 +195,9 @@ trainer = Trainer(
 )
 
 trainer.train()
+
 eval_results = trainer.evaluate()
-print(f"Evaluation: {math.exp(eval_results['eval_loss']):.2f}")
+print(f"Evaluation: {eval_results}")
 
 if SAVE_MODEL:
     trainer.save_model("bert_ner_model")
