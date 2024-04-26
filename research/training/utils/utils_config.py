@@ -1,9 +1,9 @@
 import argparse
 import json
 import warnings
+from typing import Optional
 
 from pydantic import BaseModel
-from typing import Optional
 
 
 class ModelConfigCLM(BaseModel):
@@ -107,3 +107,24 @@ def normalize_clm_config(config: TrainConfigCLM):
         raise ValueError("Evals per epoch must be at least 1.")
 
     return config
+
+
+def get_steps_per_epoch(
+    training_examples: int,
+    batch_size: int,
+    gradient_accumulation: int,
+    evals_per_epoch: int,
+    logs_per_epoch: int,
+) -> tuple[int, int]:
+    """
+    Calculate the number of steps per epoch for evaluation and logging.
+    :return:
+    """
+    _steps_per_epoch = max(
+        1,
+        round(training_examples / batch_size * gradient_accumulation),
+    )
+    eval_steps = max(1, round(_steps_per_epoch / evals_per_epoch))
+    logging_steps = max(1, round(_steps_per_epoch / logs_per_epoch))
+
+    return eval_steps, logging_steps

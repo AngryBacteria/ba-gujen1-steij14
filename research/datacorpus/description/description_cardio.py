@@ -6,6 +6,7 @@ import sys
 sys.path.insert(0, 'E:/VisualStudioCodeProject/Bachelor/ba-gujen1-steij14')
 from research.datacorpus.creation.utils.utils_mongodb import get_collection
 
+
 def save_to_csv() -> None:
     """
     Save the cardio mongodb to trimmed down csv file
@@ -33,6 +34,7 @@ def save_to_csv() -> None:
     df = pd.DataFrame(formatted_annotations)
     df.to_csv("cardio_description.csv", sep="|", index=False)
 
+
 def save_full_text_to_csv() -> None:
     """
     Save the cardio mongodb (only document and its full_text) to trimmed down csv file
@@ -59,6 +61,7 @@ def read_from_csv(str="cardio_description.csv") -> DataFrame:
     df = pd.read_csv(str, sep="|", na_filter=False)
     return df
 
+
 def type_pieplot(df: DataFrame) -> None:
     """
     Plot the distribution of the extraction types
@@ -72,7 +75,10 @@ def type_pieplot(df: DataFrame) -> None:
         {"type": type_counts.index, "count": type_counts.values}
     )
     fig = px.pie(
-        type_counts_df, values="count", names="type", title="Distribution of Types in Cardio Corpus"
+        type_counts_df,
+        values="count",
+        names="type",
+        title="Distribution of Types in Cardio Corpus",
     )
     fig.show()
 
@@ -118,6 +124,7 @@ def paragraph_lengths(df, tokenize=False) -> tuple:
         f"Max: {max_length}, Min: {min_length}, Average: {avg_length}, Median: {median}"
     )
     return max_length, min_length, avg_length, median
+
 
 def plot_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     """

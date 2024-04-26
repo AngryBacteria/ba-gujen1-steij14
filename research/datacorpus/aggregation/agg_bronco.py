@@ -14,6 +14,7 @@ bronco_collection = get_collection("corpus", "bronco")
 
 # TODO: add attribute prompts
 # TODO: add prompts for sentences with not all 3 types of annotations?
+# TODO: eventually ignore prompts for level_of_truth that is not true
 
 
 def get_bronco_prompts(
@@ -30,7 +31,6 @@ def get_bronco_prompts(
     :param minimal_length: Minimal length of origin texts to include
     :return: List of prompts
     """
-
     simple_prompts = []
     normalization_prompts = []
     documents = bronco_collection.find({"type": annotation_type})
@@ -41,7 +41,7 @@ def get_bronco_prompts(
         # remove duplicates from text
         document["text"] = list(set(document["text"]))
 
-        # concatenate
+        # concatenate extraction texts
         texts = "|".join(document["text"])
         if texts == "":
             texts = "Keine vorhanden"
@@ -58,6 +58,7 @@ def get_bronco_prompts(
         )
 
         for index, text in enumerate(document["text"]):
+            # todo fix this, wont work like that
             if document["normalizations"][index][0] is None:
                 continue
             else:

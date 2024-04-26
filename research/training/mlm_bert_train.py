@@ -7,6 +7,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+from research.training.utils.utils_config import get_steps_per_epoch
 from datasets import load_dataset
 from transformers import (
     AutoTokenizer,
@@ -15,7 +16,6 @@ from transformers import (
     TrainingArguments,
     Trainer,
 )
-import math
 from research.training.utils.custom_callbacks import GPUMemoryUsageCallback
 from research.training.utils.printing_utils import (
     print_welcome_message,
@@ -25,12 +25,15 @@ from research.training.utils.utils_gpu import print_gpu_support
 
 EPOCHS = 3
 BATCH_SIZE = 8
-LOGGING_STEPS = 200
+LEARNING_RATE = 2e-5
 DEBUG = True
 WANDB = False
 RUN_NAME = ""
 SAVE_MODEL = False
 BLOCK_SIZE = 384
+EVALS_PER_EPOCH = 2
+TEST_SIZE = 0.05
+LOGS_PER_EPOCH = 2
 
 # Welcome messages
 print_welcome_message()
@@ -71,7 +74,7 @@ def group_texts(examples):
 print_with_heading("Load dataset")
 _dataset = load_dataset("json", data_files={"data": "pretrain.json"})[
     "data"
-].train_test_split(test_size=0.1, shuffle=True, seed=42)
+].train_test_split(test_size=TEST_SIZE, shuffle=True, seed=42)
 _dataset_tokenizer = _dataset.map(
     tokenize_function, batched=True, remove_columns=["text", "task", "source"]
 )
@@ -82,7 +85,6 @@ data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer, mlm_probability=0.15, mlm=True
 )
 
-
 # Setup training
 print_with_heading("Train model")
 training_args = TrainingArguments(
@@ -92,24 +94,34 @@ training_args = TrainingArguments(
     num_train_epochs=EPOCHS,
     # optimization setup
     optim="adamw_torch_fused",
-    learning_rate=2e-5,
+    learning_rate=LEARNING_RATE,
     weight_decay=0.01,
     # logging
     report_to=["none"],
     logging_strategy="steps",
-    logging_steps=LOGGING_STEPS,
     # saving
     output_dir="bert_mlm_model",
     save_strategy="epoch",
     save_total_limit=2,
     # evaluation
-    evaluation_strategy="epoch",
+    evaluation_strategy="steps",
 )
+
+# setup steps for logging and evaluation
+EVAL_STEPS, LOGGING_STEPS = get_steps_per_epoch(
+    len(dataset_mlm_train),
+    BATCH_SIZE,
+    1,
+    EVALS_PER_EPOCH,
+    LOGS_PER_EPOCH,
+)
+training_args.eval_steps = EVAL_STEPS
+training_args.logging_steps = LOGGING_STEPS
 
 if DEBUG:  # setup logging and debugging
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-    custom_callbacks = [GPUMemoryUsageCallback(GPU, 16)]
+    custom_callbacks = [GPUMemoryUsageCallback(GPU, LOGGING_STEPS)]
 else:
     custom_callbacks = []
 if WANDB:
@@ -129,5 +141,9 @@ trainer = Trainer(
 )
 
 trainer.train()
+
 eval_results = trainer.evaluate()
-print(f"Perplexity: {math.exp(eval_results['eval_loss']):.2f}")
+print(f"Evaluation: {eval_results}")
+
+if SAVE_MODEL:
+    trainer.save_model("bert_mlm_model")
