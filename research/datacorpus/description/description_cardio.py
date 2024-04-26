@@ -2,6 +2,8 @@
 import pandas as pd
 from pandas import DataFrame
 
+import sys
+sys.path.insert(0, 'E:/VisualStudioCodeProject/Bachelor/ba-gujen1-steij14')
 from research.datacorpus.creation.utils.utils_mongodb import get_collection
 
 def save_to_csv() -> None:
@@ -20,23 +22,41 @@ def save_to_csv() -> None:
         for anno in doc["annotations"]:
             if anno["type"] == "NA":
                 formatted_annotations.append(
-                    {"type": anno["type"], "origin": anno["origin"], "text": "NA"}
+                    {"document": doc["document"], "type": anno["type"], "origin": anno["origin"], "text": "NA"}
                 )
             else:
                 for text in anno["text"]:
                     formatted_annotations.append(
-                        {"type": anno["type"], "origin": anno["origin"], "text": text}
+                        {"document": doc["document"], "type": anno["type"], "origin": anno["origin"], "text": text}
                     )
 
     df = pd.DataFrame(formatted_annotations)
     df.to_csv("cardio_description.csv", sep="|", index=False)
 
-def read_from_csv() -> DataFrame:
+def save_full_text_to_csv() -> None:
+    """
+    Save the cardio mongodb (only document and its full_text) to trimmed down csv file
+    :return: None
+    """
+     
+    cardio_collection = get_collection("corpus", "cardio")
+    cardio_cursor = cardio_collection.find({})
+
+    formatted_annotations = []
+    for doc in cardio_cursor:
+        formatted_annotations.append(
+            {"document": doc["document"], "origin": doc["full_text"]}
+        )
+
+    df = pd.DataFrame(formatted_annotations)
+    df.to_csv("cardio_full_text.csv", sep="|", index=False)
+
+def read_from_csv(str="cardio_description.csv") -> DataFrame:
     """
     Read the cardio properties csv file
     :return: cardio properties dataframe
     """
-    df = pd.read_csv("cardio_description.csv", sep="|", na_filter=False)
+    df = pd.read_csv(str, sep="|", na_filter=False)
     return df
 
 def type_pieplot(df: DataFrame) -> None:
@@ -136,8 +156,63 @@ def plot_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     )
     fig.show()
 
+def analyze_types_per_document(df: DataFrame) -> None:
+    """
+    Analyze and visualize the count of types per unique document.
+    :param df: The dataframe to plot from
+    :return: None
+    """
+
+    import plotly.express as px
+    
+    # group per type
+    type_counts = df.groupby(['document', 'type']).size().reset_index(name='count')
+
+    # barplot
+    fig = px.bar(type_counts, x='document', y='count', color='type', title="Type Counts per Document in Cardio Corpus",
+                 labels={'count': 'Count of Types', 'document': 'Document ID', 'type': 'Type'})
+    fig.update_layout(xaxis_title="Document ID", yaxis_title="Count of Types", showlegend=True)
+    fig.show()
+
+    print(type_counts)
+
+def analyze_medication_counts_per_document(df: DataFrame) -> None:
+    """
+    Analyze and visualize the count of 'Medication' type per unique document.
+    :param df: The dataframe to analyze
+    :return: None
+    """
+    import numpy as np
+    import plotly.express as px
+
+    # only type medication
+    medication_df = df[df['type'] == 'MEDICATION']
+
+    # Gruppiere nach 'document' und zähle die Anzahl der Vorkommen von 'Medication'
+    medication_counts = medication_df.groupby('document').size().reset_index(name='count')
+
+    max_count = medication_counts['count'].max()
+    min_count = medication_counts['count'].min()
+    median_count = medication_counts['count'].median()
+    average_count = medication_counts['count'].mean()
+
+    # Visualisiere die Ergebnisse als Balkendiagramm
+    fig = px.bar(medication_counts, x='document', y='count', title="Medication Counts per Document in Cardio Corpus",
+                 labels={'count': 'Count of Medication', 'document': 'Document ID'})
+    fig.update_layout(xaxis_title="Document ID", yaxis_title="Count of Medication", showlegend=False)
+    fig.show()
+
+    print(f"Max Count: {max_count}")
+    print(f"Min Count: {min_count}")
+    print(f"Median Count: {median_count}")
+    print(f"Average Count: {np.round(average_count, 2)}")
+
+
 save_to_csv()
+save_full_text_to_csv()
 df_main = read_from_csv()
+df_text = read_from_csv("cardio_full_text.csv")
 type_pieplot(df_main)
-paragraph_lengths(df_main, tokenize=True)
-plot_lengths_boxplot(df_main)
+analyze_medication_counts_per_document(df_main)
+paragraph_lengths(df_text, tokenize=True)
+plot_lengths_boxplot(df_text)
