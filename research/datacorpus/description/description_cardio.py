@@ -2,8 +2,6 @@
 import pandas as pd
 from pandas import DataFrame
 
-import sys
-sys.path.insert(0, 'E:/VisualStudioCodeProject/Bachelor/ba-gujen1-steij14')
 from research.datacorpus.creation.utils.utils_mongodb import get_collection
 
 
