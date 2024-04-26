@@ -7,7 +7,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
-import math
+from research.training.utils.utils_config import get_steps_per_epoch
 import evaluate
 import numpy as np
 from datasets import load_dataset
@@ -161,12 +161,13 @@ training_args = TrainingArguments(
 )
 
 # setup steps for logging and evaluation
-_steps_per_epoch = max(
+EVAL_STEPS, LOGGING_STEPS = get_steps_per_epoch(
+    len(tokenized_wnut["train"]),
+    BATCH_SIZE,
     1,
-    round(len(tokenized_wnut["train"]) / BATCH_SIZE),
+    EVALS_PER_EPOCH,
+    LOGS_PER_EPOCH,
 )
-EVAL_STEPS = max(1, round(_steps_per_epoch / EVALS_PER_EPOCH))
-LOGGING_STEPS = max(1, round(_steps_per_epoch / LOGS_PER_EPOCH))
 training_args.eval_steps = EVAL_STEPS
 training_args.logging_steps = LOGGING_STEPS
 

@@ -1,25 +1,24 @@
 import os
 
 import setproctitle
-
-from research.training.utils.printing_utils import (
-    print_welcome_message,
-    print_with_heading,
-)
 from research.training.utils.utils_config import parse_clm_config
-from research.training.utils.utils_gpu import print_gpu_support
 
 config = parse_clm_config()
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{config.general.gpu}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
-import math
 import torch
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
+from research.training.utils.utils_config import get_steps_per_epoch
+from research.training.utils.printing_utils import (
+    print_welcome_message,
+    print_with_heading,
+)
+from research.training.utils.utils_gpu import print_gpu_support
 from research.training.utils.custom_callbacks import GPUMemoryUsageCallback
 from datasets import load_dataset
 from transformers import (
@@ -160,15 +159,13 @@ training_args = TrainingArguments(
 )
 
 # setup steps for logging and evaluation
-_steps_per_epoch = max(
-    1,
-    round(
-        len(tokenized_dataset["train"])
-        / (config.trainer.batch_size * config.trainer.gradient_accumulation_steps)
-    ),
+EVAL_STEPS, LOGGING_STEPS = get_steps_per_epoch(
+    len(tokenized_dataset["train"]),
+    config.trainer.batch_size,
+    config.trainer.gradient_accumulation_steps,
+    config.trainer.evals_per_epoch,
+    config.general.logs_per_epoch,
 )
-EVAL_STEPS = max(1, round(_steps_per_epoch / config.trainer.evals_per_epoch))
-LOGGING_STEPS = max(1, round(_steps_per_epoch / config.general.logs_per_epoch))
 training_args.eval_steps = EVAL_STEPS
 training_args.logging_steps = LOGGING_STEPS
 
@@ -225,7 +222,7 @@ trainer = Trainer(
 )
 trainer.train()
 eval_results = trainer.evaluate()
-print(f"Evaluation: {math.exp(eval_results['eval_loss']):.2f}")
+print(f"Evaluation: {eval_results}")
 
 if config.general.save_model:
     trainer.save_model(config.general.output_dir)

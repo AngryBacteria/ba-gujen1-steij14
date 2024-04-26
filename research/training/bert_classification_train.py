@@ -7,6 +7,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+from research.training.utils.utils_config import get_steps_per_epoch
 from research.training.utils.custom_callbacks import GPUMemoryUsageCallback
 from research.training.utils.printing_utils import (
     print_welcome_message,
@@ -100,12 +101,13 @@ training_args = TrainingArguments(
 )
 
 # setup steps for logging and evaluation
-_steps_per_epoch = max(
+EVAL_STEPS, LOGGING_STEPS = get_steps_per_epoch(
+    len(imdb_dataset_tokenized["train"]),
+    BATCH_SIZE,
     1,
-    round(len(imdb_dataset_tokenized["train"]) / BATCH_SIZE),
+    EVALS_PER_EPOCH,
+    LOGS_PER_EPOCH,
 )
-EVAL_STEPS = max(1, round(_steps_per_epoch / EVALS_PER_EPOCH))
-LOGGING_STEPS = max(1, round(_steps_per_epoch / LOGS_PER_EPOCH))
 training_args.eval_steps = EVAL_STEPS
 training_args.logging_steps = LOGGING_STEPS
 

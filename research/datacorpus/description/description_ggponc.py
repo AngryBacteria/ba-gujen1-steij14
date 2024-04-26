@@ -39,7 +39,7 @@ def read_from_csv() -> DataFrame:
     return df
 
 
-def type_pieplot(df: DataFrame) -> None:
+def show_extraction_types_pieplot(df: DataFrame) -> None:
     """
     Plot the distribution of the extraction types
     :param df: The dataframe to plot from
@@ -57,7 +57,7 @@ def type_pieplot(df: DataFrame) -> None:
     fig.show()
 
 
-def text_barplot(df: DataFrame, desired_types=None) -> None:
+def show_top_labels_barplot(df: DataFrame, desired_types=None) -> None:
     """
     Plot the distribution of the top 20 extraction labels
     :param df: The dataframe to plot from
@@ -65,7 +65,7 @@ def text_barplot(df: DataFrame, desired_types=None) -> None:
     :return: None (a plot is displayed)
     """
     if desired_types is None:
-        desired_types = ["TREATMENT", "DIAGNOSIS", "NA", "MEDICATION"]
+        desired_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
     import plotly.express as px
 
     filtered_df = df[df["type"].isin(desired_types)]
@@ -74,16 +74,20 @@ def text_barplot(df: DataFrame, desired_types=None) -> None:
     top_20_counts_df = pd.DataFrame(
         {"text": top_20_counts.index, "count": top_20_counts.values}
     )
+
+    desired_types_string = ", ".join(desired_types)
+    total_number = len(filtered_df)
+
     fig = px.bar(
         top_20_counts_df,
         x="text",
         y="count",
-        title="Distribution of Top 20 Extractions",
+        title=f"Distribution of Top 20 Extractions (n = {total_number}, types = {desired_types_string})",
     )
     fig.show()
 
 
-def paragraph_lengths(df, tokenize=False) -> tuple:
+def get_paragraph_lengths(df, tokenize=False) -> tuple:
     """
     Get the max, min, average and median length of the paragraphs
     :param df: The dataframe to calculate from. Needs to have an "origin" column
@@ -127,7 +131,7 @@ def paragraph_lengths(df, tokenize=False) -> tuple:
     return max_length, min_length, avg_length, median
 
 
-def plot_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
+def show_paragraph_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     import plotly.express as px
 
     # calculate the lengths
@@ -160,5 +164,6 @@ def plot_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     fig.show()
 
 
-df_main = read_from_csv()
-type_pieplot(df_main)
+# save_to_csv()
+df = read_from_csv()
+show_top_labels_barplot(df, ["DIAGNOSIS"])
