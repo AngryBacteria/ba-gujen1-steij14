@@ -22,6 +22,7 @@ def get_bronco_prompts(
     extraction: str,
     normalization_prompt: str,
     minimal_length: int,
+    add_level_of_truth: bool = False,
 ):
     """
     Generic function to get prompts from bronco corpus
@@ -38,16 +39,36 @@ def get_bronco_prompts(
         if minimal_length > 0 and len(document["origin"]) < minimal_length:
             continue
 
+        texts = []
+        # add level of truth to the text
+        if add_level_of_truth:
+            for index, extraction_text in enumerate(document["text"]):
+                attributes = []
+                for attribute in document["attributes"][index]:
+                    if attribute["attribute_label"] == "LevelOfTruth":
+                        if attribute["attribute"] == "negative":
+                            attributes.append("negativ")
+                        if attribute["attribute"] == "speculative":
+                            attributes.append("spekulativ")
+                        if attribute["attribute"] == "possibleFuture":
+                            attributes.append("zukünftig")
+
+                if len(attributes) < 1:
+                    texts.append(extraction_text)
+                else:
+                    texts.append(f"{extraction_text} [{'|'.join(attributes)}]")
+        else:
+            texts = document["text"]
         # remove duplicates from text
-        document["text"] = list(set(document["text"]))
+        texts = list(set(texts))
 
         # concatenate extraction texts
-        texts = "|".join(document["text"])
-        if texts == "":
-            texts = "Keine vorhanden"
+        text = "|".join(texts)
+        if text == "":
+            text = "Keine vorhanden"
 
         simple_prompt_str = extraction.replace("<<CONTEXT>>", document["origin"])
-        simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", texts)
+        simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", text)
         simple_prompts.append(
             {
                 "text": simple_prompt_str.strip(),
@@ -128,3 +149,11 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
     )
 
     return prompts
+
+
+huhs, _ = medication_prompts, medication_norm_prompts = get_bronco_prompts(
+    "MEDICATION", MEDICATION_PROMPT, MEDICATION_NORMALIZATION_PROMPT, 15
+)
+
+for huh in huhs:
+    print(huh["text"])

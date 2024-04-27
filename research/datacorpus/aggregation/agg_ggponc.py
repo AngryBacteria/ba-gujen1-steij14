@@ -64,25 +64,25 @@ def get_all_ggponc_prompts(minimal_length: int):
     medication_prompts = get_ggponc_prompts(
         "MEDICATION", MEDICATION_PROMPT, minimal_length
     )
-    diagnosis_prompts = get_ggponc_prompts(
-        "DIAGNOSIS", DIAGNOSIS_PROMPT, minimal_length
-    )
-    treatment_prompts = get_ggponc_prompts(
-        "TREATMENT", TREATMENT_PROMPT, minimal_length
-    )
+    # diagnosis_prompts = get_ggponc_prompts(
+    #     "DIAGNOSIS", DIAGNOSIS_PROMPT, minimal_length
+    # )
+    # treatment_prompts = get_ggponc_prompts(
+    #     "TREATMENT", TREATMENT_PROMPT, minimal_length
+    # )
     prompts.extend(medication_prompts)
-    prompts.extend(diagnosis_prompts)
-    prompts.extend(treatment_prompts)
+    # prompts.extend(diagnosis_prompts)
+    # prompts.extend(treatment_prompts)
 
     # prompts without annotations
     empty_medication_prompts = get_ggponc_prompts(
         "NA", MEDICATION_PROMPT, minimal_length
     )
-    empty_diagnosis_prompts = get_ggponc_prompts("NA", DIAGNOSIS_PROMPT, minimal_length)
-    empty_treatment_prompts = get_ggponc_prompts("NA", TREATMENT_PROMPT, minimal_length)
+    # empty_diagnosis_prompts = get_ggponc_prompts("NA", DIAGNOSIS_PROMPT, minimal_length)
+    # empty_treatment_prompts = get_ggponc_prompts("NA", TREATMENT_PROMPT, minimal_length)
     prompts.extend(empty_medication_prompts)
-    prompts.extend(empty_diagnosis_prompts)
-    prompts.extend(empty_treatment_prompts)
+    # prompts.extend(empty_diagnosis_prompts)
+    # prompts.extend(empty_treatment_prompts)
 
     logger.debug(
         f"Created {len(prompts)} prompts from the ggponc corpus [minimal length: {minimal_length}]."

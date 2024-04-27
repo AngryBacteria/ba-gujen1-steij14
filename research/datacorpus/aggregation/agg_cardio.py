@@ -8,7 +8,6 @@ cardio = get_collection("corpus", "cardio")
 cardio_heldout = get_collection("corpus", "cardio_heldout")
 
 
-# TODO: rausnhemen? nein
 # TODO: duration / frequency prompts?
 def get_cardio_pretrain_texts():
     """
