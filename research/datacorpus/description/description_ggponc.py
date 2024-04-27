@@ -166,4 +166,4 @@ def show_paragraph_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
 
 # save_to_csv()
 df = read_from_csv()
-show_top_labels_barplot(df, ["DIAGNOSIS"])
+show_top_labels_barplot(df, ["MEDICATION"])
