@@ -60,7 +60,7 @@ if config.model.qlora and config.model.lora:
     )
     model = prepare_model_for_kbit_training(model)
 else:
-    print_with_heading("Load model [{MODEL_PRECISION}]")
+    print_with_heading(f"Load model [{MODEL_PRECISION}]")
     model = MistralForCausalLM.from_pretrained(
         config.model.id_model,
         torch_dtype=MODEL_PRECISION,
@@ -101,7 +101,6 @@ if tokenizer.pad_token is None:
 def preprocess_function(examples):
     return tokenizer(
         examples["text"],
-        max_length=config.data_processing.sequence_length,
     )
 
 
@@ -139,7 +138,7 @@ print_with_heading(
     f"sequence {config.data_processing.sequence_length}] "
 )
 
-# TODO: weight decay
+# TODO: weight decay and grad norm
 training_args = TrainingArguments(
     # training setup
     num_train_epochs=config.trainer.epochs,
@@ -155,7 +154,7 @@ training_args = TrainingArguments(
     optim=config.trainer.optimizer,
     learning_rate=config.trainer.learning_rate,
     lr_scheduler_type="cosine",  # axolotl does this
-    warmup_ratio=config.trainer.warmup_ratio,
+    warmup_steps=config.trainer.warmup_steps,
     # logging
     report_to=["none"],
     logging_strategy="steps",

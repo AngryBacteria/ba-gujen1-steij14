@@ -27,7 +27,7 @@ class TrainerConfigCLM(BaseModel):
     evals_per_epoch: int
     optimizer: str
     learning_rate: float
-    warmup_ratio: float
+    warmup_steps: int
     gradient_accumulation_steps: int
     gradient_checkpointing: bool
     mixed_precision: bool

@@ -29,7 +29,7 @@
     "evals_per_epoch": 2,
     "optimizer": "adamw_torch_fused",
     "learning_rate": 0.00005,
-    "warmup_ratio": 0.05,
+    "warmup_steps": 100,
     "gradient_accumulation_steps": 4,
     "gradient_checkpointing": true,
     "mixed_precision": false

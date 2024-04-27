@@ -3,12 +3,12 @@
     "debug": true,
     "wandb_logging": false,
     "disable_annoying_warnings": false,
-    "run_name": "LowerPrecisionConfig",
+    "run_name": "BA1 BRONCO/CARDIO finetune",
     "gpu": 0,
     "save_model": false,
     "output_dir": "mistral_instruction_low_precision",
     "save_steps": 0,
-    "logs_per_epoch": 16
+    "logs_per_epoch": 32
   },
   "model": {
     "id_model": "LeoLM/leo-mistral-hessianai-7b",
@@ -19,18 +19,18 @@
     "galore": false
   },
   "data_processing": {
-    "sequence_length": 512,
+    "sequence_length": 8192,
     "processing_threads": 1,
     "test_size": 0.05
   },
   "trainer": {
-    "epochs": 1,
-    "batch_size": 1,
+    "epochs": 4,
+    "batch_size": 4,
     "evals_per_epoch": 2,
     "optimizer": "adamw_8bit",
-    "learning_rate": 0.00005,
-    "warmup_ratio": 0.05,
-    "gradient_accumulation_steps": 4,
+    "learning_rate": 0.00002,
+    "warmup_steps": 50,
+    "gradient_accumulation_steps": 2,
     "gradient_checkpointing": true,
     "mixed_precision": false
   }
