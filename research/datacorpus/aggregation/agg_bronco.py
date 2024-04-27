@@ -97,8 +97,15 @@ def get_bronco_prompts(
             if document["normalizations"][index][0] is None:
                 continue
             else:
+                normalization_entity = document["text"][index]
+                norm_prompt_str = normalization_prompt.replace(
+                    "<<ENTITY>>", normalization_entity
+                )
+
                 normalization = document["normalizations"][index][0]
-                norm_prompt_str = normalization_prompt.replace("<<CONTEXT>>", text)
+                norm_prompt_str = norm_prompt_str.replace(
+                    "<<CONTEXT>>", document["origin"]
+                )
                 norm_prompt_str = norm_prompt_str.replace(
                     "<<OUTPUT>>", normalization["normalization"].split(":")[1]
                 )
@@ -163,4 +170,3 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
     )
 
     return prompts
-

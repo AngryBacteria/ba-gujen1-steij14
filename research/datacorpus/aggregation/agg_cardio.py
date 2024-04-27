@@ -29,14 +29,15 @@ def get_cardio_pretrain_texts():
 def get_cardio_medication_prompts():
     """
     Retrieves medication prompts from the cardio corpus based on the MEDICATION_PROMPT.
-    :param minimal_length: Minimal length of origin texts to include
     :return: List of medication extraction prompts
     """
     prompts = []
     documents = cardio.find({"annotations.type": "MEDICATION"})
 
     for document in documents:
-        simple_prompt_str = MEDICATION_PROMPT.replace("<<CONTEXT>>", document["full_text"])
+        simple_prompt_str = MEDICATION_PROMPT.replace(
+            "<<CONTEXT>>", document["full_text"]
+        )
         texts = []
         for anno in document["annotations"]:
             # skip certain steps
@@ -59,9 +60,7 @@ def get_cardio_medication_prompts():
             }
         )
 
-    logger.debug(
-        f"Created {len(prompts)} medication prompts from the cardio corpus."
-    )
+    logger.debug(f"Created {len(prompts)} medication prompts from the cardio corpus.")
 
     return prompts
 
@@ -69,7 +68,6 @@ def get_cardio_medication_prompts():
 def aggregate_cardio_prompts():
     """
     Aggregate all medication-related prompts from the cardio corpus with specified minimal text length.
-    :param minimal_length: Minimal length of origin texts to include
     :return: List of medication prompts
     """
     medication_prompts_cardio = get_cardio_medication_prompts()
@@ -77,9 +75,3 @@ def aggregate_cardio_prompts():
         f"Aggregated {len(medication_prompts_cardio)} medication prompts from the cardio corpus."
     )
     return medication_prompts_cardio
-
-
-# Example: Aggregate medication prompts with a minimal origin text length of 50 characters
-medication_prompts = aggregate_cardio_prompts()
-for prompt in medication_prompts:
-    print(prompt)

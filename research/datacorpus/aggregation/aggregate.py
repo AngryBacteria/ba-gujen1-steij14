@@ -3,7 +3,10 @@ import pandas as pd
 from datasets import load_dataset
 
 from research.datacorpus.aggregation.agg_bronco import get_all_bronco_prompts
-from research.datacorpus.aggregation.agg_cardio import get_cardio_pretrain_texts, aggregate_cardio_prompts
+from research.datacorpus.aggregation.agg_cardio import (
+    get_cardio_pretrain_texts,
+    aggregate_cardio_prompts,
+)
 from research.datacorpus.aggregation.agg_clef import get_clef_pretrain_texts
 from research.datacorpus.aggregation.agg_ggponc import get_all_ggponc_prompts
 from research.datacorpus.aggregation.agg_jsyncc import get_jsyncc_pretrain_texts
@@ -25,7 +28,9 @@ def get_unique_prompts(prompts: list[dict]) -> list[dict]:
     return list(unique_prompts.values())
 
 
-def save_all_prompts(bronco=True, ggponc=True, cardio=True, normalization=True, ignore_short=15):
+def save_all_prompts(
+    bronco=True, ggponc=True, cardio=True, normalization=True, ignore_short=15
+):
     prompts = []
     if ggponc:
         ggponc_prompts = get_all_ggponc_prompts(ignore_short)
@@ -48,7 +53,7 @@ def save_all_prompts(bronco=True, ggponc=True, cardio=True, normalization=True, 
             prompts.extend(simple_bronco_prompts)
 
     if cardio:
-        prompts.extend(aggregate_cardio_prompts(ignore_short))
+        prompts.extend(aggregate_cardio_prompts())
 
     prompts = get_unique_prompts(prompts)
     prompts_df = pd.DataFrame(prompts)
@@ -104,6 +109,7 @@ def count_training_tokens():
 
 save_all_prompts()
 count_training_tokens()
-dataset = load_dataset("json", data_files={"data": "prompts.json"})[
-    "data"].train_test_split(test_size=0.1, shuffle=True, seed=42)
-print(dataset)
+prompt_dataset = load_dataset("json", data_files={"data": "prompts.json"})[
+    "data"
+].train_test_split(test_size=0.1, shuffle=True, seed=42)
+print(prompt_dataset)

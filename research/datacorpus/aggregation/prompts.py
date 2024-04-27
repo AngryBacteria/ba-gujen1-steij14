@@ -7,7 +7,7 @@ Bitte extrahiere alle Medikamente und Wirkstoffe aus dem folgenden Text:
 MEDICATION_NORMALIZATION_PROMPT = """<|im_start|>system
 Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, medizinischen Entitäten wie Medikamenten, Diagnosen und Prozeduren entsprechende Codierungen zuzuordnen.<|im_end|>
 <|im_start|>user
-Weise den im Text genannten Medikamenten „<<ENTITIES>>“ ihre entsprechenden ATC-Codes zu:
+Weise dem im Text genannten Medikament „<<ENTITY>>“ den entsprechenden ATC-Code zu:
 <<CONTEXT>><|im_end|>
 <|im_start|><<OUTPUT>>"""
 
@@ -20,7 +20,7 @@ Bitte extrahiere alle Diagnosen und Symptome aus dem folgenden Text:
 DIAGNOSIS_NORMALIZATION_PROMPT = """<|im_start|>system
 Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, medizinischen Entitäten wie Medikamenten, Diagnosen und Prozeduren entsprechende Codierungen zuzuordnen.<|im_end|>
 <|im_start|>user
-Weise den im Text genannten Symptome oder Krankheiten „<<ENTITIES>>“ ihre entsprechenden ICD10-GM Codes zu:
+Weise dem im Text genannten Symptom oder Krankheit „<<ENTITY>>“ den entsprechenden ICD10-GM Code zu:
 <<CONTEXT>><|im_end|>
 <|im_start|><<OUTPUT>>"""
 
@@ -33,6 +33,6 @@ Bitte extrahiere alle klinischen Prozeduren aus dem folgenden Text:
 TREATMENT_NORMALIZATION_PROMPT = """<|im_start|>system
 Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, medizinischen Entitäten wie Medikamenten, Diagnosen und Prozeduren entsprechende Codierungen zuzuordnen.<|im_end|>
 <|im_start|>user
-Weise den im Text genannten klinischen Prozeduren „<<ENTITIES>>“ ihre entsprechenden OPS-2017 Codes zu:
+Weise der im Text genannten klinischen Prozedur „<<ENTITY>>“ den entsprechenden OPS-2017 Code zu:
 <<CONTEXT>><|im_end|>
 <|im_start|><<OUTPUT>>"""

@@ -101,7 +101,6 @@ if tokenizer.pad_token is None:
 def preprocess_function(examples):
     return tokenizer(
         examples["text"],
-        truncation=True,
         max_length=config.data_processing.sequence_length,
     )
 
@@ -116,7 +115,10 @@ tokenized_dataset = _dataset.map(
     num_proc=config.data_processing.processing_threads,
     remove_columns=["text", "type", "task", "source"],
 )
-# todo filter out too long sequences
+tokenized_dataset = tokenized_dataset.filter(
+    lambda example: len(example["input_ids"]) <= config.data_processing.sequence_length,
+    num_proc=config.data_processing.processing_threads,
+)
 
 data_collator_fn = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
@@ -132,7 +134,6 @@ print_with_heading(
 )
 
 # TODO: weight decay
-# TODO YAML
 training_args = TrainingArguments(
     # training setup
     num_train_epochs=config.trainer.epochs,

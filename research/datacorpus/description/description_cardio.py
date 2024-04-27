@@ -241,11 +241,11 @@ def analyze_medication_counts_per_document(df: DataFrame) -> None:
 
 def show_top_labels_barplot(df: DataFrame, desired_types=None) -> None:
     """
-        Plot the distribution of the top 20 extraction labels
-        :param df: The dataframe to plot from
-        :param desired_types: The extraction types to use for the plot
-        :return: None (a plot is displayed)
-        """
+    Plot the distribution of the top 20 extraction labels
+    :param df: The dataframe to plot from
+    :param desired_types: The extraction types to use for the plot
+    :return: None (a plot is displayed)
+    """
     if desired_types is None:
         desired_types = ["MEDICATION"]
     import plotly.express as px
