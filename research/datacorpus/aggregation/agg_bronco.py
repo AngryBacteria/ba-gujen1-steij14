@@ -12,9 +12,7 @@ from research.logger import logger
 bronco_collection = get_collection("corpus", "bronco")
 
 
-# TODO: add attribute prompts
 # TODO: add prompts for sentences with not all 3 types of annotations?
-# TODO: eventually ignore prompts for level_of_truth that is not true
 
 
 def get_bronco_prompts(
@@ -23,6 +21,7 @@ def get_bronco_prompts(
     normalization_prompt: str,
     minimal_length: int,
     add_level_of_truth: bool = False,
+    add_localisation: bool = False,
 ):
     """
     Generic function to get prompts from bronco corpus
@@ -30,6 +29,8 @@ def get_bronco_prompts(
     :param extraction: The prompt format for the extraction
     :param normalization_prompt: The prompt format for the normalization task
     :param minimal_length: Minimal length of origin texts to include
+    :param add_level_of_truth: If the level of truth should be added to the text
+    :param add_localisation: If the localisation should be added to the text
     :return: List of prompts
     """
     simple_prompts = []
@@ -41,17 +42,30 @@ def get_bronco_prompts(
 
         texts = []
         # add level of truth to the text
-        if add_level_of_truth:
+        if add_level_of_truth or add_localisation:
             for index, extraction_text in enumerate(document["text"]):
                 attributes = []
                 for attribute in document["attributes"][index]:
-                    if attribute["attribute_label"] == "LevelOfTruth":
+                    if (
+                        add_level_of_truth
+                        and attribute["attribute_label"] == "LevelOfTruth"
+                    ):
                         if attribute["attribute"] == "negative":
                             attributes.append("negativ")
                         if attribute["attribute"] == "speculative":
                             attributes.append("spekulativ")
                         if attribute["attribute"] == "possibleFuture":
                             attributes.append("zukünftig")
+                    if (
+                        add_localisation
+                        and attribute["attribute_label"] == "Localisation"
+                    ):
+                        if attribute["attribute"] == "L":
+                            attributes.append("links")
+                        if attribute["attribute"] == "R":
+                            attributes.append("rechts")
+                        if attribute["attribute"] == "B":
+                            attributes.append("beidseitig")
 
                 if len(attributes) < 1:
                     texts.append(extraction_text)
@@ -150,10 +164,3 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
 
     return prompts
 
-
-huhs, _ = medication_prompts, medication_norm_prompts = get_bronco_prompts(
-    "MEDICATION", MEDICATION_PROMPT, MEDICATION_NORMALIZATION_PROMPT, 15
-)
-
-for huh in huhs:
-    print(huh["text"])
