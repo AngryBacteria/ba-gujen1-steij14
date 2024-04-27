@@ -1,11 +1,11 @@
 {
   "general": {
     "debug": true,
-    "wandb_logging": false,
+    "wandb_logging": true,
     "disable_annoying_warnings": false,
     "run_name": "BA1 BRONCO/CARDIO finetune",
     "gpu": 0,
-    "save_model": false,
+    "save_model": true,
     "output_dir": "mistral_instruction_low_precision",
     "save_steps": 0,
     "logs_per_epoch": 32
@@ -26,7 +26,7 @@
   "trainer": {
     "epochs": 4,
     "batch_size": 4,
-    "evals_per_epoch": 2,
+    "evals_per_epoch": 4,
     "optimizer": "adamw_8bit",
     "learning_rate": 0.00002,
     "warmup_steps": 50,
