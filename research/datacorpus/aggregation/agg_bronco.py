@@ -41,7 +41,7 @@ def get_bronco_prompts(
             continue
 
         texts = []
-        # add level of truth to the text
+        # add level of truth and localisation to the text
         if add_level_of_truth or add_localisation:
             for index, extraction_text in enumerate(document["text"]):
                 attributes = []

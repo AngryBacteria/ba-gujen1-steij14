@@ -3,7 +3,7 @@ import pandas as pd
 from datasets import load_dataset
 
 from research.datacorpus.aggregation.agg_bronco import get_all_bronco_prompts
-from research.datacorpus.aggregation.agg_cardio import get_cardio_pretrain_texts
+from research.datacorpus.aggregation.agg_cardio import get_cardio_pretrain_texts, aggregate_cardio_prompts
 from research.datacorpus.aggregation.agg_clef import get_clef_pretrain_texts
 from research.datacorpus.aggregation.agg_ggponc import get_all_ggponc_prompts
 from research.datacorpus.aggregation.agg_jsyncc import get_jsyncc_pretrain_texts
@@ -25,11 +25,12 @@ def get_unique_prompts(prompts: list[dict]) -> list[dict]:
     return list(unique_prompts.values())
 
 
-def save_all_prompts(bronco=True, ggponc=True, normalization=True, ignore_short=10):
+def save_all_prompts(bronco=True, ggponc=True, cardio=True, normalization=True, ignore_short=15):
     prompts = []
     if ggponc:
         ggponc_prompts = get_all_ggponc_prompts(ignore_short)
         prompts.extend(ggponc_prompts)
+
     if bronco:
         if normalization:
             bronco_normalization_prompts = get_all_bronco_prompts(
@@ -46,8 +47,10 @@ def save_all_prompts(bronco=True, ggponc=True, normalization=True, ignore_short=
             )
             prompts.extend(simple_bronco_prompts)
 
-    prompts = get_unique_prompts(prompts)
+    if cardio:
+        prompts.extend(aggregate_cardio_prompts(ignore_short))
 
+    prompts = get_unique_prompts(prompts)
     prompts_df = pd.DataFrame(prompts)
     prompts_df.to_json("prompts.json", orient="records")
     logger.debug(f"Saved {len(prompts)} prompts to prompts.json")
@@ -99,6 +102,8 @@ def count_training_tokens():
     return token_count
 
 
-# count_training_tokens()
-save_all_pretrain_texts()
 save_all_prompts()
+count_training_tokens()
+dataset = load_dataset("json", data_files={"data": "prompts.json"})[
+    "data"].train_test_split(test_size=0.1, shuffle=True, seed=42)
+print(dataset)
