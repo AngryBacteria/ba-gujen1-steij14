@@ -29,24 +29,24 @@ def get_unique_prompts(prompts: list[dict]) -> list[dict]:
 
 
 def save_all_prompts(
-    bronco=True, ggponc=True, cardio=True, normalization=True, ignore_short=15
+    bronco=True, ggponc=True, cardio=True, normalization=True, minimal_length=15
 ):
     prompts = []
     if ggponc:
-        ggponc_prompts = get_all_ggponc_prompts(ignore_short)
+        ggponc_prompts = get_all_ggponc_prompts(minimal_length)
         prompts.extend(ggponc_prompts)
 
     if bronco:
         if normalization:
             bronco_normalization_prompts = get_all_bronco_prompts(
-                ignore_short,
+                minimal_length,
                 extraction=True,
                 normalization=True,
             )
             prompts.extend(bronco_normalization_prompts)
         else:
             simple_bronco_prompts = get_all_bronco_prompts(
-                ignore_short,
+                minimal_length,
                 extraction=True,
                 normalization=False,
             )
@@ -107,20 +107,5 @@ def count_training_tokens():
     return token_count
 
 
-save_all_prompts()
+save_all_prompts(ggponc=False, bronco=True, cardio=True, minimal_length=15)
 # count_training_tokens()
-prompt_dataset = load_dataset("json", data_files={"data": "prompts.json"})[
-    "data"
-].train_test_split(test_size=0.1, shuffle=True, seed=42)
-
-nas = 0
-not_nas = 0
-
-for i, example in enumerate(prompt_dataset["train"]):
-    if example["type"] == "NA":
-        nas += 1
-    else:
-        not_nas += 1
-
-print("Number of NA prompts: ", nas)
-print("Number of non-NA prompts: ", not_nas)

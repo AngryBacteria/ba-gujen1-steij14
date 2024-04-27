@@ -14,12 +14,12 @@ bronco_collection = get_collection("corpus", "bronco")
 
 # TODO: add prompts with no annotation for the entity, but that have annotations for other entities
 def get_bronco_prompts(
-        annotation_type: str,
-        extraction: str,
-        normalization_prompt: str,
-        minimal_length: int,
-        add_level_of_truth: bool = False,
-        add_localisation: bool = False,
+    annotation_type: str,
+    extraction: str,
+    normalization_prompt: str,
+    minimal_length: int,
+    add_level_of_truth: bool = False,
+    add_localisation: bool = False,
 ):
     """
     Generic function to get prompts from bronco corpus
@@ -45,8 +45,8 @@ def get_bronco_prompts(
                 attributes = []
                 for attribute in document["attributes"][index]:
                     if (
-                            add_level_of_truth
-                            and attribute["attribute_label"] == "LevelOfTruth"
+                        add_level_of_truth
+                        and attribute["attribute_label"] == "LevelOfTruth"
                     ):
                         if attribute["attribute"] == "negative":
                             attributes.append("negativ")
@@ -55,8 +55,8 @@ def get_bronco_prompts(
                         if attribute["attribute"] == "possibleFuture":
                             attributes.append("zukünftig")
                     if (
-                            add_localisation
-                            and attribute["attribute_label"] == "Localisation"
+                        add_localisation
+                        and attribute["attribute_label"] == "Localisation"
                     ):
                         if attribute["attribute"] == "L":
                             attributes.append("links")
@@ -133,10 +133,18 @@ def get_all_bronco_prompts(minimal_length: int, extraction=True, normalization=T
         "MEDICATION", MEDICATION_PROMPT, MEDICATION_NORMALIZATION_PROMPT, minimal_length
     )
     diagnosis_prompts, diagnosis_norm_prompts = get_bronco_prompts(
-        "DIAGNOSIS", DIAGNOSIS_PROMPT, DIAGNOSIS_NORMALIZATION_PROMPT, minimal_length, add_level_of_truth=True
+        "DIAGNOSIS",
+        DIAGNOSIS_PROMPT,
+        DIAGNOSIS_NORMALIZATION_PROMPT,
+        minimal_length,
+        add_level_of_truth=True,
     )
     treatment_prompts, treatment_norm_prompts = get_bronco_prompts(
-        "TREATMENT", TREATMENT_PROMPT, TREATMENT_NORMALIZATION_PROMPT, minimal_length, add_level_of_truth=True
+        "TREATMENT",
+        TREATMENT_PROMPT,
+        TREATMENT_NORMALIZATION_PROMPT,
+        minimal_length,
+        add_level_of_truth=True,
     )
     # prompts without annotations
     empty_medication_prompts, empty_medication_norm_prompts = get_bronco_prompts(

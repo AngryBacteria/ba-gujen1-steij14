@@ -115,9 +115,15 @@ tokenized_dataset = _dataset.map(
     num_proc=config.data_processing.processing_threads,
     remove_columns=["text", "type", "task", "source"],
 )
+print(
+    f"Dataset length before: {len(tokenized_dataset['train']) + len(tokenized_dataset['test'])}"
+)
 tokenized_dataset = tokenized_dataset.filter(
     lambda example: len(example["input_ids"]) <= config.data_processing.sequence_length,
     num_proc=config.data_processing.processing_threads,
+)
+print(
+    f"Dataset length after: {len(tokenized_dataset['train']) + len(tokenized_dataset['test'])}"
 )
 
 data_collator_fn = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)

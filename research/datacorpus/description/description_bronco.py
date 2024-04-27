@@ -295,13 +295,7 @@ def show_distribution_na_notna():
 
     bronnco_df = pd.DataFrame(bronco_docs)
     bronnco_df = (
-        bronnco_df.groupby(["origin"])
-        .agg(
-            {
-                "type": lambda x: x.tolist()
-            }
-        )
-        .reset_index()
+        bronnco_df.groupby(["origin"]).agg({"type": lambda x: x.tolist()}).reset_index()
     )
 
     # make the items inside the type array unique
@@ -319,6 +313,7 @@ def show_distribution_na_notna():
 
     # pie plot
     import plotly.express as px
+
     fig = px.pie(
         names=["NA", "Not NA"],
         values=[is_na, is_not_na],
