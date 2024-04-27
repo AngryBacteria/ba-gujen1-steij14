@@ -8,7 +8,7 @@
     "save_model": true,
     "output_dir": "mistral_instruction_low_precision",
     "save_steps": 0,
-    "logs_per_epoch": 32
+    "logs_per_epoch": 64
   },
   "model": {
     "id_model": "LeoLM/leo-mistral-hessianai-7b",
@@ -30,7 +30,7 @@
     "optimizer": "adamw_8bit",
     "learning_rate": 0.00002,
     "warmup_steps": 50,
-    "gradient_accumulation_steps": 2,
+    "gradient_accumulation_steps": 1,
     "gradient_checkpointing": true,
     "mixed_precision": false
   }
