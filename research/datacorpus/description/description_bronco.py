@@ -1,4 +1,3 @@
-# TODO: properties graphs and tables of bronco
 import pandas as pd
 from pandas import DataFrame
 
@@ -281,6 +280,51 @@ def show_top_normalizations_barplot(df: DataFrame, desired_types=None) -> None:
     fig.show()
 
 
-save_to_csv()
-df_main = read_from_csv()
-show_localisation_pieplot(df_main)
+# save_to_csv()
+# df_main = read_from_csv()
+# show_localisation_pieplot(df_main)
+
+
+def show_distribution_na_notna():
+    """
+    Show the distribution of NA and Not NA in the origin texts
+    """
+    bronco_collection = get_collection("corpus", "bronco")
+    bronco_cursor = bronco_collection.find({})
+    bronco_docs = list(bronco_cursor)
+
+    bronnco_df = pd.DataFrame(bronco_docs)
+    bronnco_df = (
+        bronnco_df.groupby(["origin"])
+        .agg(
+            {
+                "type": lambda x: x.tolist()
+            }
+        )
+        .reset_index()
+    )
+
+    # make the items inside the type array unique
+    bronnco_df["type"] = bronnco_df["type"].apply(lambda x: list(set(x)))
+    value_counts = bronnco_df["type"].value_counts()
+
+    # get distribution between NA and all others
+    is_na = 0
+    is_not_na = 0
+    for index, value in value_counts.items():
+        if index == ["NA"]:
+            is_na += value
+        else:
+            is_not_na += value
+
+    # pie plot
+    import plotly.express as px
+    fig = px.pie(
+        names=["NA", "Not NA"],
+        values=[is_na, is_not_na],
+        title="Distribution of NA and Not NA in Origin Texts",
+    )
+    fig.show()
+
+
+show_distribution_na_notna()

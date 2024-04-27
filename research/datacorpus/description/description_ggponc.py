@@ -1,4 +1,3 @@
-# TODO: properties graphs and tables of ggponc
 import pandas as pd
 from pandas import DataFrame
 

@@ -108,8 +108,19 @@ def count_training_tokens():
 
 
 save_all_prompts()
-count_training_tokens()
+# count_training_tokens()
 prompt_dataset = load_dataset("json", data_files={"data": "prompts.json"})[
     "data"
 ].train_test_split(test_size=0.1, shuffle=True, seed=42)
-print(prompt_dataset)
+
+nas = 0
+not_nas = 0
+
+for i, example in enumerate(prompt_dataset["train"]):
+    if example["type"] == "NA":
+        nas += 1
+    else:
+        not_nas += 1
+
+print("Number of NA prompts: ", nas)
+print("Number of non-NA prompts: ", not_nas)

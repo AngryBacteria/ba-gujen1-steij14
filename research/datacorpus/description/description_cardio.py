@@ -1,4 +1,3 @@
-# TODO: properties graphs and tables of cardio
 import pandas as pd
 from pandas import DataFrame
 

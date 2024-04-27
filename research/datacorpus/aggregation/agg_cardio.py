@@ -1,5 +1,3 @@
-# TODO: aggregation of cardio
-
 from research.datacorpus.aggregation.prompts import MEDICATION_PROMPT
 from research.datacorpus.creation.utils.utils_mongodb import get_collection
 from research.logger import logger
