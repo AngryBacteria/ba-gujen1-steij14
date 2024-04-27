@@ -239,11 +239,44 @@ def analyze_medication_counts_per_document(df: DataFrame) -> None:
     print(f"Average Count: {np.round(average_count, 2)}")
 
 
+def show_top_labels_barplot(df: DataFrame, desired_types=None) -> None:
+    """
+        Plot the distribution of the top 20 extraction labels
+        :param df: The dataframe to plot from
+        :param desired_types: The extraction types to use for the plot
+        :return: None (a plot is displayed)
+        """
+    if desired_types is None:
+        desired_types = ["MEDICATION"]
+    import plotly.express as px
+
+    filtered_df = df[df["type"].isin(desired_types)]
+    type_counts = filtered_df["text"].value_counts()
+    top_20_counts = type_counts.head(20)
+    top_20_counts_df = pd.DataFrame(
+        {"text": top_20_counts.index, "count": top_20_counts.values}
+    )
+
+    desired_types_string = ", ".join(desired_types)
+    total_number = len(filtered_df)
+
+    fig = px.bar(
+        top_20_counts_df,
+        x="text",
+        y="count",
+        title=f"Distribution of Top 20 Extractions (n = {total_number}, types = {desired_types_string})",
+    )
+    fig.show()
+
+
 save_to_csv()
 save_full_text_to_csv()
 df_main = read_from_csv()
 df_text = read_from_csv("cardio_full_text.csv")
-type_pieplot(df_main)
-analyze_medication_counts_per_document(df_main)
-paragraph_lengths(df_text, tokenize=True)
-plot_lengths_boxplot(df_text)
+# type_pieplot(df_main)
+# analyze_medication_counts_per_document(df_main)
+# paragraph_lengths(df_text, tokenize=True)
+plot_lengths_boxplot(df_text, tokenize=True)
+plot_lengths_boxplot(df_main, tokenize=True)
+
+# show_top_labels_barplot(df_main)
