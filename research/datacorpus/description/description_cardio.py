@@ -21,12 +21,22 @@ def save_to_csv() -> None:
         for anno in doc["annotations"]:
             if anno["type"] == "NA":
                 formatted_annotations.append(
-                    {"document": doc["document"], "type": anno["type"], "origin": anno["origin"], "text": "NA"}
+                    {
+                        "document": doc["document"],
+                        "type": anno["type"],
+                        "origin": anno["origin"],
+                        "text": "NA",
+                    }
                 )
             else:
                 for text in anno["text"]:
                     formatted_annotations.append(
-                        {"document": doc["document"], "type": anno["type"], "origin": anno["origin"], "text": text}
+                        {
+                            "document": doc["document"],
+                            "type": anno["type"],
+                            "origin": anno["origin"],
+                            "text": text,
+                        }
                     )
 
     df = pd.DataFrame(formatted_annotations)
@@ -38,7 +48,7 @@ def save_full_text_to_csv() -> None:
     Save the cardio mongodb (only document and its full_text) to trimmed down csv file
     :return: None
     """
-     
+
     cardio_collection = get_collection("corpus", "cardio")
     cardio_cursor = cardio_collection.find({})
 
@@ -50,6 +60,7 @@ def save_full_text_to_csv() -> None:
 
     df = pd.DataFrame(formatted_annotations)
     df.to_csv("cardio_full_text.csv", sep="|", index=False)
+
 
 def read_from_csv(str="cardio_description.csv") -> DataFrame:
     """
@@ -154,12 +165,9 @@ def plot_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
 
     # display the boxplot
     fig = px.box(y=lengths, title="Paragraph Lengths in Cardio Corpus")
-    fig.update_layout(
-        xaxis_title="",
-        yaxis_title="Length",
-        showlegend=False
-    )
+    fig.update_layout(xaxis_title="", yaxis_title="Length", showlegend=False)
     fig.show()
+
 
 def analyze_types_per_document(df: DataFrame) -> None:
     """
@@ -169,17 +177,26 @@ def analyze_types_per_document(df: DataFrame) -> None:
     """
 
     import plotly.express as px
-    
+
     # group per type
-    type_counts = df.groupby(['document', 'type']).size().reset_index(name='count')
+    type_counts = df.groupby(["document", "type"]).size().reset_index(name="count")
 
     # barplot
-    fig = px.bar(type_counts, x='document', y='count', color='type', title="Type Counts per Document in Cardio Corpus",
-                 labels={'count': 'Count of Types', 'document': 'Document ID', 'type': 'Type'})
-    fig.update_layout(xaxis_title="Document ID", yaxis_title="Count of Types", showlegend=True)
+    fig = px.bar(
+        type_counts,
+        x="document",
+        y="count",
+        color="type",
+        title="Type Counts per Document in Cardio Corpus",
+        labels={"count": "Count of Types", "document": "Document ID", "type": "Type"},
+    )
+    fig.update_layout(
+        xaxis_title="Document ID", yaxis_title="Count of Types", showlegend=True
+    )
     fig.show()
 
     print(type_counts)
+
 
 def analyze_medication_counts_per_document(df: DataFrame) -> None:
     """
@@ -191,20 +208,29 @@ def analyze_medication_counts_per_document(df: DataFrame) -> None:
     import plotly.express as px
 
     # only type medication
-    medication_df = df[df['type'] == 'MEDICATION']
+    medication_df = df[df["type"] == "MEDICATION"]
 
     # Gruppiere nach 'document' und zähle die Anzahl der Vorkommen von 'Medication'
-    medication_counts = medication_df.groupby('document').size().reset_index(name='count')
+    medication_counts = (
+        medication_df.groupby("document").size().reset_index(name="count")
+    )
 
-    max_count = medication_counts['count'].max()
-    min_count = medication_counts['count'].min()
-    median_count = medication_counts['count'].median()
-    average_count = medication_counts['count'].mean()
+    max_count = medication_counts["count"].max()
+    min_count = medication_counts["count"].min()
+    median_count = medication_counts["count"].median()
+    average_count = medication_counts["count"].mean()
 
     # Visualisiere die Ergebnisse als Balkendiagramm
-    fig = px.bar(medication_counts, x='document', y='count', title="Medication Counts per Document in Cardio Corpus",
-                 labels={'count': 'Count of Medication', 'document': 'Document ID'})
-    fig.update_layout(xaxis_title="Document ID", yaxis_title="Count of Medication", showlegend=False)
+    fig = px.bar(
+        medication_counts,
+        x="document",
+        y="count",
+        title="Medication Counts per Document in Cardio Corpus",
+        labels={"count": "Count of Medication", "document": "Document ID"},
+    )
+    fig.update_layout(
+        xaxis_title="Document ID", yaxis_title="Count of Medication", showlegend=False
+    )
     fig.show()
 
     print(f"Max Count: {max_count}")

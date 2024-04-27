@@ -68,6 +68,54 @@ def transform_ner_cardio_annotations(annotations: list[str]) -> list[str]:
     return transformed
 
 
+def get_medication_relations(annotation: dict, relation_type: str):
+    """
+    Get relations of type relation_type from the annotation. These could be the duration or frequency of the medication.
+    :param annotation: The annotation object
+    :param relation_type: The type of relation to get
+    :return: List of relations of type relation_type
+    """
+    # get relation mentions
+    relations = []
+    current_relation_text = []
+    current_relation = None
+    for index, tag in enumerate(annotation["ner_tags"]):
+        relation = annotation["relations"][index]
+        word = annotation["words"][index]
+
+        # Check if the current tag is relation of type relation_type
+        if relation_type in tag:
+            # Start a new relation if not already started
+            if current_relation_text == []:
+                current_relation = relation
+            current_relation_text.append(word)
+        else:
+            # If a relation just ended, save it
+            if current_relation_text:
+                # If there are multiple relations, split and store duration under each
+                if "|" in current_relation:
+                    for rel in current_relation.split("|"):
+                        if relation_type in ["FREQUENCY", "STRENGTH"]:
+                            text = "".join(current_relation_text)
+                        else:
+                            text = " ".join(current_relation_text)
+                        relations.append({"relation": rel, "relation_text": text})
+                else:
+                    if relation_type in ["FREQUENCY", "STRENGTH"]:
+                        text = "".join(current_relation_text)
+                    else:
+                        text = " ".join(current_relation_text)
+                    relations.append(
+                        {"relation": current_relation, "relation_text": text}
+                    )
+
+                # Reset the current relation
+                current_relation_text = []
+                current_relation = None
+
+    return relations
+
+
 def parse_ner_annotations():
     # get all filenames in the folder TSV_FOLDER_PATH
     tsv_files = [file for file in os.listdir(TSV_FOLDER_PATH) if file.endswith(".tsv")]
@@ -127,7 +175,6 @@ def parse_ner_annotations():
     return annotations_ner
 
 
-# TODO: also parse the duration, form, frequency, strength
 def transform_cardio_annotation(annotation: dict):
     """Transform annotations into unified format."""
     drugs = []
@@ -144,8 +191,23 @@ def transform_cardio_annotation(annotation: dict):
                     "in_narrative": annotation["in_narrative"][index],
                     "start": int(offsets[0]),
                     "end": int(offsets[1]),
+                    "attributes": [],
                 }
             )
+
+    for relation_type in ["DURATION", "FREQUENCY", "STRENGTH"]:
+        for relation in get_medication_relations(annotation, relation_type):
+            pattern = r"\[.*?\]"
+            search_id = relation["relation"]
+            search_id = re.sub(pattern, "", search_id)
+            for drug in drugs:
+                if drug["id"] == search_id:
+                    drug["attributes"].append(
+                        {
+                            "attribute_label": relation_type,
+                            "attribute": relation["relation_text"],
+                        }
+                    )
 
     if len(drugs) == 0:
         return {
@@ -155,6 +217,7 @@ def transform_cardio_annotation(annotation: dict):
             "type": "NA",
             "end": [],
             "start": [],
+            "attributes": [],
         }
     else:
         df = pd.DataFrame(drugs)
@@ -167,6 +230,7 @@ def transform_cardio_annotation(annotation: dict):
                     "in_narrative": lambda x: x.tolist(),
                     "start": lambda x: x.tolist(),
                     "end": lambda x: x.tolist(),
+                    "attributes": lambda x: x.tolist(),
                 }
             )
             .reset_index()
@@ -294,5 +358,3 @@ def build_cardio_db():
 
 
 build_cardio_db()
-
-# print_unique_anonymization()
