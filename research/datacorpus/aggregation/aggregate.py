@@ -29,35 +29,39 @@ def get_unique_prompts(prompts: list[dict]) -> list[dict]:
 
 
 def save_all_prompts(
-    bronco=True, ggponc=True, cardio=True, normalization=True, minimal_length=15
+    bronco: bool,
+    ggponc: bool,
+    cardio: bool,
+    normalization: bool,
+    na_prompts: bool,
+    minimal_length=15,
 ):
     prompts = []
     if ggponc:
-        ggponc_prompts = get_all_ggponc_prompts(minimal_length)
+        ggponc_prompts = get_all_ggponc_prompts(
+            minimal_length=minimal_length,
+            diagnosis=False,
+            treatment=False,
+            medication=True,
+            na_prompts=na_prompts,
+        )
         prompts.extend(ggponc_prompts)
 
     if bronco:
-        if normalization:
-            bronco_normalization_prompts = get_all_bronco_prompts(
-                minimal_length,
-                extraction=True,
-                normalization=False,
-                diagnosis=True,
-                treatment=False,
-                medication=False,
-                na_prompts=False,
-            )
-            prompts.extend(bronco_normalization_prompts)
-        else:
-            simple_bronco_prompts = get_all_bronco_prompts(
-                minimal_length,
-                extraction=True,
-                normalization=False,
-            )
-            prompts.extend(simple_bronco_prompts)
+        bronco_prompts = get_all_bronco_prompts(
+            minimal_length=minimal_length,
+            extraction=True,
+            normalization=normalization,
+            diagnosis=True,
+            treatment=True,
+            medication=True,
+            na_prompts=na_prompts,
+        )
+        prompts.extend(bronco_prompts)
 
     if cardio:
-        prompts.extend(aggregate_cardio_prompts())
+        cardio_prompts = aggregate_cardio_prompts()
+        prompts.extend(cardio_prompts)
 
     prompts = get_unique_prompts(prompts)
     prompts_df = pd.DataFrame(prompts)
@@ -111,14 +115,22 @@ def count_training_tokens():
     return token_count
 
 
-save_all_prompts(ggponc=False, bronco=True, cardio=False, minimal_length=100)
-# count_training_tokens()
+# save prompts
+save_all_prompts(
+    ggponc=False,
+    bronco=True,
+    cardio=True,
+    normalization=True,
+    na_prompts=True,
+    minimal_length=15,
+)
 
+# print selection of prompts
 data = load_dataset("json", data_files={"data": "prompts.json"})[
     "data"
 ].train_test_split(0.1, shuffle=True, seed=42)
 for i, example in enumerate(data["test"]):
     print(example["text"])
     print("----------------------------------")
-    if i > 10:
+    if i > 5:
         break

@@ -53,10 +53,10 @@ def get_ggponc_prompts(
 
 def get_all_ggponc_prompts(
     minimal_length: int,
-    diagnosis=False,
-    treatment=False,
-    medication=True,
-    na_prompts=True,
+    diagnosis: bool,
+    treatment: bool,
+    medication: bool,
+    na_prompts: bool,
 ):
     """
     Get all prompts from ggponc corpus

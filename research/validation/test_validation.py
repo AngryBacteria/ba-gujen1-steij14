@@ -20,7 +20,9 @@ Tumorkonferenz ZGO: Die Leber zeigt bildmorphologisch deutliche Umbauzeichen, in
 tokenizer = AutoTokenizer.from_pretrained(
     "LeoLM/leo-mistral-hessianai-7b", use_fast=True, add_bos_token=True
 )
-model = AutoModelForCausalLM.from_pretrained("mistral_instruction_low_precision", torch_dtype=torch.bfloat16)
+model = AutoModelForCausalLM.from_pretrained(
+    "mistral_instruction_low_precision", torch_dtype=torch.bfloat16
+)
 
 model.to("cuda:0")
 

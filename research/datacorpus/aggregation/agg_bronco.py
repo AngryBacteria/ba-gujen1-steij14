@@ -15,16 +15,16 @@ bronco_collection = get_collection("corpus", "bronco")
 # TODO: add prompts with no annotation for the entity, but that have annotations for other entities
 def get_bronco_prompts(
     annotation_type: str,
-    extraction: str,
+    extraction_prompt: str,
     normalization_prompt: str,
     minimal_length: int,
-    add_level_of_truth: bool = False,
+    add_level_of_truth: bool,
     add_localisation: bool = False,
 ):
     """
     Generic function to get prompts from bronco corpus
     :param annotation_type: The type of annotation to get prompts for
-    :param extraction: The prompt format for the extraction
+    :param extraction_prompt: The prompt format for the extraction
     :param normalization_prompt: The prompt format for the normalization task
     :param minimal_length: Minimal length of origin texts to include
     :param add_level_of_truth: If the level of truth should be added to the text
@@ -79,7 +79,7 @@ def get_bronco_prompts(
         if text == "":
             text = "Keine vorhanden"
 
-        simple_prompt_str = extraction.replace("<<CONTEXT>>", document["origin"])
+        simple_prompt_str = extraction_prompt.replace("<<CONTEXT>>", document["origin"])
         simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", text)
         simple_prompts.append(
             {
@@ -120,13 +120,13 @@ def get_bronco_prompts(
 
 
 def get_all_bronco_prompts(
-    minimal_length: int,
-    extraction=True,
-    normalization=True,
-    diagnosis=True,
-    treatment=True,
-    medication=True,
-    na_prompts=True,
+    extraction: bool,
+    normalization: bool,
+    diagnosis: bool,
+    treatment: bool,
+    medication: bool,
+    na_prompts: bool,
+    minimal_length=15,
 ):
     """
     Get all prompts from bronco corpus
@@ -182,13 +182,25 @@ def get_all_bronco_prompts(
     # prompts without annotations
     if na_prompts and extraction:
         empty_medication_prompts, empty_medication_norm_prompts = get_bronco_prompts(
-            "NA", MEDICATION_PROMPT, MEDICATION_NORMALIZATION_PROMPT, minimal_length
+            "NA",
+            MEDICATION_PROMPT,
+            MEDICATION_NORMALIZATION_PROMPT,
+            minimal_length,
+            add_level_of_truth=True,
         )
         empty_diagnosis_prompts, empty_diagnosis_norm_prompts = get_bronco_prompts(
-            "NA", DIAGNOSIS_PROMPT, DIAGNOSIS_NORMALIZATION_PROMPT, minimal_length
+            "NA",
+            DIAGNOSIS_PROMPT,
+            DIAGNOSIS_NORMALIZATION_PROMPT,
+            minimal_length,
+            add_level_of_truth=True,
         )
         empty_treatment_prompts, empty_treatment_norm_prompts = get_bronco_prompts(
-            "NA", TREATMENT_PROMPT, TREATMENT_NORMALIZATION_PROMPT, minimal_length
+            "NA",
+            TREATMENT_PROMPT,
+            TREATMENT_NORMALIZATION_PROMPT,
+            minimal_length,
+            add_level_of_truth=True,
         )
         prompts.extend(empty_medication_prompts)
         prompts.extend(empty_diagnosis_prompts)

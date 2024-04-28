@@ -91,10 +91,14 @@ if config.model.lora:
 # Tokenizer
 print_with_heading("Load fast tokenizer")
 tokenizer = AutoTokenizer.from_pretrained(
-    config.model.id_model, use_fast=True, add_eos_token=True, add_bos_token=True, padding_side="left",
+    config.model.id_model,
+    use_fast=True,
+    add_eos_token=True,
+    add_bos_token=True,
+    padding_side="left",
 )
 # TODO: find out why this fixes it
-# google für mistral padding token
+# google: mistral padding token
 # https://discuss.huggingface.co/t/mistral-trouble-when-fine-tuning-dont-set-pad-token-id-eos-token-id/77928/4
 # https://www.reddit.com/r/LocalLLaMA/comments/184g120/mistral_fine_tuning_eos_and_padding/
 # https://medium.com/@parikshitsaikia1619/mistral-mastery-fine-tuning-fast-inference-guide-62e163198b06
@@ -129,13 +133,6 @@ tokenized_dataset = tokenized_dataset.filter(
 print(
     f"Dataset length after: {len(tokenized_dataset['train']) + len(tokenized_dataset['test'])}"
 )
-# count unk tokens in dataset that are not at the beginning or end # todo remove
-unk_count = 0
-for example in tokenized_dataset["train"]:
-    unk_count += example["input_ids"].count(tokenizer.unk_token_id)
-for example in tokenized_dataset["test"]:
-    unk_count += example["input_ids"].count(tokenizer.unk_token_id)
-print(f"Number of unk tokens in dataset: {unk_count}")
 
 data_collator_fn = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
@@ -250,6 +247,7 @@ if config.general.wandb_logging:
     import wandb
 
     wandb.finish()
+
 del model
 del trainer
 del tokenizer
