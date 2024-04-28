@@ -117,7 +117,7 @@ save_all_prompts(ggponc=False, bronco=True, cardio=False, minimal_length=15)
 data = load_dataset("json", data_files={"data": "prompts.json"})[
     "data"
 ].train_test_split(0.1, shuffle=True, seed=42)
-for i, example in enumerate(data["train"]):
+for i, example in enumerate(data["test"]):
     print(example["text"])
     print("----------------------------------")
     if i > 10:
