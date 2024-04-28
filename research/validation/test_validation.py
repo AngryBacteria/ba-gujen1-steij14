@@ -15,7 +15,7 @@ Du bist ein fortgeschrittener Algorithmus, spezialisiert darauf aus medizinische
 Bitte extrahiere alle Diagnosen und Symptome aus dem folgenden Text:
 Tumorkonferenz ZGO: Die Leber zeigt bildmorphologisch deutliche Umbauzeichen, in der Vorgeschichte sind eine Hepatitis C und Alkoholabusus beschrieben.
 ### Response:
-Hepatitis C|Alkoholabusus"""
+"""
 
 tokenizer = AutoTokenizer.from_pretrained(
     "LeoLM/leo-mistral-hessianai-7b", use_fast=True, add_bos_token=True
