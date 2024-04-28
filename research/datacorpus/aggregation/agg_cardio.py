@@ -55,6 +55,7 @@ def get_cardio_medication_prompts():
                 "type": "MEDICATION",
                 "task": "extraction",
                 "source": "cardio",
+                "extraction_labels": texts if texts != "Keine vorhanden" else "",
             }
         )
 

@@ -112,7 +112,7 @@ tokenized_dataset = _dataset.map(
     preprocess_function,
     batched=True,
     num_proc=config.data_processing.processing_threads,
-    remove_columns=["text", "type", "task", "source"],
+    remove_columns=["text", "type", "task", "source", "extraction_labels"],
 )
 print(
     f"Dataset length before: {len(tokenized_dataset['train']) + len(tokenized_dataset['test'])}"
