@@ -111,7 +111,7 @@ def count_training_tokens():
     return token_count
 
 
-save_all_prompts(ggponc=False, bronco=True, cardio=False, minimal_length=15)
+save_all_prompts(ggponc=False, bronco=True, cardio=False, minimal_length=100)
 # count_training_tokens()
 
 data = load_dataset("json", data_files={"data": "prompts.json"})[

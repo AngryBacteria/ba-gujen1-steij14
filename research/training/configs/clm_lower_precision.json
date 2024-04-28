@@ -3,7 +3,7 @@
     "debug": true,
     "wandb_logging": true,
     "disable_annoying_warnings": false,
-    "run_name": "BA1 BRONCO/CARDIO finetune",
+    "run_name": "BA2 BRONCO/CARDIO finetune",
     "gpu": 0,
     "save_model": true,
     "output_dir": "mistral_instruction_low_precision",
@@ -19,17 +19,17 @@
     "galore": false
   },
   "data_processing": {
-    "sequence_length": 8192,
+    "sequence_length": 1024,
     "processing_threads": 1,
     "test_size": 0.05
   },
   "trainer": {
-    "epochs": 4,
+    "epochs": 2,
     "batch_size": 4,
     "evals_per_epoch": 4,
     "optimizer": "adamw_8bit",
     "learning_rate": 0.00002,
-    "warmup_steps": 50,
+    "warmup_steps": 5,
     "gradient_accumulation_steps": 1,
     "gradient_checkpointing": true,
     "mixed_precision": false
