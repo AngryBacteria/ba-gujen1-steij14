@@ -75,19 +75,21 @@ def get_bronco_prompts(
         texts = list(set(texts))
 
         # concatenate extraction texts
-        text = "|".join(texts)
-        if text == "":
-            text = "Keine vorhanden"
+        extraction_string = "|".join(texts)
+        if extraction_string == "":
+            extraction_string = "Keine vorhanden"
 
         simple_prompt_str = extraction_prompt.replace("<<CONTEXT>>", document["origin"])
-        simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", text)
+        simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", extraction_string)
         simple_prompts.append(
             {
                 "text": simple_prompt_str.strip(),
                 "type": annotation_type,
                 "task": "extraction",
                 "source": "bronco",
-                "extraction_labels": texts if texts != "Keine vorhanden" else "",
+                "annotation_labels": (
+                    extraction_string if extraction_string != "Keine vorhanden" else ""
+                ),
             }
         )
 
@@ -113,6 +115,9 @@ def get_bronco_prompts(
                         "type": annotation_type,
                         "task": "normalization",
                         "source": "bronco",
+                        "annotation_labels": normalization["normalization"].split(":")[
+                            1
+                        ],
                     }
                 )
 

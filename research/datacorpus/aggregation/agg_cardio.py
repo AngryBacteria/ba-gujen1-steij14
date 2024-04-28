@@ -46,8 +46,8 @@ def get_cardio_medication_prompts():
             texts.extend(anno["text"])
 
         texts = list(set(texts))
-        texts = "|".join(texts)
-        simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", texts)
+        extraction_string = "|".join(texts)
+        simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", extraction_string)
 
         prompts.append(
             {
@@ -55,7 +55,9 @@ def get_cardio_medication_prompts():
                 "type": "MEDICATION",
                 "task": "extraction",
                 "source": "cardio",
-                "extraction_labels": texts if texts != "Keine vorhanden" else "",
+                "annotation_labels": (
+                    extraction_string if extraction_string != "Keine vorhanden" else ""
+                ),
             }
         )
 

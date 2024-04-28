@@ -1,4 +1,3 @@
-# TODO: aggregation of all corpus datasets
 import pandas as pd
 from datasets import load_dataset
 
@@ -128,9 +127,10 @@ save_all_prompts(
 # print selection of prompts
 data = load_dataset("json", data_files={"data": "prompts.json"})[
     "data"
-].train_test_split(0.1, shuffle=True, seed=42)
+].train_test_split(test_size=0.1, shuffle=True, seed=42)
+print(data)
 for i, example in enumerate(data["test"]):
     print(example["text"])
     print("----------------------------------")
-    if i > 5:
+    if i > 25:
         break

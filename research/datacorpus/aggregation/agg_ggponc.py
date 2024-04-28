@@ -9,6 +9,7 @@ from research.logger import logger
 ggonc_collection = get_collection("corpus", "ggponc_short")
 
 
+# TODO: add prompts with no annotation for the entity, but that have annotations for other entities
 def get_ggponc_prompts(
     annotation_type: str, extraction_prompt: str, minimal_length: int
 ):
@@ -29,22 +30,28 @@ def get_ggponc_prompts(
                 continue
 
             # remove duplicates from text
-            anno["text"] = list(set(anno["text"]))
+            texts = list(set(anno["text"]))
 
             # concatenate
-            texts = "|".join(anno["text"])
-            if texts == "":
-                texts = "Keine vorhanden"
+            extraction_string = "|".join(texts)
+            if extraction_string == "":
+                extraction_string = "Keine vorhanden"
 
             simple_prompt_str = extraction_prompt.replace("<<CONTEXT>>", anno["origin"])
-            simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", texts)
+            simple_prompt_str = simple_prompt_str.replace(
+                "<<OUTPUT>>", extraction_string
+            )
             prompts.append(
                 {
                     "text": simple_prompt_str.strip(),
                     "type": annotation_type,
                     "task": "extraction",
                     "source": "ggponc",
-                    "extraction_labels": texts if texts != "Keine vorhanden" else "",
+                    "annotation_labels": (
+                        extraction_string
+                        if extraction_string != "Keine vorhanden"
+                        else ""
+                    ),
                 }
             )
 
