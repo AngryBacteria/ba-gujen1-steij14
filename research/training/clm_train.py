@@ -92,7 +92,9 @@ if config.model.lora:
 
 # Tokenizer
 print_with_heading("Load fast tokenizer")
-tokenizer = AutoTokenizer.from_pretrained(config.model.id_model, use_fast=True)
+tokenizer = AutoTokenizer.from_pretrained(
+    config.model.id_model, use_fast=True, add_eos_token=True, add_bos_token=True, padding_side="left",
+)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 

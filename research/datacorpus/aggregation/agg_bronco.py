@@ -147,7 +147,7 @@ def get_all_bronco_prompts(
             MEDICATION_PROMPT,
             MEDICATION_NORMALIZATION_PROMPT,
             minimal_length,
-            add_level_of_truth=False
+            add_level_of_truth=False,
         )
         if extraction:
             prompts.extend(medication_prompts)

@@ -41,7 +41,11 @@ def save_all_prompts(
             bronco_normalization_prompts = get_all_bronco_prompts(
                 minimal_length,
                 extraction=True,
-                normalization=True,
+                normalization=False,
+                diagnosis=True,
+                treatment=False,
+                medication=False,
+                na_prompts=False,
             )
             prompts.extend(bronco_normalization_prompts)
         else:
@@ -107,5 +111,14 @@ def count_training_tokens():
     return token_count
 
 
-save_all_prompts(ggponc=False, bronco=True, cardio=True, minimal_length=15)
+save_all_prompts(ggponc=False, bronco=True, cardio=False, minimal_length=15)
 # count_training_tokens()
+
+data = load_dataset("json", data_files={"data": "prompts.json"})[
+    "data"
+].train_test_split(0.1, shuffle=True, seed=42)
+for i, example in enumerate(data["train"]):
+    print(example["text"])
+    print("----------------------------------")
+    if i > 10:
+        break
