@@ -79,6 +79,7 @@ def compute_metrics(eval_pred: EvalPrediction):
 
 
 # Train
+# TODO: weight decay and grad norm, warmup ratio verstehen und anwenden
 print_with_heading("Training arguments")
 training_args = TrainingArguments(
     # training setup

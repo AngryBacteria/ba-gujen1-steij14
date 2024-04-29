@@ -139,6 +139,7 @@ tokenized_dataset = dataset.map(
 )
 data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
 
+# TODO: weight decay and grad norm, warmup ratio verstehen und anwenden
 print_with_heading("Train model")
 training_args = TrainingArguments(
     # training setup

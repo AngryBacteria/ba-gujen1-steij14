@@ -147,7 +147,7 @@ print_with_heading(
     f"sequence {config.data_processing.sequence_length}] "
 )
 
-# TODO: weight decay and grad norm
+# TODO: weight decay and grad norm, warmup ratio verstehen und anwenden
 training_args = TrainingArguments(
     # training setup
     num_train_epochs=config.trainer.epochs,

@@ -86,6 +86,7 @@ data_collator = DataCollatorForLanguageModeling(
 )
 
 # Setup training
+# TODO: weight decay and grad norm, warmup ratio verstehen und anwenden
 print_with_heading("Train model")
 training_args = TrainingArguments(
     # training setup
