@@ -3,7 +3,7 @@
     "debug": true,
     "wandb_logging": true,
     "disable_annoying_warnings": false,
-    "run_name": "BA V1 BRONCO/CARDIO finetune",
+    "run_name": "BA V2 BRONCO/CARDIO finetune",
     "gpu": 0,
     "save_model": true,
     "output_dir": "mistral_instruction_low_precision",

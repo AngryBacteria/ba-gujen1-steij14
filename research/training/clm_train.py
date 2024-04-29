@@ -158,7 +158,6 @@ training_args = TrainingArguments(
     gradient_checkpointing_kwargs={
         "use_reentrant": False,
     },  # https://github.com/huggingface/transformers/issues/26969
-    group_by_length=True,  # should speed up training
     # optimization setup
     optim=config.trainer.optimizer,
     learning_rate=config.trainer.learning_rate,
