@@ -82,13 +82,13 @@ model = AutoModelForTokenClassification.from_pretrained(
 print_with_heading("Load data")
 dataset = load_dataset("json", data_files={"data": "ner.json"})[
     "data"
-].train_test_split(test_size=0.1, shuffle=True, seed=42)
+].train_test_split(test_size=0.15, shuffle=True, seed=42)
 seqeval = evaluate.load("seqeval")
 
 
 def tokenize_and_align_labels(examples):
     tokenized_inputs = tokenizer(
-        examples["words"], truncation=True, is_split_into_words=True
+        examples["words"], truncation=True, is_split_into_words=True, max_length=512
     )
     labels = []
     for i, label in enumerate(examples["ner_tags"]):
