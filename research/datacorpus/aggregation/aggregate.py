@@ -130,7 +130,7 @@ data = load_dataset("json", data_files={"data": "prompts.json"})[
 ].train_test_split(test_size=0.1, shuffle=True, seed=42)
 print(data)
 for i, example in enumerate(data["test"]):
-    if example["task"] == "extraction":
+    if example["task"] == "extraction" and example["source"] == "bronco":
         print(example["text"])
         print("----------------------------------")
         if i > 25:
