@@ -11,3 +11,4 @@ galore-torch==1.0
 scikit-learn==1.4.2
 evaluate==0.4.1
 seqeval
+huggingface-hub

@@ -9,12 +9,12 @@ setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-prompt2 = """### Instruction:
-Du bist ein fortgeschrittener Algorithmus, spezialisiert darauf aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und medizinische Prozeduren zu extrahieren.<|im_end|>
-### Input:
+prompt2 = """<|im_start|>system
+Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, medizinischen Entitäten wie Medikamenten, Diagnosen und Prozeduren entsprechende Codierungen zuzuordnen.<|im_end|>
+<|im_start|>user
 Bitte extrahiere alle Diagnosen und Symptome aus dem folgenden Text:
-Tumorkonferenz ZGO: Die Leber zeigt bildmorphologisch deutliche Umbauzeichen, in der Vorgeschichte sind eine Hepatitis C und Alkoholabusus beschrieben.
-### Response:
+Histologie: malignes Melanom<|im_end|>
+<|im_start|>assistant
 """
 
 tokenizer = AutoTokenizer.from_pretrained(
