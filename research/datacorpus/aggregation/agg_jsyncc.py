@@ -3,7 +3,7 @@ from research.datacorpus.creation.utils.utils_mongodb import get_collection
 jsyncc = get_collection("corpus", "jsyncc")
 
 
-def get_jsyncc_pretrain_texts():
+def aggregate_jsyncc_pretrain_texts():
     """
     Get all texts from jsyncc
     :return: List of texts from jsyncc

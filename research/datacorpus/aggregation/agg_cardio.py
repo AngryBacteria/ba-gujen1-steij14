@@ -4,26 +4,10 @@ from research.logger import logger
 
 cardio = get_collection("corpus", "cardio")
 cardio_heldout = get_collection("corpus", "cardio_heldout")
+cardio_ner = get_collection("corpus", "cardio_ner")
 
 
 # TODO: duration / frequency prompts?
-def get_cardio_pretrain_texts():
-    """
-    Get all cardio pretrain texts
-    :return: List of pretrain texts from cardio and cardio_heldout
-    """
-    cardio_texts = [
-        {"text": doc["full_text"], "task": "pretrain", "source": "cardio"}
-        for doc in cardio.find({}, {"full_text": 1})
-    ]
-    cardio_heldout_texts = [
-        {"text": doc["full_text"], "task": "pretrain", "source": "cardio"}
-        for doc in cardio_heldout.find({}, {"full_text": 1})
-    ]
-    cardio_texts = cardio_texts + cardio_heldout_texts
-    return cardio_texts
-
-
 def get_cardio_medication_prompts():
     """
     Retrieves medication prompts from the cardio corpus based on the MEDICATION_PROMPT.
@@ -64,6 +48,49 @@ def get_cardio_medication_prompts():
     logger.debug(f"Created {len(prompts)} medication prompts from the cardio corpus.")
 
     return prompts
+
+
+def aggregate_cardio_ner():
+    """
+    Aggregate all NER annotations from the cardio corpus.
+    Filter out all NER tags that are not MEDICATION, TREATMENT, or DIAGNOSIS.
+    :return: List of NER annotations as dictionaries
+    """
+    ner_docs = []
+    documents = cardio_ner.find({})
+    for document in documents:
+        for anno in document["annotations"]:
+            ner_tags = []
+            for tag in anno["ner_tags"]:
+                if tag == "B-MED" or tag == "B-ACTIVEING":
+                    ner_tags.append(1)
+                if tag == "I-MED" or tag == "I-ACTIVEING":
+                    ner_tags.append(2)
+                else:
+                    ner_tags.append(0)
+
+            ner_docs.append(
+                {"words": anno["words"], "ner_tags": ner_tags, "source": "cardio"}
+            )
+    logger.debug(f"Created {len(ner_docs)} ner datapoints from the cardio corpus.")
+    return ner_docs
+
+
+def aggregate_cardio_pretrain_texts():
+    """
+    Get all cardio pretrain texts
+    :return: List of pretrain texts from cardio and cardio_heldout
+    """
+    cardio_texts = [
+        {"text": doc["full_text"], "task": "pretrain", "source": "cardio"}
+        for doc in cardio.find({}, {"full_text": 1})
+    ]
+    cardio_heldout_texts = [
+        {"text": doc["full_text"], "task": "pretrain", "source": "cardio"}
+        for doc in cardio_heldout.find({}, {"full_text": 1})
+    ]
+    cardio_texts = cardio_texts + cardio_heldout_texts
+    return cardio_texts
 
 
 def aggregate_cardio_prompts():

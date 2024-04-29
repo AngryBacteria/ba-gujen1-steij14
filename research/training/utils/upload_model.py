@@ -15,8 +15,8 @@ def upload_to_huggingface(
         local_model_folder, torch_dtype=torch.bfloat16
     )
 
-    model.push_to_hub(f"Rick2049Deckard/{repo_name}", private=True)
-    tokenizer.push_to_hub(f"Rick2049Deckard/{repo_name}", private=True)
+    model.push_to_hub(f"BachelorThesis/{repo_name}", private=True)
+    tokenizer.push_to_hub(f"BachelorThesis/{repo_name}", private=True)
 
 
-upload_to_huggingface("ba_v01")
+upload_to_huggingface("mistral_v02")

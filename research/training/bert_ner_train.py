@@ -26,8 +26,8 @@ from research.training.utils.printing_utils import (
 )
 from research.training.utils.utils_gpu import print_gpu_support
 
-EPOCHS = 3
-BATCH_SIZE = 16
+EPOCHS = 2
+BATCH_SIZE = 4
 LEARNING_RATE = 2e-5
 DEBUG = True
 WANDB = False
@@ -36,36 +36,33 @@ SAVE_MODEL = False
 EVALS_PER_EPOCH = 2
 LOGS_PER_EPOCH = 2
 
-id2label = {
+ID2LABEL = {
     0: "O",
-    1: "B-corporation",
-    2: "I-corporation",
-    3: "B-creative-work",
-    4: "I-creative-work",
-    5: "B-group",
-    6: "I-group",
-    7: "B-location",
-    8: "I-location",
-    9: "B-person",
-    10: "I-person",
-    11: "B-product",
-    12: "I-product",
+    1: "B-MED",
+    2: "I-MED",
+    3: "B-TREAT",
+    4: "I-TREAT",
+    5: "B-DIAG",
+    6: "I-DIAG",
 }
-label2id = {
-    "O": 0,
-    "B-corporation": 1,
-    "I-corporation": 2,
-    "B-creative-work": 3,
-    "I-creative-work": 4,
-    "B-group": 5,
-    "I-group": 6,
-    "B-location": 7,
-    "I-location": 8,
-    "B-person": 9,
-    "I-person": 10,
-    "B-product": 11,
-    "I-product": 12,
+LABEL2ID = {
+    "O": 1,
+    "B-MED": 1,
+    "I-MED": 2,
+    "B-TREAT": 3,
+    "I-TREAT": 4,
+    "B-DIAG": 5,
+    "I-DIAG": 6,
 }
+LABEL_LIST = [
+    "O",
+    "B-MED",
+    "I-MED",
+    "B-TREAT",
+    "I-TREAT",
+    "B-DIAG",
+    "I-DIAG",
+]
 
 print_welcome_message()
 print_gpu_support(f"{GPU}")
@@ -76,21 +73,22 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 print_with_heading("Load fast tokenizer")
 model = AutoModelForTokenClassification.from_pretrained(
     "google-bert/bert-base-uncased",
-    num_labels=13,
-    id2label=id2label,
-    label2id=label2id,
+    num_labels=7,
+    id2label=ID2LABEL,
+    label2id=LABEL2ID,
 )
 
 # Load Data
 print_with_heading("Load data")
-wnut = load_dataset("wnut_17")
-label_list = wnut["train"].features["ner_tags"].feature.names
+dataset = load_dataset("json", data_files={"data": "ner.json"})[
+    "data"
+].train_test_split(test_size=0.1, shuffle=True, seed=42)
 seqeval = evaluate.load("seqeval")
 
 
 def tokenize_and_align_labels(examples):
     tokenized_inputs = tokenizer(
-        examples["tokens"], truncation=True, is_split_into_words=True
+        examples["words"], truncation=True, is_split_into_words=True
     )
     labels = []
     for i, label in enumerate(examples["ner_tags"]):
@@ -118,12 +116,12 @@ def compute_metrics(p: EvalPrediction):
     predictions, labels = p
     predictions = np.argmax(predictions, axis=2)
     true_predictions = [
-        [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
+        [LABEL_LIST[p] for (p, l) in zip(prediction, label) if l != -100]
         for prediction, label in zip(predictions, labels)
     ]
 
     true_labels = [
-        [label_list[l] for (p, l) in zip(prediction, label) if l != -100]
+        [LABEL_LIST[l] for (p, l) in zip(prediction, label) if l != -100]
         for prediction, label in zip(predictions, labels)
     ]
 
@@ -136,7 +134,9 @@ def compute_metrics(p: EvalPrediction):
     }
 
 
-tokenized_wnut = wnut.map(tokenize_and_align_labels, batched=True)
+tokenized_dataset = dataset.map(
+    tokenize_and_align_labels, batched=True, remove_columns=["source"]
+)
 data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
 
 print_with_heading("Train model")
@@ -149,7 +149,6 @@ training_args = TrainingArguments(
     # optimization setup
     optim="adamw_torch_fused",
     learning_rate=LEARNING_RATE,
-    weight_decay=0.01,
     # logging
     report_to=["none"],
     logging_strategy="steps",
@@ -162,7 +161,7 @@ training_args = TrainingArguments(
 
 # setup steps for logging and evaluation
 EVAL_STEPS, LOGGING_STEPS = get_steps_per_epoch(
-    len(tokenized_wnut["train"]),
+    len(tokenized_dataset["train"]),
     BATCH_SIZE,
     1,
     EVALS_PER_EPOCH,
@@ -187,8 +186,8 @@ if WANDB:
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=tokenized_wnut["train"],
-    eval_dataset=tokenized_wnut["test"],
+    train_dataset=tokenized_dataset["train"],
+    eval_dataset=tokenized_dataset["test"],
     tokenizer=tokenizer,
     data_collator=data_collator,
     compute_metrics=compute_metrics,

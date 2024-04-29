@@ -95,7 +95,6 @@ training_args = TrainingArguments(
     # optimization setup
     optim="adamw_torch_fused",
     learning_rate=LEARNING_RATE,
-    weight_decay=0.01,
     # logging
     report_to=["none"],
     logging_strategy="steps",

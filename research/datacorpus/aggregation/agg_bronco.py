@@ -10,6 +10,7 @@ from research.datacorpus.creation.utils.utils_mongodb import get_collection
 from research.logger import logger
 
 bronco_collection = get_collection("corpus", "bronco")
+bronco_ner_collection = get_collection("corpus", "bronco_ner")
 
 
 # TODO: add prompts with no annotation for the entity, but that have annotations for other entities
@@ -124,7 +125,43 @@ def get_bronco_prompts(
     return simple_prompts, normalization_prompts
 
 
-def get_all_bronco_prompts(
+def aggregate_bronco_ner():
+    """
+    Get all NER documents from bronco corpus
+    :return: List of NER dictionaries
+    """
+    ner_docs = []
+    documents = bronco_ner_collection.find({})
+    for document in documents:
+        ner_tags = []
+        for tag in document["ner_tags"]:
+            if tag == "B-MED":
+                ner_tags.append(1)
+            if tag == "I-MED":
+                ner_tags.append(2)
+            if tag == "B-TREAT":
+                ner_tags.append(3)
+            if tag == "I-TREAT":
+                ner_tags.append(4)
+            if tag == "B-DIAG":
+                ner_tags.append(5)
+            if tag == "I-DIAG":
+                ner_tags.append(6)
+            else:
+                ner_tags.append(0)
+
+        ner_docs.append(
+            {
+                "words": document["words"],
+                "ner_tags": ner_tags,
+                "source": "bronco",
+            }
+        )
+    logger.debug(f"Created {len(ner_docs)} ner datapoints from the bronco corpus.")
+    return ner_docs
+
+
+def aggregate_bronco_prompts(
     extraction: bool,
     normalization: bool,
     diagnosis: bool,

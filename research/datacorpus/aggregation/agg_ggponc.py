@@ -7,6 +7,7 @@ from research.datacorpus.creation.utils.utils_mongodb import get_collection
 from research.logger import logger
 
 ggonc_collection = get_collection("corpus", "ggponc_short")
+ggonc_collection_ner = get_collection("corpus", "ggponc_short_ner")
 
 
 # TODO: add prompts with no annotation for the entity, but that have annotations for other entities
@@ -58,7 +59,38 @@ def get_ggponc_prompts(
     return prompts
 
 
-def get_all_ggponc_prompts(
+def aggregate_ggponc_ner():
+    """
+    Get all NER documents from ggponc corpus.
+    Filter out all NER tags that are not MEDICATION, TREATMENT, or DIAGNOSIS.
+    :return: List of NER annotations as dictionaries
+    """
+    ner_docs = []
+    documents = ggonc_collection_ner.find({})
+    for document in documents:
+        ner_tags = []
+        for tag in documents["ner_tags"]:
+            if tag == "B-MED":
+                ner_tags.append(1)
+            if tag == "I-MED":
+                ner_tags.append(2)
+            if tag == "B-TREAT":
+                ner_tags.append(3)
+            if tag == "I-TREAT":
+                ner_tags.append(4)
+            if tag == "B-DIAG":
+                ner_tags.append(5)
+            if tag == "I-DIAG":
+                ner_tags.append(6)
+            else:
+                ner_tags.append(0)
+
+        ner_docs.append(
+            {"words": document["words"], "ner_tags": ner_tags, "source": "ggponc"}
+        )
+
+
+def aggregate_ggponc_prompts(
     minimal_length: int,
     diagnosis: bool,
     treatment: bool,
