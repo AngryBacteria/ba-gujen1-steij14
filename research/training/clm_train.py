@@ -26,7 +26,7 @@ from transformers import (
     DataCollatorForLanguageModeling,
     TrainingArguments,
     Trainer,
-    MistralForCausalLM,
+    AutoModelForCausalLM,
 )
 
 # Welcome messages
@@ -52,7 +52,7 @@ if config.model.qlora and config.model.lora:
         bnb_4bit_compute_dtype=MODEL_PRECISION,
         bnb_4bit_quant_storage=torch.bfloat16,  # axolotl uses this
     )
-    model = MistralForCausalLM.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         config.model.id_model,
         quantization_config=_bnb_quantization_config,
         attn_implementation=config.model.attention_implementation,
@@ -60,7 +60,7 @@ if config.model.qlora and config.model.lora:
     model = prepare_model_for_kbit_training(model)
 else:
     print_with_heading(f"Load model [{MODEL_PRECISION}]")
-    model = MistralForCausalLM.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         config.model.id_model,
         torch_dtype=MODEL_PRECISION,
         attn_implementation=config.model.attention_implementation,
@@ -97,13 +97,11 @@ tokenizer = AutoTokenizer.from_pretrained(
     add_bos_token=True,
     padding_side="left",
 )
-# TODO: find out why this fixes it
-# google: mistral padding token
-# https://discuss.huggingface.co/t/mistral-trouble-when-fine-tuning-dont-set-pad-token-id-eos-token-id/77928/4
-# https://www.reddit.com/r/LocalLLaMA/comments/184g120/mistral_fine_tuning_eos_and_padding/
-# https://medium.com/@parikshitsaikia1619/mistral-mastery-fine-tuning-fast-inference-guide-62e163198b06
-# tokenizer.pad_token = "[PAD]"
+# tokenizer.pad_token = tokenizer.eos_token
 tokenizer.add_special_tokens({"pad_token": tokenizer.unk_token})
+if len(tokenizer) > model.get_input_embeddings().weight.shape[0]:
+    print("WARNING: Resizing the embedding matrix to match the tokenizer vocab size.")
+    model.resize_token_embeddings(len(tokenizer))
 
 
 # Dataset
