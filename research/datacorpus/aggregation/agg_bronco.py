@@ -1,11 +1,17 @@
+import random
+
 from research.datacorpus.aggregation.prompts import (
     SYSTEM_PROMPT,
     MEDICATION_INSTRUCTION,
     MEDICATION_NORMALIZATION_INSTRUCTION,
-    DIAGNOSIS_INSTRUCTION,
     DIAGNOSIS_NORMALIZATION_INSTRUCTION,
-    TREATMENT_INSTRUCTION,
     TREATMENT_NORMALIZATION_INSTRUCTION,
+    TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH,
+    DIAGNOSIS_INSTRUCTION_LEVEL_OF_TRUTH,
+    DIAGNOSIS_INSTRUCTION,
+    TREATMENT_INSTRUCTION,
+    MEDICATION_INSTRUCTION_LEVEL_OF_TRUTH,
+    SYSTEM_PROMPT_NORMALIZATION,
 )
 from research.datacorpus.creation.utils.utils_mongodb import get_collection
 from research.logger import logger
@@ -14,25 +20,74 @@ bronco_collection = get_collection("corpus", "bronco")
 bronco_ner_collection = get_collection("corpus", "bronco_ner")
 
 
+def get_instructions(annotation_type: str, add_level_of_truth: bool):
+    if add_level_of_truth:
+        if annotation_type == "DIAGNOSIS":
+            extraction_instruction = DIAGNOSIS_INSTRUCTION_LEVEL_OF_TRUTH
+            normalization_instruction = DIAGNOSIS_NORMALIZATION_INSTRUCTION
+        elif annotation_type == "TREATMENT":
+            extraction_instruction = TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH
+            normalization_instruction = TREATMENT_NORMALIZATION_INSTRUCTION
+        elif annotation_type == "MEDICATION":
+            extraction_instruction = MEDICATION_INSTRUCTION_LEVEL_OF_TRUTH
+            normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
+        elif annotation_type == "NA":
+            randint = random.randint(0, 2)
+            random.seed(42)
+            if randint == 0:
+                extraction_instruction = DIAGNOSIS_INSTRUCTION_LEVEL_OF_TRUTH
+                normalization_instruction = DIAGNOSIS_NORMALIZATION_INSTRUCTION
+            elif randint == 1:
+                extraction_instruction = TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH
+                normalization_instruction = TREATMENT_NORMALIZATION_INSTRUCTION
+            else:
+                extraction_instruction = MEDICATION_INSTRUCTION_LEVEL_OF_TRUTH
+                normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
+        else:
+            raise ValueError(f"Unknown annotation type {annotation_type}.")
+    else:
+        if annotation_type == "DIAGNOSIS":
+            extraction_instruction = DIAGNOSIS_INSTRUCTION
+            normalization_instruction = DIAGNOSIS_NORMALIZATION_INSTRUCTION
+        elif annotation_type == "TREATMENT":
+            extraction_instruction = TREATMENT_INSTRUCTION
+            normalization_instruction = TREATMENT_NORMALIZATION_INSTRUCTION
+        elif annotation_type == "MEDICATION":
+            extraction_instruction = MEDICATION_INSTRUCTION
+            normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
+        elif annotation_type == "NA":
+            randint = random.randint(0, 2)
+            random.seed(42)
+            if randint == 0:
+                extraction_instruction = DIAGNOSIS_INSTRUCTION
+                normalization_instruction = DIAGNOSIS_NORMALIZATION_INSTRUCTION
+            elif randint == 1:
+                extraction_instruction = TREATMENT_INSTRUCTION
+                normalization_instruction = TREATMENT_NORMALIZATION_INSTRUCTION
+            else:
+                extraction_instruction = MEDICATION_INSTRUCTION
+                normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
+        else:
+            raise ValueError(f"Unknown annotation type {annotation_type}.")
+
+    return extraction_instruction, normalization_instruction
+
+
 # TODO: add prompts with no annotation for the entity, but that have annotations for other entities
 def get_bronco_prompts(
-    annotation_type: str,
-    extraction_instruction: str,
-    normalization_instruction: str,
-    minimal_length: int,
-    add_level_of_truth: bool,
-    add_localisation: bool = False,
+    annotation_type: str, minimal_length: int, add_level_of_truth: bool
 ):
     """
     Generic function to get prompts from bronco corpus
     :param annotation_type: The type of annotation to get prompts for
-    :param extraction_instruction: The prompt format for the extraction
-    :param normalization_instruction: The prompt format for the normalization task
     :param minimal_length: Minimal length of origin texts to include
     :param add_level_of_truth: If the level of truth should be added to the text
-    :param add_localisation: If the localisation should be added to the text
     :return: List of prompts
     """
+
+    extraction_instruction, normalization_instruction = get_instructions(
+        annotation_type, add_level_of_truth
+    )
     extraction_prompts = []
     normalization_prompts = []
     documents = bronco_collection.find({"type": annotation_type})
@@ -42,31 +97,27 @@ def get_bronco_prompts(
 
         texts = []
         # add level of truth and localisation to the text
-        if add_level_of_truth or add_localisation:
+        if add_level_of_truth:
             for index, extraction_text in enumerate(document["text"]):
                 attributes = []
+                is_positive = True
                 for attribute in document["attributes"][index]:
                     if (
                         add_level_of_truth
                         and attribute["attribute_label"] == "LevelOfTruth"
                     ):
                         if attribute["attribute"] == "negative":
-                            attributes.append("negativ")
+                            attributes.append("NEGATIV")
+                            is_positive = False
                         if attribute["attribute"] == "speculative":
-                            attributes.append("spekulativ")
+                            attributes.append("SPEKULATIV")
+                            is_positive = False
                         if attribute["attribute"] == "possibleFuture":
-                            attributes.append("zukünftig")
-                    if (
-                        add_localisation
-                        and attribute["attribute_label"] == "Localisation"
-                    ):
-                        if attribute["attribute"] == "L":
-                            attributes.append("links")
-                        if attribute["attribute"] == "R":
-                            attributes.append("rechts")
-                        if attribute["attribute"] == "B":
-                            attributes.append("beidseitig")
+                            attributes.append("ZUKÜNFTIG")
+                            is_positive = False
 
+                if is_positive:
+                    attributes.append("POSITIV")
                 if len(attributes) < 1:
                     texts.append(extraction_text)
                 else:
@@ -115,7 +166,7 @@ def get_bronco_prompts(
                 normalization_prompts.append(
                     {
                         "messages": [
-                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "system", "content": SYSTEM_PROMPT_NORMALIZATION},
                             {"role": "user", "content": norm_instruction_str.strip()},
                             {
                                 "role": "assistant",
@@ -195,8 +246,6 @@ def aggregate_bronco_prompts(
     if medication:
         medication_prompts, medication_norm_prompts = get_bronco_prompts(
             "MEDICATION",
-            MEDICATION_INSTRUCTION,
-            MEDICATION_NORMALIZATION_INSTRUCTION,
             minimal_length,
             add_level_of_truth=False,
         )
@@ -208,8 +257,6 @@ def aggregate_bronco_prompts(
     if diagnosis:
         diagnosis_prompts, diagnosis_norm_prompts = get_bronco_prompts(
             "DIAGNOSIS",
-            DIAGNOSIS_INSTRUCTION,
-            DIAGNOSIS_NORMALIZATION_INSTRUCTION,
             minimal_length,
             add_level_of_truth=True,
         )
@@ -220,8 +267,6 @@ def aggregate_bronco_prompts(
     if treatment:
         treatment_prompts, treatment_norm_prompts = get_bronco_prompts(
             "TREATMENT",
-            TREATMENT_INSTRUCTION,
-            TREATMENT_NORMALIZATION_INSTRUCTION,
             minimal_length,
             add_level_of_truth=True,
         )
@@ -234,22 +279,16 @@ def aggregate_bronco_prompts(
     if na_prompts and extraction:
         empty_medication_prompts, empty_medication_norm_prompts = get_bronco_prompts(
             "NA",
-            MEDICATION_INSTRUCTION,
-            MEDICATION_NORMALIZATION_INSTRUCTION,
             minimal_length,
-            add_level_of_truth=True,
+            add_level_of_truth=False,
         )
         empty_diagnosis_prompts, empty_diagnosis_norm_prompts = get_bronco_prompts(
             "NA",
-            DIAGNOSIS_INSTRUCTION,
-            DIAGNOSIS_NORMALIZATION_INSTRUCTION,
             minimal_length,
             add_level_of_truth=True,
         )
         empty_treatment_prompts, empty_treatment_norm_prompts = get_bronco_prompts(
             "NA",
-            TREATMENT_INSTRUCTION,
-            TREATMENT_NORMALIZATION_INSTRUCTION,
             minimal_length,
             add_level_of_truth=True,
         )

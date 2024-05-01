@@ -35,6 +35,7 @@ def get_unique_prompts(prompts: list[dict]) -> list[dict]:
     return list(unique_prompts.values())
 
 
+# todo: ADD distribute na and not na prompts
 def save_all_prompts(
     bronco: bool,
     ggponc: bool,
@@ -85,14 +86,6 @@ def save_all_prompts(
 
     prompts_df.to_json("prompts.jsonl", orient="records", lines=True)
     logger.debug(f"Saved {len(prompts)} prompts to prompts.jsonl")
-
-    # axolotl compatible dataset
-    axolotl_df = pd.DataFrame(prompts)
-    axolotl_df = axolotl_df.drop(
-        columns=["type", "task", "source", "annotation_labels"]
-    )
-    axolotl_df = axolotl_df.rename(columns={"messages": "conversations"})
-    axolotl_df.to_json("axolotl.jsonl", orient="records", lines=True)
 
     data = load_dataset("json", data_files={"data": "prompts.jsonl"})[
         "data"
@@ -173,7 +166,7 @@ def save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True):
 save_all_prompts(
     bronco=True,
     ggponc=False,
-    cardio=True,
+    cardio=False,
     normalization=True,
     na_prompts=True,
     minimal_length=15,
