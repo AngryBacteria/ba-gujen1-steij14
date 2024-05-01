@@ -170,13 +170,13 @@ def save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True):
 
 # save_all_ner_annotations(bronco=True, ggponc=False, cardio=False)
 
-# save_all_prompts(
-#     bronco=True,
-#     ggponc=False,
-#     cardio=False,
-#     normalization=True,
-#     na_prompts=True,
-#     minimal_length=15,
-# )
+save_all_prompts(
+    bronco=True,
+    ggponc=False,
+    cardio=True,
+    normalization=True,
+    na_prompts=True,
+    minimal_length=15,
+)
 
 # save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True)
