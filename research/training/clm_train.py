@@ -106,11 +106,9 @@ if len(tokenizer) > model.get_input_embeddings().weight.shape[0]:
 
 # Dataset
 def preprocess_function(examples):
-    result = tokenizer(
+    return tokenizer(
         examples["text"],
     )
-    result["labels"] = result["input_ids"].copy()
-    return result
 
 
 print_with_heading("Load and prepare dataset")
