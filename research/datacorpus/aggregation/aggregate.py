@@ -1,5 +1,6 @@
 import pandas as pd
 from datasets import load_dataset
+from transformers import AutoTokenizer
 
 from research.datacorpus.aggregation.agg_bronco import (
     aggregate_bronco_prompts,
@@ -28,7 +29,7 @@ def get_unique_prompts(prompts: list[dict]) -> list[dict]:
     """
     unique_prompts = {}
     for prompt in prompts:
-        text_value = prompt["text"]
+        text_value = prompt["messages"][1]["content"] + prompt["messages"][2]["content"]
         if text_value not in unique_prompts:
             unique_prompts[text_value] = prompt
     return list(unique_prompts.values())
@@ -41,6 +42,7 @@ def save_all_prompts(
     normalization: bool,
     na_prompts: bool,
     minimal_length=15,
+    chat_template=None,
 ):
     prompts = []
     if ggponc:
@@ -70,17 +72,36 @@ def save_all_prompts(
         prompts.extend(cardio_prompts)
 
     prompts = get_unique_prompts(prompts)
-    prompts_df = pd.DataFrame(prompts)
-    prompts_df.to_json("prompts.json", orient="records")
-    logger.debug(f"Saved {len(prompts)} prompts to prompts.json")
 
-    data = load_dataset("json", data_files={"data": "prompts.json"})[
+    tokenizer = AutoTokenizer.from_pretrained(
+        "LeoLM/leo-mistral-hessianai-7b", use_fast=True
+    )
+    if chat_template is not None:
+        tokenizer.chat_template = chat_template
+    prompts_df = pd.DataFrame(prompts)
+    prompts_df["text"] = prompts_df["messages"].apply(
+        lambda x: tokenizer.apply_chat_template(x, tokenize=False)
+    )
+
+    prompts_df.to_json("prompts.jsonl", orient="records", lines=True)
+    logger.debug(f"Saved {len(prompts)} prompts to prompts.jsonl")
+
+    # axolotl compatible dataset
+    axolotl_df = pd.DataFrame(prompts)
+    axolotl_df = axolotl_df.drop(
+        columns=["type", "task", "source", "annotation_labels"]
+    )
+    axolotl_df = axolotl_df.rename(columns={"messages": "conversations"})
+    axolotl_df.to_json("axolotl.jsonl", orient="records", lines=True)
+
+    data = load_dataset("json", data_files={"data": "prompts.jsonl"})[
         "data"
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
     print(data)
     amount = 20
     for i, example in enumerate(data["train"]):
         print(example["text"])
+        print("-----------------------------------------")
         if i > amount:
             break
 
@@ -147,36 +168,15 @@ def save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True):
             break
 
 
-def count_training_tokens():
-    from transformers import AutoTokenizer
-
-    tokenizer = AutoTokenizer.from_pretrained(
-        "LeoLM/leo-mistral-hessianai-7b", use_fast=True
-    )
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-
-    dataset = load_dataset("json", data_files={"data": "prompts.json"})[
-        "data"
-    ].train_test_split(test_size=0.1, shuffle=True, seed=42)
-    # iterate over dataset
-    token_count = 0
-    for i, example in enumerate(dataset["train"]):
-        token_count = token_count + len(tokenizer.tokenize(example["text"]))
-
-    print("Total number of tokens in training dataset: ", token_count)
-    return token_count
-
-
 # save_all_ner_annotations(bronco=True, ggponc=False, cardio=False)
 
-save_all_prompts(
-    bronco=True,
-    ggponc=False,
-    cardio=True,
-    normalization=True,
-    na_prompts=True,
-    minimal_length=15,
-)
+# save_all_prompts(
+#     bronco=True,
+#     ggponc=False,
+#     cardio=False,
+#     normalization=True,
+#     na_prompts=True,
+#     minimal_length=15,
+# )
 
 # save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True)

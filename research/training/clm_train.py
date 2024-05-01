@@ -93,8 +93,8 @@ print_with_heading("Load fast tokenizer")
 tokenizer = AutoTokenizer.from_pretrained(
     config.model.id_model,
     use_fast=True,
-    add_eos_token=True,
-    add_bos_token=True,
+    add_eos_token=False,
+    add_bos_token=False,
     padding_side="left",
 )
 # tokenizer.pad_token = tokenizer.eos_token
@@ -106,20 +106,22 @@ if len(tokenizer) > model.get_input_embeddings().weight.shape[0]:
 
 # Dataset
 def preprocess_function(examples):
-    return tokenizer(
+    result = tokenizer(
         examples["text"],
     )
+    result["labels"] = result["input_ids"].copy()
+    return result
 
 
 print_with_heading("Load and prepare dataset")
-_dataset = load_dataset("json", data_files={"data": "prompts.json"})[
+_dataset = load_dataset("json", data_files={"data": "prompts.jsonl"})[
     "data"
 ].train_test_split(test_size=config.data_processing.test_size, shuffle=True, seed=42)
 tokenized_dataset = _dataset.map(
     preprocess_function,
     batched=True,
     num_proc=config.data_processing.processing_threads,
-    remove_columns=["text", "type", "task", "source", "annotation_labels"],
+    remove_columns=["messages", "text", "type", "task", "source", "annotation_labels"],
 )
 print(
     f"Dataset length before: {len(tokenized_dataset['train']) + len(tokenized_dataset['test'])}"

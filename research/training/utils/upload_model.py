@@ -6,7 +6,9 @@ login()
 
 
 def upload_to_huggingface(
-    account_name: str, repo_name: str, local_model_folder="mistral_instruction_low_precision"
+    account_name: str,
+    repo_name: str,
+    local_model_folder="mistral_instruction_low_precision",
 ):
     tokenizer = AutoTokenizer.from_pretrained(
         "LeoLM/leo-mistral-hessianai-7b", use_fast=True

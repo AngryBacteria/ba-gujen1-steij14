@@ -1,4 +1,7 @@
-from research.datacorpus.aggregation.prompts import MEDICATION_PROMPT
+from research.datacorpus.aggregation.prompts import (
+    MEDICATION_INSTRUCTION,
+    SYSTEM_PROMPT,
+)
 from research.datacorpus.creation.utils.utils_mongodb import get_collection
 from research.logger import logger
 
@@ -17,7 +20,7 @@ def get_cardio_medication_prompts():
     documents = cardio.find({"annotations.type": "MEDICATION"})
 
     for document in documents:
-        simple_prompt_str = MEDICATION_PROMPT.replace(
+        extraction_instruction_str = MEDICATION_INSTRUCTION.replace(
             "<<CONTEXT>>", document["full_text"]
         )
         texts = []
@@ -31,11 +34,27 @@ def get_cardio_medication_prompts():
 
         texts = list(set(texts))
         extraction_string = "|".join(texts)
-        simple_prompt_str = simple_prompt_str.replace("<<OUTPUT>>", extraction_string)
+        extraction_instruction_str = extraction_instruction_str.replace(
+            "<<OUTPUT>>", extraction_string
+        )
 
         prompts.append(
             {
-                "text": simple_prompt_str.strip(),
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": SYSTEM_PROMPT,
+                    },
+                    {
+                        "role": "user",
+                        "content": extraction_instruction_str.strip(),
+                    },
+                    {
+                        "role": "assistant",
+                        "content": extraction_string.strip(),
+                    },
+                ],
+                "text": extraction_instruction_str.strip(),
                 "type": "MEDICATION",
                 "task": "extraction",
                 "source": "cardio",

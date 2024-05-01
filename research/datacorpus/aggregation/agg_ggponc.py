@@ -1,7 +1,10 @@
+from transformers import AutoTokenizer
+
 from research.datacorpus.aggregation.prompts import (
-    MEDICATION_PROMPT,
-    TREATMENT_PROMPT,
-    DIAGNOSIS_PROMPT,
+    SYSTEM_PROMPT,
+    MEDICATION_INSTRUCTION,
+    DIAGNOSIS_INSTRUCTION,
+    TREATMENT_INSTRUCTION,
 )
 from research.datacorpus.creation.utils.utils_mongodb import get_collection
 from research.logger import logger
@@ -12,12 +15,12 @@ ggonc_collection_ner = get_collection("corpus", "ggponc_short_ner")
 
 # TODO: add prompts with no annotation for the entity, but that have annotations for other entities
 def get_ggponc_prompts(
-    annotation_type: str, extraction_prompt: str, minimal_length: int
+    annotation_type: str, extraction_instruction: str, minimal_length: int
 ):
     """
     Generic function to get prompts from ggponc corpus
     :param annotation_type: The type of annotation to get prompts for
-    :param extraction_prompt: The prompt format for the extraction
+    :param extraction_instruction: The prompt format for the extraction
     :param minimal_length: The minimal length of origin texts to include
     :return: List of prompts
     """
@@ -38,13 +41,28 @@ def get_ggponc_prompts(
             if extraction_string == "":
                 extraction_string = "Keine vorhanden"
 
-            simple_prompt_str = extraction_prompt.replace("<<CONTEXT>>", anno["origin"])
-            simple_prompt_str = simple_prompt_str.replace(
+            extraction_prompt_str = extraction_instruction.replace(
+                "<<CONTEXT>>", anno["origin"]
+            )
+            extraction_prompt_str = extraction_prompt_str.replace(
                 "<<OUTPUT>>", extraction_string
             )
             prompts.append(
                 {
-                    "text": simple_prompt_str.strip(),
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": SYSTEM_PROMPT,
+                        },
+                        {
+                            "role": "user",
+                            "content": extraction_prompt_str.strip(),
+                        },
+                        {
+                            "role": "assistant",
+                            "content": extraction_string.strip(),
+                        },
+                    ],
                     "type": annotation_type,
                     "task": "extraction",
                     "source": "ggponc",
@@ -110,34 +128,34 @@ def aggregate_ggponc_prompts(
     # prompts with annotations
     if medication:
         medication_prompts = get_ggponc_prompts(
-            "MEDICATION", MEDICATION_PROMPT, minimal_length
+            "MEDICATION", MEDICATION_INSTRUCTION, minimal_length
         )
         prompts.extend(medication_prompts)
     if diagnosis:
         diagnosis_prompts = get_ggponc_prompts(
-            "DIAGNOSIS", DIAGNOSIS_PROMPT, minimal_length
+            "DIAGNOSIS", DIAGNOSIS_INSTRUCTION, minimal_length
         )
         prompts.extend(diagnosis_prompts)
     if treatment:
         treatment_prompts = get_ggponc_prompts(
-            "TREATMENT", TREATMENT_PROMPT, minimal_length
+            "TREATMENT", TREATMENT_INSTRUCTION, minimal_length
         )
         prompts.extend(treatment_prompts)
 
     # prompts without annotations
     if medication and na_prompts:
         empty_medication_prompts = get_ggponc_prompts(
-            "NA", MEDICATION_PROMPT, minimal_length
+            "NA", MEDICATION_INSTRUCTION, minimal_length
         )
         prompts.extend(empty_medication_prompts)
     if diagnosis and na_prompts:
         empty_diagnosis_prompts = get_ggponc_prompts(
-            "NA", DIAGNOSIS_PROMPT, minimal_length
+            "NA", DIAGNOSIS_INSTRUCTION, minimal_length
         )
         prompts.extend(empty_diagnosis_prompts)
     if treatment and na_prompts:
         empty_treatment_prompts = get_ggponc_prompts(
-            "NA", TREATMENT_PROMPT, minimal_length
+            "NA", TREATMENT_INSTRUCTION, minimal_length
         )
         prompts.extend(empty_treatment_prompts)
 

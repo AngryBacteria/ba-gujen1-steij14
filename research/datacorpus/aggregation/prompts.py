@@ -1,46 +1,16 @@
 # todo: add instruction for level of truth?
 
-MEDICATION_PROMPT = """<|im_start|>system
-Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.<|im_end|>
-<|im_start|>user
-Extrahiere alle Medikamente aus dem folgenden Text:
-<<CONTEXT>><|im_end|>
-<|im_start|>assistant
-<<OUTPUT>><|im_end|>"""
-MEDICATION_NORMALIZATION_PROMPT = """<|im_start|>system
-Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, medizinischen Entitäten wie Medikamenten, Symptomen oder Diagnosen und klinischen Prozeduren entsprechende Codierungen zuzuordnen.<|im_end|>
-<|im_start|>user
-Weise dem im Text genannten Medikament „<<ENTITY>>“ den entsprechenden ATC-Code zu:
-<<CONTEXT>><|im_end|>
-<|im_start|>assistant
-<<OUTPUT>><|im_end|>"""
+SYSTEM_PROMPT = "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren."
 
-DIAGNOSIS_PROMPT = """<|im_start|>system
-Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.<|im_end|>
-<|im_start|>user
-Extrahiere alle Diagnosen und Symptome aus dem folgenden Text:
-<<CONTEXT>><|im_end|>
-<|im_start|>assistant
-<<OUTPUT>><|im_end|>"""
-DIAGNOSIS_NORMALIZATION_PROMPT = """<|im_start|>system
-Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, medizinischen Entitäten wie Medikamenten, Symptomen oder Diagnosen und klinischen Prozeduren entsprechende Codierungen zuzuordnen.<|im_end|>
-<|im_start|>user
-Weise dem im Text genannten Symptom oder Krankheit „<<ENTITY>>“ den entsprechenden ICD10-GM Code zu:
-<<CONTEXT>><|im_end|>
-<|im_start|>assistant
-<<OUTPUT>><|im_end|>"""
-
-TREATMENT_PROMPT = """<|im_start|>system
-Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.<|im_end|>
-<|im_start|>user
-Extrahiere alle klinischen Prozeduren aus dem folgenden Text:
-<<CONTEXT>><|im_end|>
-<|im_start|>assistant
-<<OUTPUT>><|im_end|>"""
-TREATMENT_NORMALIZATION_PROMPT = """<|im_start|>system
-Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, medizinischen Entitäten wie Medikamenten, Symptomen oder Diagnosen und klinischen Prozeduren entsprechende Codierungen zuzuordnen.<|im_end|>
-<|im_start|>user
-Weise der im Text genannten klinischen Prozedur „<<ENTITY>>“ den entsprechenden OPS-2017 Code zu:
-<<CONTEXT>><|im_end|>
-<|im_start|>assistant
-<<OUTPUT>><|im_end|>"""
+MEDICATION_INSTRUCTION = """Extrahiere alle Medikamente aus dem folgenden Text:
+<<CONTEXT>>"""
+MEDICATION_NORMALIZATION_INSTRUCTION = """Weise dem im Text genannten Medikament „<<ENTITY>>“ den entsprechenden ATC-Code zu:
+<<CONTEXT>>"""
+DIAGNOSIS_INSTRUCTION = """Extrahiere alle Diagnosen und Symptome aus dem folgenden Text:
+<<CONTEXT>>"""
+DIAGNOSIS_NORMALIZATION_INSTRUCTION = """Weise dem im Text genannten Symptom oder Krankheit „<<ENTITY>>“ den entsprechenden ICD10-GM Code zu:
+<<CONTEXT>>"""
+TREATMENT_INSTRUCTION = """Extrahiere alle klinischen Prozeduren aus dem folgenden Text:
+<<CONTEXT>>"""
+TREATMENT_NORMALIZATION_INSTRUCTION = """Weise der im Text genannten klinischen Prozedur „<<ENTITY>>“ den entsprechenden OPS-2017 Code zu:
+<<CONTEXT>>"""
