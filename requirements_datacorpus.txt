@@ -9,3 +9,5 @@ tiktoken
 datasets==2.19.0
 openpyxl
 plotly
+tokenizers==0.19.1
+python-dotenv==1.0.1

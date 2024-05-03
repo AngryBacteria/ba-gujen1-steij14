@@ -4,11 +4,13 @@ setproctitle
 datasets==2.19.0
 accelerate==0.29.3
 bitsandbytes==0.43.1
-wandb
+wandb==0.16.6
 peft==0.10.0
 pydantic
 galore-torch==1.0
 scikit-learn==1.4.2
 evaluate==0.4.1
-seqeval
-huggingface-hub
+seqeval==0.0.10
+huggingface-hub==0.22.2
+tokenizers==0.19.1
+safetensors==0.4.3

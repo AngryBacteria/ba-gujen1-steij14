@@ -1,5 +1,3 @@
-import random
-
 from research.datacorpus.aggregation.prompts import (
     SYSTEM_PROMPT,
     MEDICATION_INSTRUCTION,
@@ -20,7 +18,12 @@ bronco_collection = get_collection("corpus", "bronco")
 bronco_ner_collection = get_collection("corpus", "bronco_ner")
 
 
-def get_instructions(annotation_type: str, add_level_of_truth: bool):
+def get_bronco_instruction(annotation_type: str, add_level_of_truth: bool):
+    """Helper function for getting the instruction strings for a given annotation type.
+    :param annotation_type: The annotation type to get the instruction string for. Can be
+    one of the following: DIAGNOSIS, TREATMENT, MEDICATION
+    :param add_level_of_truth: Boolean to if the level of truth shoul dbe added to the instruction string
+    """
     if add_level_of_truth:
         if annotation_type == "DIAGNOSIS":
             extraction_instruction = DIAGNOSIS_INSTRUCTION_LEVEL_OF_TRUTH
@@ -31,20 +34,9 @@ def get_instructions(annotation_type: str, add_level_of_truth: bool):
         elif annotation_type == "MEDICATION":
             extraction_instruction = MEDICATION_INSTRUCTION_LEVEL_OF_TRUTH
             normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
-        elif annotation_type == "NA":
-            randint = random.randint(0, 2)
-            random.seed(42)
-            if randint == 0:
-                extraction_instruction = DIAGNOSIS_INSTRUCTION_LEVEL_OF_TRUTH
-                normalization_instruction = DIAGNOSIS_NORMALIZATION_INSTRUCTION
-            elif randint == 1:
-                extraction_instruction = TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH
-                normalization_instruction = TREATMENT_NORMALIZATION_INSTRUCTION
-            else:
-                extraction_instruction = MEDICATION_INSTRUCTION_LEVEL_OF_TRUTH
-                normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
         else:
-            raise ValueError(f"Unknown annotation type {annotation_type}.")
+            raise ValueError("Invalid annotation type")
+
     else:
         if annotation_type == "DIAGNOSIS":
             extraction_instruction = DIAGNOSIS_INSTRUCTION
@@ -55,41 +47,36 @@ def get_instructions(annotation_type: str, add_level_of_truth: bool):
         elif annotation_type == "MEDICATION":
             extraction_instruction = MEDICATION_INSTRUCTION
             normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
-        elif annotation_type == "NA":
-            randint = random.randint(0, 2)
-            random.seed(42)
-            if randint == 0:
-                extraction_instruction = DIAGNOSIS_INSTRUCTION
-                normalization_instruction = DIAGNOSIS_NORMALIZATION_INSTRUCTION
-            elif randint == 1:
-                extraction_instruction = TREATMENT_INSTRUCTION
-                normalization_instruction = TREATMENT_NORMALIZATION_INSTRUCTION
-            else:
-                extraction_instruction = MEDICATION_INSTRUCTION
-                normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
         else:
-            raise ValueError(f"Unknown annotation type {annotation_type}.")
+            raise ValueError("Invalid annotation type")
 
     return extraction_instruction, normalization_instruction
 
 
 # TODO: add prompts with no annotation for the entity, but that have annotations for other entities
 def get_bronco_prompts(
-    annotation_type: str, minimal_length: int, add_level_of_truth: bool
+    annotation_type: str,
+    na_prompts: bool,
+    add_level_of_truth: bool,
+    minimal_length: int,
 ):
     """
     Generic function to get prompts from bronco corpus
     :param annotation_type: The type of annotation to get prompts for
-    :param minimal_length: Minimal length of origin texts to include
+    :param na_prompts: Indicates if the prompts should be created for examples without any annotations
     :param add_level_of_truth: If the level of truth should be added to the text
+    :param minimal_length: Minimal length of origin texts to include
     :return: List of prompts
     """
-
-    extraction_instruction, normalization_instruction = get_instructions(
-        annotation_type, add_level_of_truth
-    )
     extraction_prompts = []
     normalization_prompts = []
+    extraction_instruction, normalization_instruction = get_bronco_instruction(
+        annotation_type, add_level_of_truth
+    )
+    # if na_prompt is enabled use "na" as annotation type to get the right examples from the db
+    if na_prompts:
+        annotation_type = "NA"
+
     documents = bronco_collection.find({"type": annotation_type})
     for document in documents:
         if minimal_length > 0 and len(document["origin"]) < minimal_length:
@@ -243,11 +230,21 @@ def aggregate_bronco_prompts(
     """
     prompts = []
     # prompts with annotations
+    medication_extraction_instruction, medication_normalization_instruction = (
+        get_bronco_instruction("MEDICATION", False)
+    )
+    diagnosis_extraction_instruction, diagnosis_normalization_instruction = (
+        get_bronco_instruction("DIAGNOSIS", True)
+    )
+    treatment_extraction_instruction, treatment_normalization_instruction = (
+        get_bronco_instruction("TREATMENT", True)
+    )
     if medication:
         medication_prompts, medication_norm_prompts = get_bronco_prompts(
             "MEDICATION",
+            False,
+            False,
             minimal_length,
-            add_level_of_truth=False,
         )
         if extraction:
             prompts.extend(medication_prompts)
@@ -257,8 +254,9 @@ def aggregate_bronco_prompts(
     if diagnosis:
         diagnosis_prompts, diagnosis_norm_prompts = get_bronco_prompts(
             "DIAGNOSIS",
+            False,
+            True,
             minimal_length,
-            add_level_of_truth=True,
         )
         if extraction:
             prompts.extend(diagnosis_prompts)
@@ -267,8 +265,9 @@ def aggregate_bronco_prompts(
     if treatment:
         treatment_prompts, treatment_norm_prompts = get_bronco_prompts(
             "TREATMENT",
+            False,
+            True,
             minimal_length,
-            add_level_of_truth=True,
         )
         if extraction:
             prompts.extend(treatment_prompts)
@@ -279,18 +278,21 @@ def aggregate_bronco_prompts(
     if na_prompts and extraction:
         empty_medication_prompts, empty_medication_norm_prompts = get_bronco_prompts(
             "NA",
+            True,
+            False,
             minimal_length,
-            add_level_of_truth=False,
         )
         empty_diagnosis_prompts, empty_diagnosis_norm_prompts = get_bronco_prompts(
             "NA",
+            True,
+            True,
             minimal_length,
-            add_level_of_truth=True,
         )
         empty_treatment_prompts, empty_treatment_norm_prompts = get_bronco_prompts(
             "NA",
+            True,
+            True,
             minimal_length,
-            add_level_of_truth=True,
         )
         prompts.extend(empty_medication_prompts)
         prompts.extend(empty_diagnosis_prompts)
