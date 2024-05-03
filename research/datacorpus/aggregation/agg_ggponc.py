@@ -14,14 +14,15 @@ ggponc_collection_ner = get_collection("corpus", "ggponc_short_ner")
 def get_ggponc_instruction(annotation_type: str):
     """
     Helper function to get the instruction string for a given annotation type.
-    :param annotation_type: Type of annotation to get the instruction string for.
+    :param annotation_type: Type of annotation to get the instruction string for. Can be
+    one of the following: DIAGNOSIS, TREATMENT, MEDICATION
     """
-    if annotation_type == "MEDICATION":
-        extraction_instruction = MEDICATION_INSTRUCTION
-    elif annotation_type == "DIAGNOSIS":
+    if annotation_type == "DIAGNOSIS":
         extraction_instruction = DIAGNOSIS_INSTRUCTION
     elif annotation_type == "TREATMENT":
         extraction_instruction = TREATMENT_INSTRUCTION
+    elif annotation_type == "MEDICATION":
+        extraction_instruction = MEDICATION_INSTRUCTION
     else:
         raise ValueError(
             f"Annotation type {annotation_type} is not supported for ggponc prompts."
@@ -34,7 +35,8 @@ def get_ggponc_instruction(annotation_type: str):
 def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: int):
     """
     Generic function to get prompts from ggponc corpus
-    :param annotation_type: The type of annotation to get prompts for
+    :param annotation_type: The type of annotation to get prompts for. Can be
+    one of the following: DIAGNOSIS, TREATMENT, MEDICATION
     :param minimal_length: The minimal length of origin texts to include
     :param na_prompts: If the prompts should be created for sentences without annotations
     :return: List of prompts
@@ -146,28 +148,28 @@ def aggregate_ggponc_prompts(
     """
     prompts = []
     # prompts with annotations
-    if medication:
-        medication_prompts = get_ggponc_prompts("MEDICATION", False, minimal_length)
-        prompts.extend(medication_prompts)
     if diagnosis:
         diagnosis_prompts = get_ggponc_prompts("DIAGNOSIS", False, minimal_length)
         prompts.extend(diagnosis_prompts)
     if treatment:
         treatment_prompts = get_ggponc_prompts("TREATMENT", False, minimal_length)
         prompts.extend(treatment_prompts)
+    if medication:
+        medication_prompts = get_ggponc_prompts("MEDICATION", False, minimal_length)
+        prompts.extend(medication_prompts)
 
     # prompts without annotations
-    if medication and na_prompts:
-        empty_medication_prompts = get_ggponc_prompts(
-            "MEDICATION", True, minimal_length
-        )
-        prompts.extend(empty_medication_prompts)
     if diagnosis and na_prompts:
         empty_diagnosis_prompts = get_ggponc_prompts("DIAGNOSIS", True, minimal_length)
         prompts.extend(empty_diagnosis_prompts)
     if treatment and na_prompts:
         empty_treatment_prompts = get_ggponc_prompts("TREATMENT", True, minimal_length)
         prompts.extend(empty_treatment_prompts)
+    if medication and na_prompts:
+        empty_medication_prompts = get_ggponc_prompts(
+            "MEDICATION", True, minimal_length
+        )
+        prompts.extend(empty_medication_prompts)
 
     logger.debug(
         f"Created {len(prompts)} prompts from the ggponc corpus [minimal length: {minimal_length}]."

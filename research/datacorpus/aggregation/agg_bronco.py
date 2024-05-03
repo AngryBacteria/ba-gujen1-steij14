@@ -62,7 +62,8 @@ def get_bronco_prompts(
 ):
     """
     Generic function to get prompts from bronco corpus
-    :param annotation_type: The type of annotation to get prompts for
+    :param annotation_type: The type of annotation to get prompts for. Can be
+    one of the following: DIAGNOSIS, TREATMENT, MEDICATION
     :param na_prompts: Indicates if the prompts should be created for examples without any annotations
     :param add_level_of_truth: If the level of truth should be added to the text
     :param minimal_length: Minimal length of origin texts to include
@@ -230,27 +231,6 @@ def aggregate_bronco_prompts(
     """
     prompts = []
     # prompts with annotations
-    medication_extraction_instruction, medication_normalization_instruction = (
-        get_bronco_instruction("MEDICATION", False)
-    )
-    diagnosis_extraction_instruction, diagnosis_normalization_instruction = (
-        get_bronco_instruction("DIAGNOSIS", True)
-    )
-    treatment_extraction_instruction, treatment_normalization_instruction = (
-        get_bronco_instruction("TREATMENT", True)
-    )
-    if medication:
-        medication_prompts, medication_norm_prompts = get_bronco_prompts(
-            "MEDICATION",
-            False,
-            False,
-            minimal_length,
-        )
-        if extraction:
-            prompts.extend(medication_prompts)
-        if normalization:
-            prompts.extend(medication_norm_prompts)
-
     if diagnosis:
         diagnosis_prompts, diagnosis_norm_prompts = get_bronco_prompts(
             "DIAGNOSIS",
@@ -273,30 +253,46 @@ def aggregate_bronco_prompts(
             prompts.extend(treatment_prompts)
         if normalization:
             prompts.extend(treatment_norm_prompts)
-
-    # prompts without annotations
-    if na_prompts and extraction:
-        empty_medication_prompts, empty_medication_norm_prompts = get_bronco_prompts(
-            "NA",
-            True,
+    if medication:
+        medication_prompts, medication_norm_prompts = get_bronco_prompts(
+            "MEDICATION",
+            False,
             False,
             minimal_length,
         )
-        empty_diagnosis_prompts, empty_diagnosis_norm_prompts = get_bronco_prompts(
-            "NA",
-            True,
-            True,
-            minimal_length,
-        )
-        empty_treatment_prompts, empty_treatment_norm_prompts = get_bronco_prompts(
-            "NA",
-            True,
-            True,
-            minimal_length,
-        )
-        prompts.extend(empty_medication_prompts)
-        prompts.extend(empty_diagnosis_prompts)
-        prompts.extend(empty_treatment_prompts)
+        if extraction:
+            prompts.extend(medication_prompts)
+        if normalization:
+            prompts.extend(medication_norm_prompts)
+
+    # prompts without annotations
+    if na_prompts and extraction:
+        if diagnosis:
+            empty_diagnosis_prompts, empty_diagnosis_norm_prompts = get_bronco_prompts(
+                "DIAGNOSIS",
+                True,
+                True,
+                minimal_length,
+            )
+            prompts.extend(empty_diagnosis_prompts)
+        if treatment:
+            empty_treatment_prompts, empty_treatment_norm_prompts = get_bronco_prompts(
+                "TREATMENT",
+                True,
+                True,
+                minimal_length,
+            )
+            prompts.extend(empty_treatment_prompts)
+        if medication:
+            empty_medication_prompts, empty_medication_norm_prompts = (
+                get_bronco_prompts(
+                    "MEDICATION",
+                    True,
+                    False,
+                    minimal_length,
+                )
+            )
+            prompts.extend(empty_medication_prompts)
 
     logger.debug(
         f"Created {len(prompts)} prompts from the bronco corpus "
