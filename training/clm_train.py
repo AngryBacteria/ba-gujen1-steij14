@@ -1,6 +1,7 @@
 import os
 
 import setproctitle
+
 from training.utils.config import parse_clm_config
 
 config = parse_clm_config()
@@ -18,15 +19,15 @@ from training.utils.printing import (
     print_welcome_message,
     print_with_heading,
 )
+from shared.model_utils import get_tokenizer_with_template, patch_model
 from training.utils.gpu import print_gpu_support
 from training.utils.custom_callbacks import GPUMemoryUsageCallback
 from datasets import load_dataset
 from transformers import (
-    AutoTokenizer,
-    DataCollatorForLanguageModeling,
     TrainingArguments,
     Trainer,
     AutoModelForCausalLM,
+    DataCollatorForSeq2Seq,
 )
 
 # Welcome messages
@@ -90,25 +91,17 @@ if config.model.lora:
 
 # Tokenizer
 print_with_heading("Load fast tokenizer")
-tokenizer = AutoTokenizer.from_pretrained(
-    config.model.id_model,
-    use_fast=True,
-    add_eos_token=False,
-    add_bos_token=False,
-    padding_side="left",
-)
-# tokenizer.pad_token = tokenizer.eos_token
-tokenizer.add_special_tokens({"pad_token": tokenizer.unk_token})
-if len(tokenizer) > model.get_input_embeddings().weight.shape[0]:
-    print("WARNING: Resizing the embedding matrix to match the tokenizer vocab size.")
-    model.resize_token_embeddings(len(tokenizer))
+tokenizer = get_tokenizer_with_template(tokenizer_name=config.model.id_model)
+model = patch_model(model, tokenizer)
 
 
 # Dataset
 def preprocess_function(examples):
-    return tokenizer(
+    output = tokenizer(
         examples["text"],
     )
+    output["labels"] = output["input_ids"].copy()
+    return output
 
 
 print_with_heading("Load and prepare dataset")
@@ -132,7 +125,7 @@ print(
     f"Dataset length after: {len(tokenized_dataset['train']) + len(tokenized_dataset['test'])}"
 )
 
-data_collator_fn = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+data_collator_fn = DataCollatorForSeq2Seq(tokenizer=tokenizer)
 
 # Training setup
 print_with_heading(

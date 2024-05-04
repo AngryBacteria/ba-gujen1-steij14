@@ -1,6 +1,5 @@
 import pandas as pd
 from datasets import load_dataset
-from transformers import AutoTokenizer
 
 from datacorpus.aggregation.agg_bronco import (
     aggregate_bronco_prompts,
@@ -18,6 +17,7 @@ from datacorpus.aggregation.agg_ggponc import (
 )
 from datacorpus.aggregation.agg_jsyncc import aggregate_jsyncc_pretrain_texts
 from shared.logger import logger
+from shared.model_utils import get_tokenizer_with_template
 
 
 def get_unique_prompts(prompts: list[dict]) -> list[dict]:
@@ -43,7 +43,6 @@ def save_all_prompts(
     normalization: bool,
     na_prompts: bool,
     minimal_length=15,
-    chat_template=None,
 ):
     prompts = []
     if ggponc:
@@ -74,14 +73,14 @@ def save_all_prompts(
 
     prompts = get_unique_prompts(prompts)
 
-    tokenizer = AutoTokenizer.from_pretrained(
-        "LeoLM/leo-mistral-hessianai-7b", use_fast=True
+    tokenizer = get_tokenizer_with_template(
+        tokenizer_name="LeoLM/leo-mistral-hessianai-7b"
     )
-    if chat_template is not None:
-        tokenizer.chat_template = chat_template
     prompts_df = pd.DataFrame(prompts)
     prompts_df["text"] = prompts_df["messages"].apply(
-        lambda x: tokenizer.apply_chat_template(x, tokenize=False)
+        lambda x: tokenizer.apply_chat_template(
+            x, tokenize=False, add_generation_prompt=False
+        )
     )
 
     prompts_df.to_json("prompts.jsonl", orient="records", lines=True)
