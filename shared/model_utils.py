@@ -8,6 +8,9 @@ from transformers import (
 
 
 class ChatTemplate(Enum):
+    """
+    Enum class to store different chat templates
+    """
     CHATML = {
         "template": "{% if not add_generation_prompt is defined %}{% set add_generation_prompt = false %}{% endif %}{% for message in messages %}{{'<|im_start|>' + message['role'] + '\n' + message['content'] + '<|im_end|>' + '\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\n' }}{% endif %}",
         "bos_token": "<|im_start|>",
@@ -17,6 +20,7 @@ class ChatTemplate(Enum):
 
 
 def load_from_jinja(file_name="template"):
+    """Loads a chat template from a jinja file and cleans it"""
     chat_template = open(f"{file_name}.jinja").read()
     chat_template = chat_template.replace("    ", "").replace("\n", "")
     print(chat_template)
@@ -24,6 +28,9 @@ def load_from_jinja(file_name="template"):
 
 
 def test_chat_template(template: ChatTemplate, add_second_conversation=False):
+    """
+    Test function to apply a chat template to a list of messages and print the output
+    """
     test = get_tokenizer_with_template(template=template)
 
     messages = [
@@ -54,7 +61,7 @@ def get_tokenizer_with_template(
     Helper function to load a tokenizer with a specific chat template and special tokens
     """
     # load the tokenizer
-    if "mistral" in tokenizer_name:
+    if "mistral" in tokenizer_name.lower():
         padding_side = "left"
     else:
         padding_side = "right"
