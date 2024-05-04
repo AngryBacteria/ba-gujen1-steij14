@@ -4,9 +4,9 @@ from shared.model_utils import get_tokenizer_with_template
 
 
 def upload_to_huggingface(
-        account_name: str,
-        repo_name: str,
-        local_model_folder="mistral_instruction_low_precision",
+    account_name: str,
+    repo_name: str,
+    local_model_folder="mistral_instruction_low_precision",
 ):
     """
     Uploads a model and tokenizer to Huggingface.
@@ -16,9 +16,9 @@ def upload_to_huggingface(
 
 
 def upload_model(
-        account_name: str,
-        repo_name: str,
-        local_model_folder="mistral_instruction_low_precision",
+    account_name: str,
+    repo_name: str,
+    local_model_folder="mistral_instruction_low_precision",
 ):
     """
     Uploads a model to Huggingface.
@@ -30,9 +30,9 @@ def upload_model(
 
 
 def upload_tokenizer(
-        account_name: str,
-        repo_name: str,
-        local_model_folder="mistral_instruction_low_precision",
+    account_name: str,
+    repo_name: str,
+    local_model_folder="mistral_instruction_low_precision",
 ):
     """
     Uploads a tokenizer to Huggingface.

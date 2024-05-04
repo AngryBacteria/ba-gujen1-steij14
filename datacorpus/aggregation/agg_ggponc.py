@@ -34,7 +34,7 @@ def get_ggponc_instruction(annotation_type: str):
 # TODO: add prompts with no annotation for the entity, but that have annotations for other entities
 def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: int):
     """
-    Generic function to get prompts from ggponc corpus
+    Generic function to get prompts from the ggponc corpus
     :param annotation_type: The type of annotation to get prompts for. Can be
     one of the following: DIAGNOSIS, TREATMENT, MEDICATION
     :param minimal_length: The minimal length of origin texts to include
@@ -101,7 +101,7 @@ def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: i
 
 def aggregate_ggponc_ner():
     """
-    Get all NER documents from ggponc corpus.
+    Get all NER documents from the ggponc corpus.
     Filter out all NER tags that are not MEDICATION, TREATMENT, or DIAGNOSIS.
     :return: List of NER annotations as dictionaries
     """

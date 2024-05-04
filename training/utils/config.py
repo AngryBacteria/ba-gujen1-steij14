@@ -40,6 +40,7 @@ class GeneralConfigCLM(BaseModel):
     run_name: Optional[str] = ""
     gpu: int
     save_model: bool
+    upload_model: bool
     output_dir: str
     save_steps: int
     logs_per_epoch: int

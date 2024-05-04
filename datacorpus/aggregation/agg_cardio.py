@@ -10,9 +10,10 @@ cardio = get_collection("corpus", "cardio")
 cardio_heldout = get_collection("corpus", "cardio_heldout")
 cardio_ner = get_collection("corpus", "cardio_ner")
 
+
 def get_cardio_instruction(add_attributes: bool):
     """Helper function for getting the right instruction strings.
-    :param add_attributes: Boolean to if the attributes should be added to the instruction string
+    :param add_attributes: Boolean to indicate if the attributes should be added to the instruction string or not
     """
     if add_attributes:
         extraction_instruction = MEDICATION_INSTRUCTION_ATTRIBUTES
@@ -21,13 +22,12 @@ def get_cardio_instruction(add_attributes: bool):
 
     return extraction_instruction
 
+
 # TODO: duration / frequency prompts? --> Done but now perhaps same meds?
-def get_cardio_medication_prompts(
-        add_attributes: bool
-):
+def get_cardio_medication_prompts(add_attributes: bool):
     """
-    Retrieves medication prompts from the cardio corpus based on the MEDICATION_PROMPT.
-    :param add_attributes: If the attributes of medication should be added to the text
+    Retrieves medication prompts from the cardio corpus.
+    :param add_attributes: If the attributes of medications should be added to the text
     :return: List of medication extraction prompts
     """
     prompts = []
@@ -51,13 +51,22 @@ def get_cardio_medication_prompts(
 
                 for name, attr_list in zip(names, attributes):
                     # Preparing attributes string for each text, skipping 'DURATION' attributes (because of anonymization they are often nonsense)
-                    filtered_attributes = [attr for attr in attr_list if attr['attribute_label'] != 'DURATION']
+                    filtered_attributes = [
+                        attr
+                        for attr in attr_list
+                        if attr["attribute_label"] != "DURATION"
+                    ]
                     if filtered_attributes:
-                        attributes_str = ", ".join([f"{attr['attribute_label'].replace('STRENGTH', 'STÄRKE').replace('FREQUENCY', 'HÄUFIGKEIT')}: {attr['attribute']}" for attr in filtered_attributes])
+                        attributes_str = ", ".join(
+                            [
+                                f"{attr['attribute_label'].replace('STRENGTH', 'STÄRKE').replace('FREQUENCY', 'HÄUFIGKEIT')}: {attr['attribute']}"
+                                for attr in filtered_attributes
+                            ]
+                        )
                     else:
-                        attributes_str = "Keine Attribute vorhanden" 
+                        attributes_str = "Keine Attribute vorhanden"
 
-                    # combining text and attributes into one string
+                        # combining text and attributes into one string
                     med_str = f"{name} [{attributes_str}]"
                     texts.append(med_str)
             else:
@@ -103,8 +112,8 @@ def get_cardio_medication_prompts(
 
 def aggregate_cardio_ner():
     """
-    Aggregate all NER annotations from the cardio corpus.
-    Filter out all NER tags that are not MEDICATION, TREATMENT, or DIAGNOSIS.
+    Aggregate all NER annotations from the cardio corpus into a format usable for training.
+    Filters out all NER tags that are not MEDICATION, TREATMENT, or DIAGNOSIS and replaces them with the respective id.
     :return: List of NER annotations as dictionaries
     """
     ner_docs = []
@@ -144,12 +153,10 @@ def aggregate_cardio_pretrain_texts():
     return cardio_texts
 
 
-def aggregate_cardio_prompts(
-        attributes: bool
-):
+def aggregate_cardio_prompts(attributes: bool):
     """
     Aggregate all medication-related prompts from the cardio corpus with specified minimal text length.
-    :param attributes: If prompt with attributes should be included 
+    :param attributes: If prompt with attributes should be included
     :return: List of medication prompts
     """
     medication_prompts_cardio = get_cardio_medication_prompts(attributes)
@@ -157,6 +164,3 @@ def aggregate_cardio_prompts(
         f"Aggregated {len(medication_prompts_cardio)} medication prompts from the cardio corpus."
     )
     return medication_prompts_cardio
-
-
-print(get_cardio_medication_prompts(True)[10])

@@ -21,9 +21,9 @@ def transform_label(label: str):
     elif label == 1:
         return "B-Chemical"
     elif label == 2:
-        return "B-Disease"
+        return "B-DIAG"
     elif label == 3:
-        return "I-Disease"
+        return "I-DIAG"
     elif label == 4:
         return "I-Chemical"
     else:

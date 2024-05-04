@@ -1,14 +1,18 @@
 from shared.logger import logger
 
 
-def load_conll_annotations_file(filepath):
-    """Load a CoNLL file"""
+def load_conll_annotations_file(filepath: str) -> str:
+    """Load a CoNLL file from disk and return the text as a string."""
     with open(filepath, "r", encoding="utf-8") as file:
         text = file.read()
     return text
 
 
 def parse_ner_dataset(filepath: str):
+    """
+    Parse a CoNLL NER dataset from a file and return a list of sentences with words and NER tags.
+    :param filepath: The path to the CoNLL NER dataset file.
+    """
     text = load_conll_annotations_file(filepath)
 
     sentences = []

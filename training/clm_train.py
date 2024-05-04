@@ -1,6 +1,7 @@
 import os
 
 import setproctitle
+from transformers.trainer_utils import HubStrategy
 
 from training.utils.config import parse_clm_config
 
@@ -159,6 +160,10 @@ training_args = TrainingArguments(
     logging_strategy="steps",
     # saving
     output_dir=config.general.output_dir,
+    hub_strategy=HubStrategy.END,
+    hub_private_repo=True,
+    push_to_hub_model_id=config.general.run_name,
+    push_to_hub_organization="BachelorThesis",
     # evaluation
     evaluation_strategy="steps",
 )
@@ -231,6 +236,9 @@ print(f"Evaluation: {eval_results}")
 
 if config.general.save_model:
     trainer.save_model(config.general.output_dir)
+
+if config.general.upload_model:
+    trainer.push_to_hub()
 
 # cleanup
 if config.general.wandb_logging:

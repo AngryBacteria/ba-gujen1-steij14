@@ -6,6 +6,7 @@
     "run_name": "BaseConfig",
     "gpu": 0,
     "save_model": false,
+    "upload_model": false,
     "output_dir": "mistral_instruction_base",
     "save_steps": 0,
     "logs_per_epoch": 16

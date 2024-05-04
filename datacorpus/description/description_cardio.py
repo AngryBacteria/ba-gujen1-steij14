@@ -44,7 +44,7 @@ def save_to_csv() -> None:
 
 def save_full_text_to_csv() -> None:
     """
-    Save the cardio mongodb (only document and its full_text) to trimmed down csv file
+    Save the cardio mongodb (only document and its full_text) to a trimmed down csv file
     :return: None
     """
 
@@ -61,18 +61,18 @@ def save_full_text_to_csv() -> None:
     df.to_csv("cardio_full_text.csv", sep="|", index=False)
 
 
-def read_from_csv(str="cardio_description.csv") -> DataFrame:
+def read_from_csv(file_name="cardio_description.csv") -> DataFrame:
     """
     Read the cardio properties csv file
     :return: cardio properties dataframe
     """
-    df = pd.read_csv(str, sep="|", na_filter=False)
+    df = pd.read_csv(file_name, sep="|", na_filter=False)
     return df
 
 
-def type_pieplot(df: DataFrame) -> None:
+def show_type_pieplot(df: DataFrame) -> None:
     """
-    Plot the distribution of the extraction types
+    Plot the distribution of the annotation types
     :param df: The dataframe to plot from
     :return: None
     """
@@ -86,7 +86,7 @@ def type_pieplot(df: DataFrame) -> None:
         type_counts_df,
         values="count",
         names="type",
-        title="Distribution of Types in Cardio Corpus",
+        title="Distribution of annotation types in Cardio Corpus",
     )
     fig.show()
 
@@ -134,7 +134,7 @@ def paragraph_lengths(df, tokenize=False) -> tuple:
     return max_length, min_length, avg_length, median
 
 
-def plot_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
+def show_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     """
     Plot the distribution of paragraph lengths
     :param df: The dataframe to plot from
@@ -168,9 +168,9 @@ def plot_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     fig.show()
 
 
-def analyze_types_per_document(df: DataFrame) -> None:
+def show_types_per_document_plot(df: DataFrame) -> None:
     """
-    Analyze and visualize the count of types per unique document.
+    Analyze and visualize the count of annotation types per unique document.
     :param df: The dataframe to plot from
     :return: None
     """
@@ -197,7 +197,7 @@ def analyze_types_per_document(df: DataFrame) -> None:
     print(type_counts)
 
 
-def analyze_medication_counts_per_document(df: DataFrame) -> None:
+def show_medication_counts_per_document_plot(df: DataFrame) -> None:
     """
     Analyze and visualize the count of 'Medication' type per unique document.
     :param df: The dataframe to analyze
@@ -238,44 +238,31 @@ def analyze_medication_counts_per_document(df: DataFrame) -> None:
     print(f"Average Count: {np.round(average_count, 2)}")
 
 
-def show_top_labels_barplot(df: DataFrame, desired_types=None) -> None:
+def show_top_labels_barplot(df: DataFrame, annotation_types=None) -> None:
     """
-    Plot the distribution of the top 20 extraction labels
+    Plot the distribution of the top 20 annotation labels
     :param df: The dataframe to plot from
-    :param desired_types: The extraction types to use for the plot
+    :param annotation_types: The extraction types to use for the plot
     :return: None (a plot is displayed)
     """
-    if desired_types is None:
-        desired_types = ["MEDICATION"]
+    if annotation_types is None:
+        annotation_types = ["MEDICATION"]
     import plotly.express as px
 
-    filtered_df = df[df["type"].isin(desired_types)]
+    filtered_df = df[df["type"].isin(annotation_types)]
     type_counts = filtered_df["text"].value_counts()
     top_20_counts = type_counts.head(20)
     top_20_counts_df = pd.DataFrame(
         {"text": top_20_counts.index, "count": top_20_counts.values}
     )
 
-    desired_types_string = ", ".join(desired_types)
+    desired_types_string = ", ".join(annotation_types)
     total_number = len(filtered_df)
 
     fig = px.bar(
         top_20_counts_df,
         x="text",
         y="count",
-        title=f"Distribution of Top 20 Extractions (n = {total_number}, types = {desired_types_string})",
+        title=f"Distribution of Top 20 annotation labels (n = {total_number}, types = {desired_types_string})",
     )
     fig.show()
-
-
-save_to_csv()
-save_full_text_to_csv()
-df_main = read_from_csv()
-df_text = read_from_csv("cardio_full_text.csv")
-# type_pieplot(df_main)
-# analyze_medication_counts_per_document(df_main)
-# paragraph_lengths(df_text, tokenize=True)
-plot_lengths_boxplot(df_text, tokenize=True)
-plot_lengths_boxplot(df_main, tokenize=True)
-
-# show_top_labels_barplot(df_main)

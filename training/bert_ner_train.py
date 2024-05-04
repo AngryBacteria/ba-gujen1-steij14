@@ -1,6 +1,7 @@
 import os
 
 import setproctitle
+from transformers.trainer_utils import HubStrategy
 
 GPU = 0
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -26,14 +27,15 @@ from training.utils.printing import (
 )
 from training.utils.gpu import print_gpu_support
 
-EPOCHS = 2
-BATCH_SIZE = 4
+EPOCHS = 7
+BATCH_SIZE = 16
 LEARNING_RATE = 2e-5
 DEBUG = True
 WANDB = False
-RUN_NAME = ""
-SAVE_MODEL = False
-EVALS_PER_EPOCH = 2
+RUN_NAME = "BERT_NER_BRONCO"
+SAVE_MODEL = True
+UPLOAD_MODEL = True
+EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
 ID2LABEL = {
@@ -69,10 +71,10 @@ print_gpu_support(f"{GPU}")
 
 # Load tokenizer and model
 print_with_heading("Load fast tokenizer")
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+tokenizer = AutoTokenizer.from_pretrained("GerMedBERT/medbert-512")
 print_with_heading("Load fast tokenizer")
 model = AutoModelForTokenClassification.from_pretrained(
-    "google-bert/bert-base-uncased",
+    "GerMedBERT/medbert-512",
     num_labels=7,
     id2label=ID2LABEL,
     label2id=LABEL2ID,
@@ -80,7 +82,7 @@ model = AutoModelForTokenClassification.from_pretrained(
 
 # Load Data
 print_with_heading("Load data")
-dataset = load_dataset("json", data_files={"data": "ner.json"})[
+dataset = load_dataset("json", data_files={"data": "ner.jsonl"})[
     "data"
 ].train_test_split(test_size=0.15, shuffle=True, seed=42)
 seqeval = evaluate.load("seqeval")
@@ -156,6 +158,10 @@ training_args = TrainingArguments(
     # saving
     save_strategy="epoch",
     save_total_limit=2,
+    hub_private_repo=True,
+    hub_strategy=HubStrategy.END,
+    push_to_hub_organization="BachelorThesis",
+    push_to_hub_model_id=RUN_NAME,
     # evaluation
     evaluation_strategy="steps",
 )
@@ -202,3 +208,6 @@ print(f"Evaluation: {eval_results}")
 
 if SAVE_MODEL:
     trainer.save_model("bert_ner_model")
+
+if UPLOAD_MODEL:
+    trainer.push_to_hub()

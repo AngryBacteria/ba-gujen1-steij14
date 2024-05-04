@@ -6,7 +6,7 @@ from datacorpus.utils.mongodb import get_collection
 
 def save_to_csv() -> None:
     """
-    Save the ggponc mongodb to trimmed down csv file
+    Save the ggponc mongodb to a trimmed down csv file
     :return: None
     """
     ggonc_collection = get_collection("corpus", "ggponc_short")
@@ -31,7 +31,7 @@ def save_to_csv() -> None:
 
 def read_from_csv() -> DataFrame:
     """
-    Read the ggponc properties csv file
+    Read the trimmed down ggponc properties csv file
     :return: ggponc properties dataframe
     """
     df = pd.read_csv("ggponc_description.csv", sep="|", na_filter=False)
@@ -40,7 +40,7 @@ def read_from_csv() -> DataFrame:
 
 def show_extraction_types_pieplot(df: DataFrame) -> None:
     """
-    Plot the distribution of the extraction types
+    Plot the distribution of the annotation types
     :param df: The dataframe to plot from
     :return: None (a plot is displayed)
     """
@@ -51,37 +51,40 @@ def show_extraction_types_pieplot(df: DataFrame) -> None:
         {"type": type_counts.index, "count": type_counts.values}
     )
     fig = px.pie(
-        type_counts_df, values="count", names="type", title="Distribution of Types"
+        type_counts_df,
+        values="count",
+        names="type",
+        title="Distribution of annotation types",
     )
     fig.show()
 
 
-def show_top_labels_barplot(df: DataFrame, desired_types=None) -> None:
+def show_top_labels_barplot(df: DataFrame, annotation_types=None) -> None:
     """
     Plot the distribution of the top 20 extraction labels
     :param df: The dataframe to plot from
-    :param desired_types: The extraction types to use for the plot
+    :param annotation_types: The extraction types to use for the plot
     :return: None (a plot is displayed)
     """
-    if desired_types is None:
-        desired_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
+    if annotation_types is None:
+        annotation_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
     import plotly.express as px
 
-    filtered_df = df[df["type"].isin(desired_types)]
+    filtered_df = df[df["type"].isin(annotation_types)]
     type_counts = filtered_df["text"].value_counts()
     top_20_counts = type_counts.head(20)
     top_20_counts_df = pd.DataFrame(
         {"text": top_20_counts.index, "count": top_20_counts.values}
     )
 
-    desired_types_string = ", ".join(desired_types)
+    desired_types_string = ", ".join(annotation_types)
     total_number = len(filtered_df)
 
     fig = px.bar(
         top_20_counts_df,
         x="text",
         y="count",
-        title=f"Distribution of Top 20 Extractions (n = {total_number}, types = {desired_types_string})",
+        title=f"Distribution of Top 20 annotation labels (n = {total_number}, types = {desired_types_string})",
     )
     fig.show()
 
@@ -161,8 +164,3 @@ def show_paragraph_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
         showlegend=False,
     )
     fig.show()
-
-
-# save_to_csv()
-df = read_from_csv()
-show_top_labels_barplot(df, ["MEDICATION"])

@@ -6,6 +6,7 @@
     "run_name": "Mistral_V03_BRONCO_CARDIO",
     "gpu": 0,
     "save_model": true,
+    "upload_model": false,
     "output_dir": "mistral_instruction_low_precision",
     "save_steps": 0,
     "logs_per_epoch": 64

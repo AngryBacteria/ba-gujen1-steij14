@@ -111,10 +111,10 @@ def save_all_ner_annotations(bronco: bool, ggponc: bool, cardio: bool):
         ner_annotations.extend(cardio_ner_annotations)
 
     ner_annotations_df = pd.DataFrame(ner_annotations)
-    ner_annotations_df.to_json("ner.json", orient="records")
-    logger.debug(f"Saved {len(ner_annotations)} ner annotations to ner.json")
+    ner_annotations_df.to_json("ner.jsonl", orient="records", lines=True)
+    logger.debug(f"Saved {len(ner_annotations)} ner annotations to ner.jsonl")
 
-    data = load_dataset("json", data_files={"data": "ner.json"})[
+    data = load_dataset("json", data_files={"data": "ner.jsonl"})[
         "data"
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
     print(data)

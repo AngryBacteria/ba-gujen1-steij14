@@ -20,9 +20,9 @@ bronco_ner_collection = get_collection("corpus", "bronco_ner")
 
 def get_bronco_instruction(annotation_type: str, add_level_of_truth: bool):
     """Helper function for getting the instruction strings for a given annotation type.
-    :param annotation_type: The annotation type to get the instruction string for. Can be
+    :param annotation_type: The type of annotation to get the instruction string for. Can be
     one of the following: DIAGNOSIS, TREATMENT, MEDICATION
-    :param add_level_of_truth: Boolean to if the level of truth shoul dbe added to the instruction string
+    :param add_level_of_truth: Boolean to if the level of truth should be added to the instruction string or not
     """
     if add_level_of_truth:
         if annotation_type == "DIAGNOSIS":
@@ -61,10 +61,10 @@ def get_bronco_prompts(
     minimal_length: int,
 ):
     """
-    Generic function to get prompts from bronco corpus
+    Generic function to create the prompts for bronco corpus
     :param annotation_type: The type of annotation to get prompts for. Can be
     one of the following: DIAGNOSIS, TREATMENT, MEDICATION
-    :param na_prompts: Indicates if the prompts should be created for examples without any annotations
+    :param na_prompts: Indicates if prompts should be created for examples without any annotations (type NA)
     :param add_level_of_truth: If the level of truth should be added to the text
     :param minimal_length: Minimal length of origin texts to include
     :return: List of prompts
@@ -175,7 +175,7 @@ def get_bronco_prompts(
 
 def aggregate_bronco_ner():
     """
-    Get all NER documents from bronco corpus
+    Get all NER documents from the bronco corpus and convert them to the right format for training
     :return: List of NER dictionaries
     """
     ner_docs = []
@@ -221,8 +221,8 @@ def aggregate_bronco_prompts(
     """
     Get all prompts from bronco corpus
     :param minimal_length: The minimal length of origin texts to include
-    :param extraction: If extraction prompts should be included
-    :param normalization: If normalization prompts should be included
+    :param extraction: If prompts for the extraction task should be included
+    :param normalization: If prompts for the normalization task should be included
     :param diagnosis: If diagnosis prompts should be included
     :param treatment: If treatment prompts should be included
     :param medication: If medication prompts should be included
@@ -257,7 +257,7 @@ def aggregate_bronco_prompts(
         medication_prompts, medication_norm_prompts = get_bronco_prompts(
             "MEDICATION",
             False,
-            False,
+            True,
             minimal_length,
         )
         if extraction:

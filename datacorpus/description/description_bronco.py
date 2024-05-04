@@ -6,7 +6,7 @@ from datacorpus.utils.mongodb import get_collection
 
 def save_to_csv() -> None:
     """
-    Save the ggponc mongodb to trimmed down csv file
+    Save the ggponc mongodb to a trimmed down csv file
     :return: None
     """
     bronco_collection = get_collection("corpus", "bronco")
@@ -58,16 +58,16 @@ def save_to_csv() -> None:
 
 def read_from_csv() -> DataFrame:
     """
-    Read the ggponc properties csv file
+    Read the ggponc properties from the trimmed down csv file
     :return: ggponc properties dataframe
     """
     df = pd.read_csv("bronco_description.csv", sep="|", na_filter=False)
     return df
 
 
-def show_extraction_types_pieplot(df: DataFrame) -> None:
+def show_annotation_types_pieplot(df: DataFrame) -> None:
     """
-    Plot the distribution of the extraction types
+    Plot the distribution of the annotation types
     :param df: The dataframe to plot from
     :return: None (a plot is displayed)
     """
@@ -81,23 +81,23 @@ def show_extraction_types_pieplot(df: DataFrame) -> None:
         type_counts_df,
         values="count",
         names="type",
-        title="Distribution of extraction types",
+        title="Distribution of annotation types",
     )
     fig.show()
 
 
-def show_truth_levels_pieplot(df: DataFrame, desired_types=None) -> None:
+def show_truth_levels_pieplot(df: DataFrame, annotation_types=None) -> None:
     """
     Plot the level_of_truth types distribution
     :param df: The dataframe to plot from
-    :param desired_types: The extraction types to use for the plot (mostly you don't want na)
+    :param annotation_types: The annotation types to use for the plot (mostly you don't want na)
     :return: None (a plot is displayed)
     """
     import plotly.express as px
 
-    if desired_types is None:
-        desired_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
-    filtered_df = df[df["type"].isin(desired_types)]
+    if annotation_types is None:
+        annotation_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
+    filtered_df = df[df["type"].isin(annotation_types)]
 
     type_counts = filtered_df["level_of_truth"].value_counts()
     type_counts_df = pd.DataFrame(
@@ -107,23 +107,23 @@ def show_truth_levels_pieplot(df: DataFrame, desired_types=None) -> None:
         type_counts_df,
         values="count",
         names="level_of_truth",
-        title="Distribution of levels of truth",
+        title="Distribution of levels of truth attributes",
     )
     fig.show()
 
 
-def show_localisation_pieplot(df: DataFrame, desired_types=None) -> None:
+def show_localisation_pieplot(df: DataFrame, annotation_types=None) -> None:
     """
     Plot the localisation types distribution
     :param df: The dataframe to plot from
-    :param desired_types: The extraction types to use for the plot (mostly you don't want na)
+    :param annotation_types: The annotation types to use for the plot (mostly you don't want na)
     :return: None (a plot is displayed)
     """
     import plotly.express as px
 
-    if desired_types is None:
-        desired_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
-    filtered_df = df[df["type"].isin(desired_types)]
+    if annotation_types is None:
+        annotation_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
+    filtered_df = df[df["type"].isin(annotation_types)]
 
     type_counts = filtered_df["localisation"].value_counts()
     type_counts_df = pd.DataFrame(
@@ -133,7 +133,7 @@ def show_localisation_pieplot(df: DataFrame, desired_types=None) -> None:
         type_counts_df,
         values="count",
         names="level_of_truth",
-        title="Distribution of Localisation labels",
+        title="Distribution of the localisation attribute",
     )
     fig.show()
 
@@ -220,69 +220,64 @@ def get_text_lengths(df, tokenize=False) -> tuple:
     return max_length, min_length, avg_length, median
 
 
-def show_top_labels_barplot(df: DataFrame, desired_types=None) -> None:
+def show_top_labels_barplot(df: DataFrame, annotation_types=None) -> None:
     """
-    Plot the distribution of the top 20 extraction labels
+    Plot the distribution of the top 20 annotation labels for a specific annotation type
     :param df: The dataframe to plot from
-    :param desired_types: The extraction types to use for the plot
+    :param annotation_types: The annotation types to use for the plot
     :return: None (a plot is displayed)
     """
-    if desired_types is None:
-        desired_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
+    if annotation_types is None:
+        annotation_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
     import plotly.express as px
 
-    filtered_df = df[df["type"].isin(desired_types)]
+    filtered_df = df[df["type"].isin(annotation_types)]
     type_counts = filtered_df["text"].value_counts()
     top_20_counts = type_counts.head(20)
     top_20_counts_df = pd.DataFrame(
         {"text": top_20_counts.index, "count": top_20_counts.values}
     )
 
-    desired_types_string = ", ".join(desired_types)
+    desired_types_string = ", ".join(annotation_types)
     total_number = len(filtered_df)
 
     fig = px.bar(
         top_20_counts_df,
         x="text",
         y="count",
-        title=f"Distribution of Top 20 Extraction labels (n = {total_number}, types = {desired_types_string})",
+        title=f"Distribution of Top 20 annotation labels (n = {total_number}, types = {desired_types_string})",
     )
     fig.show()
 
 
-def show_top_normalizations_barplot(df: DataFrame, desired_types=None) -> None:
+def show_top_normalizations_barplot(df: DataFrame, annotation_types=None) -> None:
     """
     Plot the distribution of the top 20 normalization labels
     :param df: The dataframe to plot from
-    :param desired_types: The extraction types to use for the plot
+    :param annotation_types: The annotation types to use for the plot
     :return: None (a plot is displayed)
     """
-    if desired_types is None:
-        desired_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
+    if annotation_types is None:
+        annotation_types = ["TREATMENT", "DIAGNOSIS", "MEDICATION"]
     import plotly.express as px
 
-    filtered_df = df[df["type"].isin(desired_types)]
+    filtered_df = df[df["type"].isin(annotation_types)]
     type_counts = filtered_df["normalization"].value_counts()
     top_20_counts = type_counts.head(20)
     top_20_counts_df = pd.DataFrame(
         {"normalization": top_20_counts.index, "count": top_20_counts.values}
     )
 
-    desired_types_string = ", ".join(desired_types)
+    desired_types_string = ", ".join(annotation_types)
     total_number = len(filtered_df)
 
     fig = px.bar(
         top_20_counts_df,
         x="normalization",
         y="count",
-        title=f"Distribution of the Top 20 Normalizations (n = {total_number}, types = {desired_types_string})",
+        title=f"Distribution of the Top 20 normalizations (n = {total_number}, types = {desired_types_string})",
     )
     fig.show()
-
-
-# save_to_csv()
-# df_main = read_from_csv()
-# show_localisation_pieplot(df_main)
 
 
 def show_distribution_na_notna():
@@ -320,6 +315,3 @@ def show_distribution_na_notna():
         title="Distribution of NA and Not NA in Origin Texts",
     )
     fig.show()
-
-
-show_distribution_na_notna()

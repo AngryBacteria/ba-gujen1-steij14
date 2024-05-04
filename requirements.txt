@@ -21,6 +21,6 @@ pydantic
 galore-torch==1.0
 scikit-learn==1.4.2
 evaluate==0.4.1
-seqeval==0.0.10
+seqeval==1.2.2
 huggingface-hub==0.22.2
 safetensors==0.4.3

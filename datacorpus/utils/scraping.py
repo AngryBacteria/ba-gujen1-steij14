@@ -1,6 +1,7 @@
 from bs4 import Tag, BeautifulSoup
 from markdownify import markdownify as md
 
+# List of unwanted tags to ignore
 ignore_list = [
     "Weblinks",
     "Literatur",
@@ -37,6 +38,9 @@ def remove_unwanted(soup: BeautifulSoup) -> BeautifulSoup:
 
 
 def process_tags_to_text(tags: list[Tag]) -> str:
+    """
+    Process a list of tags to extract text.
+    """
     if tags is None or len(tags) == 0:
         return ""
 
