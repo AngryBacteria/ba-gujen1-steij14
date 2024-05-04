@@ -16,6 +16,10 @@ MEDICATION_NORMALIZATION_INSTRUCTION = """Weise dem im Text genannten Medikament
 
 <<CONTEXT>>"""
 
+MEDICATION_INSTRUCTION_ATTRIBUTES = """Extrahiere alle Medikamente aus folgenden Text. Für jedes extrahierte Medikament, füge zusätzlich gefundene Attribute in einer eckigen Klammer hinzu. Falls keine vorhanden sind, schreibe "Keine Attribute vorhanden":
+
+<<CONTEXT>>"""
+
 
 # DIAGNOSIS PROMPTS
 DIAGNOSIS_INSTRUCTION = """Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Für jedes Symptom oder Diagnose, füge in eckigen Klammern an, ob das Medikament in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] ist. Falls keine im Text vorkommen, schreibe "Keine vorhanden":
