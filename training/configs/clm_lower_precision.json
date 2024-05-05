@@ -29,7 +29,7 @@
     "batch_size": 4,
     "evals_per_epoch": 4,
     "optimizer": "adamw_8bit",
-    "learning_rate": 0.00002,
+    "learning_rate": 0.00005,
     "warmup_steps": 50,
     "gradient_accumulation_steps": 1,
     "gradient_checkpointing": true,

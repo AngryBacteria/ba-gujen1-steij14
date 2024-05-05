@@ -67,7 +67,7 @@ def save_all_prompts(
         )
         prompts.extend(bronco_prompts)
     if cardio:
-        cardio_prompts = aggregate_cardio_prompts()
+        cardio_prompts = aggregate_cardio_prompts(attributes=True)
         prompts.extend(cardio_prompts)
 
     # filter out unique prompts
@@ -168,9 +168,9 @@ def save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True):
 # save_all_ner_annotations(bronco=True, ggponc=False, cardio=False)
 
 save_all_prompts(
-    bronco=True,
+    bronco=False,
     ggponc=False,
-    cardio=False,
+    cardio=True,
     normalization=True,
     na_prompts=True,
     minimal_length=15,

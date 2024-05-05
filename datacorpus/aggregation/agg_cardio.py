@@ -57,7 +57,7 @@ def get_cardio_medication_prompts(add_attributes: bool):
                         if attr["attribute_label"] != "DURATION"
                     ]
                     if filtered_attributes:
-                        attributes_str = ", ".join(
+                        attributes_str = "|".join(
                             [
                                 f"{attr['attribute_label'].replace('STRENGTH', 'DOSIERUNG').replace('FREQUENCY', 'FREQUENZ')}: {attr['attribute']}"
                                 for attr in filtered_attributes
