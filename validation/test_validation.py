@@ -62,10 +62,15 @@ def test_with_file():
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
     data = _dataset["test"]
     for i, example in enumerate(data):
+        # remove first element from messages array (we dont want asisstant response)
+        messages = example["messages"][:-1]
         only_prompt = tokenizer.apply_chat_template(
-            example["messages"], tokenize=False, add_generation_prompt=True
+            messages, tokenize=False, add_generation_prompt=True
         )
         inputs = tokenizer(only_prompt, return_tensors="pt").to("cuda:0")
         outputs = model.generate(**inputs, max_length=512)
         print(tokenizer.decode(outputs[0], skip_special_tokens=True))
         print("-----------------------------------------")
+
+
+test_with_file()

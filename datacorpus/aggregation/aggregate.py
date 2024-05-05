@@ -44,6 +44,7 @@ def save_all_prompts(
     na_prompts: bool,
     minimal_length=15,
 ):
+    # get prompts from the datasets
     prompts = []
     if ggponc:
         ggponc_prompts = aggregate_ggponc_prompts(
@@ -54,7 +55,6 @@ def save_all_prompts(
             na_prompts=na_prompts,
         )
         prompts.extend(ggponc_prompts)
-
     if bronco:
         bronco_prompts = aggregate_bronco_prompts(
             minimal_length=minimal_length,
@@ -66,13 +66,13 @@ def save_all_prompts(
             na_prompts=na_prompts,
         )
         prompts.extend(bronco_prompts)
-
     if cardio:
         cardio_prompts = aggregate_cardio_prompts()
         prompts.extend(cardio_prompts)
 
+    # filter out unique prompts
     prompts = get_unique_prompts(prompts)
-
+    # apply chat template and strip whitespace
     tokenizer = get_tokenizer_with_template(
         tokenizer_name="LeoLM/leo-mistral-hessianai-7b"
     )
@@ -82,10 +82,15 @@ def save_all_prompts(
             x, tokenize=False, add_generation_prompt=False
         )
     )
+    prompts_df["text"] = prompts_df["text"].apply(
+        lambda x: x.strip()
+    )
 
+    # save to a json file
     prompts_df.to_json("prompts.jsonl", orient="records", lines=True)
     logger.debug(f"Saved {len(prompts)} prompts to prompts.jsonl")
 
+    # load with huggingface datasets and print some examples
     data = load_dataset("json", data_files={"data": "prompts.jsonl"})[
         "data"
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
