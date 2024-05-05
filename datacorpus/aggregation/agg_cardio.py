@@ -59,12 +59,12 @@ def get_cardio_medication_prompts(add_attributes: bool):
                     if filtered_attributes:
                         attributes_str = ", ".join(
                             [
-                                f"{attr['attribute_label'].replace('STRENGTH', 'STÄRKE').replace('FREQUENCY', 'HÄUFIGKEIT')}: {attr['attribute']}"
+                                f"{attr['attribute_label'].replace('STRENGTH', 'DOSIERUNG').replace('FREQUENCY', 'FREQUENZ')}: {attr['attribute']}"
                                 for attr in filtered_attributes
                             ]
                         )
                     else:
-                        attributes_str = "Keine Attribute vorhanden"
+                        attributes_str = ""
 
                         # combining text and attributes into one string
                     med_str = f"{name} [{attributes_str}]"
