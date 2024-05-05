@@ -162,8 +162,7 @@ training_args = TrainingArguments(
     output_dir=config.general.output_dir,
     hub_strategy=HubStrategy.END,
     hub_private_repo=True,
-    push_to_hub_model_id=config.general.run_name,
-    push_to_hub_organization="BachelorThesis",
+    hub_model_id=f"BachelorThesis/{config.general.run_name}",
     # evaluation
     evaluation_strategy="steps",
 )

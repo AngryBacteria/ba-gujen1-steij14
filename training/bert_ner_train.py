@@ -160,8 +160,7 @@ training_args = TrainingArguments(
     save_total_limit=2,
     hub_private_repo=True,
     hub_strategy=HubStrategy.END,
-    push_to_hub_organization="BachelorThesis",
-    push_to_hub_model_id=RUN_NAME,
+    hub_model_id=f"BachelorThesis/{RUN_NAME}",
     # evaluation
     evaluation_strategy="steps",
 )
