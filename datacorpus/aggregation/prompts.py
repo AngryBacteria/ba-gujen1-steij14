@@ -3,7 +3,7 @@
 # SYSTEM PROMPTS
 SYSTEM_PROMPT = "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren."
 SYSTEM_PROMPT_NORMALIZATION = "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, medizinischen Entitäten wie Medikamenten, Symptomen oder Diagnosen und Prozeduren entsprechende Codierungen zuzuordnen."
-
+SYSTEM_PROMPT_SUMMARIZATION = "Du bist ein fortschrittlicher Algorithmus, der darauf spezialisiert ist, aus umfangreichen Texten die Hauptpunkte zu extrahieren und sie in einer prägnanten, zusammengefassten Form darzustellen. Deine Aufgabe ist es, den Kerninhalt effektiv zu erfassen und dabei wichtige Details, Schlussfolgerungen und Argumentationsstränge beizubehalten."
 
 # MEDICATION PROMPTS
 MEDICATION_INSTRUCTION = """Extrahiere alle Medikamente aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":
@@ -40,5 +40,10 @@ TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH = """Extrahiere alle klinischen Prozeduren 
 
 <<CONTEXT>>"""
 TREATMENT_NORMALIZATION_INSTRUCTION = """Weise der im Text genannten klinischen Prozedur „<<ENTITY>>“ den entsprechenden OPS-2017 Code zu:
+
+<<CONTEXT>>"""
+
+# SUMMARY PROMPTS
+SUMMARY_INSTRUCTION = """Bitte fasse den folgenden Artikel aus der Zeitschrift zusammen. Das Ziel ist es, einen kompakten Überblick über den Inhalt des Artikels zu geben:
 
 <<CONTEXT>>"""
