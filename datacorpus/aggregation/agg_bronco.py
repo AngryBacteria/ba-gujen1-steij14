@@ -14,6 +14,11 @@ from datacorpus.aggregation.prompts import (
 from datacorpus.utils.mongodb import get_collection
 from shared.logger import logger
 
+# Aggregation for the bronco corpus. Prompts can be created for all three annotation types (DIAGNOSIS, TREATMENT,
+# MEDICATION) and can be created with or without the level of truth. Prompts can also be created for examples without
+# any annotations. The aggregation also includes the aggregation of NER documents.
+
+
 bronco_collection = get_collection("corpus", "bronco")
 bronco_ner_collection = get_collection("corpus", "bronco_ner")
 

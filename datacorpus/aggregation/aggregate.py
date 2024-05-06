@@ -19,6 +19,9 @@ from datacorpus.aggregation.agg_jsyncc import aggregate_jsyncc_pretrain_texts
 from shared.logger import logger
 from shared.model_utils import get_tokenizer_with_template
 
+# Takes all aggregation functions from the individual sources and combines them into the required format for the
+# training data. Methods are available to save prompts, ner, and pretrain data into json files.
+
 
 def get_unique_prompts(prompts: list[dict]) -> list[dict]:
     """

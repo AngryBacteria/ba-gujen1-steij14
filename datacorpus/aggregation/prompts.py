@@ -40,8 +40,3 @@ TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH = """Extrahiere alle klinischen Prozeduren 
 TREATMENT_NORMALIZATION_INSTRUCTION = """Weise der im Text genannten klinischen Prozedur „<<ENTITY>>“ den entsprechenden OPS-2017 Code zu:
 
 <<CONTEXT>>"""
-
-# SUMMARY PROMPTS
-SUMMARY_INSTRUCTION = """Bitte fasse den folgenden Artikel aus der Zeitschrift zusammen. Das Ziel ist es, einen kompakten Überblick über den Inhalt des Artikels zu geben:
-
-<<CONTEXT>>"""

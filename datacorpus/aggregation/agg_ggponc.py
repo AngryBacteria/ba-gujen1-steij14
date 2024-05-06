@@ -7,6 +7,9 @@ from datacorpus.aggregation.prompts import (
 from datacorpus.utils.mongodb import get_collection
 from shared.logger import logger
 
+# Aggregation of the data in the ggponc datacorpus. Includes all three types of annotations: MEDICATION, TREATMENT,
+# DIAGNOSIS. Data is saved as prompts.
+
 ggponc_collection = get_collection("corpus", "ggponc_short")
 ggponc_collection_ner = get_collection("corpus", "ggponc_short_ner")
 

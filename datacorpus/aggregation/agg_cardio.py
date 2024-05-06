@@ -6,6 +6,10 @@ from datacorpus.aggregation.prompts import (
 from datacorpus.utils.mongodb import get_collection
 from shared.logger import logger
 
+# Aggregation code for the cardio corpus. This code is used to aggregate prompts and NER annotations from the cardio
+# corpus. Only the MEDICATION annotation_type is included in the cardio dataset. Additional attributes can be added to
+# the medication prompts, specifically STRENGTH and FREQUENCY.
+
 cardio = get_collection("corpus", "cardio")
 cardio_heldout = get_collection("corpus", "cardio_heldout")
 cardio_ner = get_collection("corpus", "cardio_ner")

@@ -1,4 +1,5 @@
 import os
+import re
 
 import setproctitle
 import torch
@@ -11,6 +12,24 @@ from datasets import load_dataset
 
 from shared.model_utils import get_tokenizer_with_template, patch_model
 from transformers import AutoModelForCausalLM
+
+
+# Helper functions
+def remove_brackets(string_input: str):
+    pattern = r"\[[^]]*\]"  # Regular expression to match substrings enclosed in []
+    cleaned_string = re.sub(
+        pattern, "", string_input
+    )  # Remove substrings matching the pattern
+    cleaned_string = cleaned_string.strip()  # Remove leading and trailing whitespaces
+    return cleaned_string
+
+
+def extract_from_brackets(string_input: str):
+    pattern = r"\[(.*?)\]"  # Regular expression to match substrings inside []
+    matches = re.findall(
+        pattern, string_input
+    )  # Find all substrings matching the pattern
+    return matches
 
 
 def test_with_file():
@@ -48,10 +67,27 @@ def test_metrics():
 
     data = _dataset["test"]
     for i, example in enumerate(data):
-        message = example["messages"][-1]
-        message = message["content"].strip().lower()
-        annotations = message.split("|")
-        print(calculate_validation_metrics(annotations, annotations))
+        if example["task"] == "extraction":
+            # get annotations
+            message = example["messages"][-1]
+            content = str(message["content"])
+            print(get_extractions_only(content))
+
+
+def get_extractions_only(string_input: str):
+    string_input = string_input.strip().lower()
+    annotations = string_input.split("|")
+    extractions = [remove_brackets(x) for x in annotations]
+
+    return extractions
+
+
+def get_attributes_only(string_input: str):
+    string_input = string_input.strip().lower()
+    annotations = string_input.split("|")
+    attributes = [extract_from_brackets(x) for x in annotations]
+
+    return attributes
 
 
 def calculate_validation_metrics(truth_labels: list[str], prediction_labels: list[str]):
@@ -84,3 +120,6 @@ def calculate_validation_metrics(truth_labels: list[str], prediction_labels: lis
         f1_score = 2 * (precision * recall) / (precision + recall)
 
     return precision, recall, f1_score
+
+
+test_metrics()
