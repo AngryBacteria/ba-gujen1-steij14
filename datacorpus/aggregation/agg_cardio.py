@@ -1,4 +1,3 @@
-
 from datacorpus.aggregation.prompts import (
     MEDICATION_INSTRUCTION,
     MEDICATION_INSTRUCTION_ATTRIBUTES,
@@ -24,7 +23,6 @@ def get_cardio_instruction(add_attributes: bool):
     return extraction_instruction
 
 
-# TODO: duration / frequency prompts? --> Done but now perhaps same meds?
 def get_cardio_medication_prompts(add_attributes: bool):
     """
     Retrieves medication prompts from the cardio corpus.
@@ -55,7 +53,10 @@ def get_cardio_medication_prompts(add_attributes: bool):
                     filtered_attributes = [
                         attr
                         for attr in attr_list
-                        if (attr["attribute_label"] == "STRENGTH" or attr["attribute_label"] == "FREQUENCY")
+                        if (
+                            attr["attribute_label"] == "STRENGTH"
+                            or attr["attribute_label"] == "FREQUENCY"
+                        )
                     ]
                     if filtered_attributes:
                         attributes_str = "|".join(

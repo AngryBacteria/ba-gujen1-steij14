@@ -1,8 +1,6 @@
 import os
 
 import setproctitle
-from transformers.trainer_utils import HubStrategy
-
 from training.utils.config import parse_clm_config
 
 config = parse_clm_config()
@@ -20,6 +18,7 @@ from training.utils.printing import (
     print_welcome_message,
     print_with_heading,
 )
+from transformers.trainer_utils import HubStrategy
 from shared.model_utils import get_tokenizer_with_template, patch_model
 from training.utils.gpu import print_gpu_support
 from training.utils.custom_callbacks import GPUMemoryUsageCallback

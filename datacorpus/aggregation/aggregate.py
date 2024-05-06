@@ -16,7 +16,6 @@ from datacorpus.aggregation.agg_ggponc import (
     aggregate_ggponc_ner,
 )
 from datacorpus.aggregation.agg_jsyncc import aggregate_jsyncc_pretrain_texts
-from datacorpus.aggregation.prompts import SYSTEM_PROMPT_SUMMARIZATION, SUMMARY_INSTRUCTION
 from shared.logger import logger
 from shared.model_utils import get_tokenizer_with_template
 
@@ -41,7 +40,6 @@ def save_all_prompts(
     bronco: bool,
     ggponc: bool,
     cardio: bool,
-    summarization: bool,
     normalization: bool,
     na_prompts: bool,
     minimal_length=15,
@@ -71,30 +69,6 @@ def save_all_prompts(
     if cardio:
         cardio_prompts = aggregate_cardio_prompts(attributes=True)
         prompts.extend(cardio_prompts)
-    if summarization:
-        dataset = load_dataset("mlsum", "de")
-        # randomly take 200 samples
-        # shuffle first
-        summarization_samples = dataset["train"].shuffle(seed=42).select(range(200))
-        for sample in summarization_samples:
-            prompts.append(
-                {
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": SYSTEM_PROMPT_SUMMARIZATION,
-                        },
-                        {
-                            "role": "user",
-                            "content": SUMMARY_INSTRUCTION.replace("<<CONTEXT>>", sample["text"]),
-                        },
-                        {
-                            "role": "assistant",
-                            "content": sample["summary"],
-                        },
-                    ]
-                }
-            )
 
     # filter out unique prompts
     prompts = get_unique_prompts(prompts)
@@ -194,11 +168,10 @@ def save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True):
 save_all_prompts(
     bronco=True,
     ggponc=False,
-    cardio=False,
+    cardio=True,
     normalization=True,
     na_prompts=True,
     minimal_length=15,
-    summarization=False
 )
 
 # save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True)
