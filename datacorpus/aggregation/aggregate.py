@@ -76,9 +76,7 @@ def save_all_prompts(
     # filter out unique prompts
     prompts = get_unique_prompts(prompts)
     # apply chat template and strip whitespace
-    tokenizer = get_tokenizer_with_template(
-        tokenizer_name="LeoLM/leo-mistral-hessianai-7b"
-    )
+    tokenizer = get_tokenizer_with_template()
     prompts_df = pd.DataFrame(prompts)
     prompts_df["text"] = prompts_df["messages"].apply(
         lambda x: tokenizer.apply_chat_template(

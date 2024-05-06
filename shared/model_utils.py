@@ -11,16 +11,8 @@ class ChatTemplate(Enum):
     """
     Enum class to store different chat templates
     """
-
-    # ChatML instruction format. Meant for a chat format with alternating user and assistant messages
-    CHATML = {
-        "template": "{% if not add_generation_prompt is defined %}{% set add_generation_prompt = false %}{% endif %}{% for message in messages %}{{'<|im_start|>' + message['role'] + '\n' + message['content'] + '<|im_end|>' + '\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\n' }}{% endif %}",
-        "bos_token": "<|im_start|>",
-        "eos_token": "<|im_end|>",
-        "pad_token": "<|im_end|>",
-    }
     # Alpaca instruction format. Meant for only one instruction and one response, not a chat format like chatml
-    ALPACA = {
+    ALPACA_MISTRAL = {
         "template": "{% if messages[0]['role'] == 'system' %}{% set loop_messages = messages[1:] %}{% set system_message = messages[0]['content'].strip() + '\n\n' %}{% else %}{% set loop_messages = messages %}{% set system_message = '' %}{% endif %}{{ bos_token + system_message }}{% for message in loop_messages %}{% if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}{{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}{% endif %}{% if message['role'] == 'user' %}{{ '### Anweisung:\n' + message['content'].strip() + '\n\n' }}{% elif message['role'] == 'assistant' %}{{ '### Antwort:\n' + message['content'].strip() + eos_token + '\n\n' }}{% endif %}{% if loop.last and message['role'] == 'user' and add_generation_prompt %}{{ '### Antwort:\n' }}{% endif %}{% endfor %}",
         "bos_token": "<s>",
         "eos_token": "</s>",
@@ -31,13 +23,6 @@ class ChatTemplate(Enum):
         "bos_token": "<|begin_of_text|>",
         "eos_token": "<|end_of_text|>",
         "pad_token": "<|end_of_text|>",
-    }
-    # Mistral instruction format. Meant for only one instruction and one response, not a chat format like chatml
-    MISTRAL = {
-        "template": "{% if messages[0]['role'] == 'system' %}{% set loop_messages = messages[1:] %}{% set system_message = messages[0]['content'].strip() + '\n\n' %}{% else %}{% set loop_messages = messages %}{% set system_message = '' %}{% endif %}{{ bos_token }}{% for message in loop_messages %}{% if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}{{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}{% endif %}{% if loop.index0 == 0 %}{% set content = system_message + message['content'] %}{% else %}{% set content = message['content'] %}{% endif %}{% if message['role'] == 'user' %}{{ '[INST] ' + content.strip() + ' [/INST]' }}{% elif message['role'] == 'assistant' %}{{ ' ' + content.strip() + eos_token }}{% endif %}{% endfor %}",
-        "bos_token": "<s>",
-        "eos_token": "</s>",
-        "pad_token": "</s>",
     }
 
 
@@ -83,7 +68,7 @@ def test_chat_template(template: ChatTemplate, add_second_conversation=False):
 
 
 def get_tokenizer_with_template(
-    tokenizer_name="LeoLM/leo-mistral-hessianai-7b", template=ChatTemplate.ALPACA
+    tokenizer_name="meta-llama/Meta-Llama-3-8B", template=ChatTemplate.ALPACA_LLAMA3
 ):
     """
     Helper function to load a tokenizer with a specific chat template and special tokens
@@ -91,16 +76,12 @@ def get_tokenizer_with_template(
     :param template: The chat template to use
     """
     # load the tokenizer
-    if "mistral" in tokenizer_name.lower():
-        padding_side = "left"
-    else:
-        padding_side = "right"
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         use_fast=True,
         add_eos_token=False,
         add_bos_token=False,
-        padding_side=padding_side,
+        padding_side="left",
     )
     # add special tokens
     tokenizer.eos_token = template.value["eos_token"]

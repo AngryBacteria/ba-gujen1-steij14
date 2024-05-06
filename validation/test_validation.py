@@ -33,9 +33,7 @@ def extract_from_brackets(string_input: str):
 
 
 def test_with_file():
-    tokenizer = get_tokenizer_with_template(
-        tokenizer_name="LeoLM/leo-mistral-hessianai-7b"
-    )
+    tokenizer = get_tokenizer_with_template()
     model = AutoModelForCausalLM.from_pretrained(
         "mistral_instruction_low_precision",
         torch_dtype=torch.bfloat16,
