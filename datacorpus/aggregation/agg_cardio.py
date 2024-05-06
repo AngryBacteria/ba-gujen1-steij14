@@ -50,11 +50,11 @@ def get_cardio_medication_prompts(add_attributes: bool):
                 attributes = anno["attributes"]
 
                 for name, attr_list in zip(names, attributes):
-                    # Preparing attributes string for each text, skipping 'DURATION' attributes (because of anonymization they are often nonsense)
+                    # Preparing attributes string for each text, skipping 'DURATION' and 'FORM' attributes (because of anonymization they are often nonsense)
                     filtered_attributes = [
                         attr
                         for attr in attr_list
-                        if attr["attribute_label"] != "DURATION"
+                        if attr["attribute_label"] != "DURATION" or attr["attribute_label"] != "FORM"
                     ]
                     if filtered_attributes:
                         attributes_str = "|".join(
