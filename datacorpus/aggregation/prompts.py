@@ -21,13 +21,13 @@ MEDICATION_INSTRUCTION_ATTRIBUTES = """Extrahiere alle Medikamente aus folgenden
 
 
 # DIAGNOSIS PROMPTS
-DIAGNOSIS_INSTRUCTION = """Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Für jedes Symptom oder Diagnose, füge in eckigen Klammern an, ob das Medikament in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] ist. Falls keine Diagnosen oder Symptome im Text vorkommen, schreibe "Keine vorhanden":
+DIAGNOSIS_INSTRUCTION = """Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":
 
 <<CONTEXT>>"""
-DIAGNOSIS_INSTRUCTION_LEVEL_OF_TRUTH = """Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":
+DIAGNOSIS_INSTRUCTION_LEVEL_OF_TRUTH = """Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Für jede Diagnose oder Symptom, füge in eckigen Klammern an, ob die Diagnose oder das Symptom in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] ist. Falls keine Diagnosen oder Symptome im Text vorkommen, schreibe "Keine vorhanden":
 
 <<CONTEXT>>"""
-DIAGNOSIS_NORMALIZATION_INSTRUCTION = """Weise dem im Text genannten Symptom oder Krankheit „<<ENTITY>>“ den entsprechenden ICD10-GM Code zu:
+DIAGNOSIS_NORMALIZATION_INSTRUCTION = """Weise der im Text genannten Diagnose oder Symptom „<<ENTITY>>“ den entsprechenden ICD10-GM Code zu:
 
 <<CONTEXT>>"""
 
@@ -36,7 +36,7 @@ DIAGNOSIS_NORMALIZATION_INSTRUCTION = """Weise dem im Text genannten Symptom ode
 TREATMENT_INSTRUCTION = """Extrahiere alle klinischen Prozeduren aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":
 
 <<CONTEXT>>"""
-TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH = """Extrahiere alle klinischen Prozeduren aus dem folgenden Text. Für jede Prozedur, füge in eckigen Klammern an, ob das Medikament in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] ist. Falls keine klinischen Prozeduren im Text vorkommen, schreibe "Keine vorhanden":
+TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH = """Extrahiere alle klinischen Prozeduren aus dem folgenden Text. Für jede klinische Prozedur, füge in eckigen Klammern an, ob die klinische Prozedur in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] ist. Falls keine klinischen Prozeduren im Text vorkommen, schreibe "Keine vorhanden":
 
 <<CONTEXT>>"""
 TREATMENT_NORMALIZATION_INSTRUCTION = """Weise der im Text genannten klinischen Prozedur „<<ENTITY>>“ den entsprechenden OPS-2017 Code zu:

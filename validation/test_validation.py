@@ -51,17 +51,22 @@ def test_metrics():
         message = example["messages"][-1]
         message = message["content"].strip().lower()
         annotations = message.split("|")
-        print(calculate_extraction_metrics(annotations, annotations))
+        print(calculate_validation_metrics(annotations, annotations))
 
 
-def calculate_extraction_metrics(truth_labels: list[str], prediction_labels: list[str]):
+def calculate_validation_metrics(truth_labels: list[str], prediction_labels: list[str]):
     """
     Calculate precision, recall and f1 score for the extraction task. Takes in two lists, the truth labels and the
     predicted labels and returns the metrics.
     """
+    # only take unique
     truth_set = set(truth_labels)
     prediction_set = set(prediction_labels)
+    # make them lower case
+    truth_set = {x.lower() for x in truth_set}
+    prediction_set = {x.lower() for x in prediction_set}
 
+    # calculate metrics
     true_positives = len(truth_set & prediction_set)
     false_positives = len(prediction_set - truth_set)
     false_negatives = len(truth_set - prediction_set)

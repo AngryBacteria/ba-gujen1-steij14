@@ -288,7 +288,7 @@ def aggregate_bronco_prompts(
                 get_bronco_prompts(
                     "MEDICATION",
                     True,
-                    False,
+                    True,
                     minimal_length,
                 )
             )

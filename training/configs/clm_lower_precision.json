@@ -3,7 +3,7 @@
     "debug": true,
     "wandb_logging": true,
     "disable_annoying_warnings": false,
-    "run_name": "Mistral_V03_BRONCO_CARDIO",
+    "run_name": "Mistral_V04_BRONCO_CARDIO",
     "gpu": 0,
     "save_model": true,
     "upload_model": false,

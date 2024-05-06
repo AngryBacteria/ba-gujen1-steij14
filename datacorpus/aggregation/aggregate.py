@@ -194,7 +194,7 @@ def save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True):
 save_all_prompts(
     bronco=True,
     ggponc=False,
-    cardio=True,
+    cardio=False,
     normalization=True,
     na_prompts=True,
     minimal_length=15,
