@@ -82,6 +82,8 @@ def get_bronco_prompts(
         annotation_type, add_level_of_truth
     )
     # if na_prompt is enabled use "na" as annotation type to get the right examples from the db
+    # TODO: discuss this change so after finetune it can be better separated
+    # annotation_type_output = annotation_type
     if na_prompts:
         annotation_type = "NA"
 
@@ -245,10 +247,19 @@ def aggregate_bronco_classification():
         )
 
     data = pandas.DataFrame(classification_docs)
-    classification_docs = data.groupby('text').agg({
-        'labels': lambda x: [sublist_label for sublist in x for sublist_label in sublist],
-        'source': 'first'  # Assumes all documents from the same origin have the same source
-    }).reset_index().to_dict(orient='records')
+    classification_docs = (
+        data.groupby("text")
+        .agg(
+            {
+                "labels": lambda x: [
+                    sublist_label for sublist in x for sublist_label in sublist
+                ],
+                "source": "first",  # Assumes all documents from the same origin have the same source
+            }
+        )
+        .reset_index()
+        .to_dict(orient="records")
+    )
 
     unique_labels = set()
     for doc in classification_docs:

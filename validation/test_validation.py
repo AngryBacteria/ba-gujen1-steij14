@@ -10,82 +10,149 @@ setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 from datasets import load_dataset
 
-from shared.model_utils import get_tokenizer_with_template, patch_model
-from transformers import AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import pandas as pd
 
 
-# Helper functions
-def remove_brackets(string_input: str):
-    pattern = r"\[[^]]*\]"  # Regular expression to match substrings enclosed in []
-    cleaned_string = re.sub(
-        pattern, "", string_input
-    )  # Remove substrings matching the pattern
-    cleaned_string = cleaned_string.strip()  # Remove leading and trailing whitespaces
-    return cleaned_string
-
-
-def extract_from_brackets(string_input: str):
-    pattern = r"\[(.*?)\]"  # Regular expression to match substrings inside []
-    matches = re.findall(
-        pattern, string_input
-    )  # Find all substrings matching the pattern
-    return matches
-
-
-def test_with_file():
-    tokenizer = get_tokenizer_with_template()
-    model = AutoModelForCausalLM.from_pretrained(
-        "mistral_instruction_low_precision",
-        torch_dtype=torch.bfloat16,
-        # load_in_8bit=True,
-        # load_in_4bit=True,
+def get_tokenizer(precision: int, model_name: str):
+    # TODO: make usable for models without the LeoLm tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name,
+        use_fast=True,
+        add_eos_token=False,
+        add_bos_token=False,
     )
-    model = patch_model(model, tokenizer).to("cuda:0")
-
-    _dataset = load_dataset("json", data_files={"data": "prompts.jsonl"})[
-        "data"
-    ].train_test_split(test_size=0.1, shuffle=True, seed=42)
-    data = _dataset["test"]
-    for i, example in enumerate(data):
-        # remove first element from messages array (we dont want asisstant response)
-        messages = example["messages"][:-1]
-        only_prompt = tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
+    if precision == 4:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.bfloat16,
+            load_in_4bit=True,
         )
-        inputs = tokenizer(only_prompt, return_tensors="pt").to("cuda:0")
-        outputs = model.generate(**inputs, max_length=512)
-        print(tokenizer.decode(outputs[0], skip_special_tokens=True))
-        print("-----------------------------------------")
+    elif precision == 8:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.bfloat16,
+            load_in_8bit=True,
+        )
+    elif precision == 16:
+        model = AutoModelForCausalLM.from_pretrained(
+            "BachelorThesis/Mistral_V03_BRONCO_CARDIO",
+            torch_dtype=torch.bfloat16,
+        )
+        model.to("cuda:0")
+    else:
+        raise ValueError("Precision has to be 4, 8 or 16")
+
+    return tokenizer, model
 
 
-def test_metrics():
+def calculate_metrics_from_prompts(precision: int, model_name: str):
+    # TODO: make usable for models without the LeoLm tokenizer
+    tokenizer, model = get_tokenizer(precision, model_name)
+
     _dataset = load_dataset("json", data_files={"data": "prompts.jsonl"})[
         "data"
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
-
     data = _dataset["test"]
+
+    output = []
     for i, example in enumerate(data):
-        if example["task"] == "extraction":
-            # get annotations
-            message = example["messages"][-1]
-            content = str(message["content"])
-            print(get_extractions_only(content))
+        # create the instruction for the model
+        instruction = tokenizer.apply_chat_template(
+            example["messages"][:-1], tokenize=False, add_generation_prompt=True
+        )
+        # get the whole input to save later
+        prompt = tokenizer.apply_chat_template(
+            example["messages"], tokenize=False, add_generation_prompt=True
+        )
+        print(prompt)
+        # get the ground truth from the prompt
+        truth = example["messages"][-1]["content"]
+
+        # get the model output
+        inputs = tokenizer(instruction, return_tensors="pt").to("cuda:0")
+        outputs = model.generate(**inputs, max_new_tokens=1000)
+        model_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        prediction = model_output.split("### Antwort:")[1].strip()
+
+        # get extractions
+        truth_extractions = get_extractions_only(truth)
+        prediction_extractions = get_extractions_only(prediction)
+        print(f"Truth     : {truth_extractions}")
+        print(f"Prediction: {prediction_extractions}")
+
+        # calculate metrics
+        metrics = calculate_validation_metrics(
+            truth_extractions, prediction_extractions
+        )
+        print(f"Metrics   : {metrics}")
+
+        print("-----------------------------------------")
+        # TODO save params such as temp
+        output.append(
+            {
+                "model": model_name,
+                "text": prompt,
+                "instruction": instruction,
+                "response": model_output,
+                "truth": truth_extractions,
+                "prediction": prediction_extractions,
+                "precision": metrics[0],
+                "recall": metrics[1],
+                "f1_score": metrics[2],
+                "task": example["task"],
+                "type": example["type"],
+                "source": example["source"],
+            }
+        )
+    # convert to pandas df and save to json
+    df = pd.DataFrame(output)
+    df.to_json(f"validation_results_{precision}bit.json", orient="records")
+    return output
 
 
 def get_extractions_only(string_input: str):
+    """
+    Get all extractions from a string input. The string has to be in the typical form of a prompt output:
+    extraction1 [atrribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
+    """
     string_input = string_input.strip().lower()
     annotations = string_input.split("|")
     extractions = [remove_brackets(x) for x in annotations]
+    extractions = list(set(extractions))
 
     return extractions
 
 
 def get_attributes_only(string_input: str):
+    """
+    Get all attributes from a string input. The string has to be in the typical form of a prompt output:
+    extraction1 [atrribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
+    """
     string_input = string_input.strip().lower()
     annotations = string_input.split("|")
     attributes = [extract_from_brackets(x) for x in annotations]
 
     return attributes
+
+
+def remove_brackets(string_input: str):
+    """
+    Remove substrings enclosed in brackets from a string.
+    """
+    pattern = r"\[[^]]*\]"
+    cleaned_string = re.sub(pattern, "", string_input)
+    cleaned_string = cleaned_string.strip()
+    return cleaned_string
+
+
+def extract_from_brackets(string_input: str):
+    """
+    Extract substrings enclosed in brackets from a string.
+    """
+    pattern = r"\[(.*?)\]"
+    matches = re.findall(pattern, string_input)
+    return matches
 
 
 def calculate_validation_metrics(truth_labels: list[str], prediction_labels: list[str]):
@@ -94,6 +161,7 @@ def calculate_validation_metrics(truth_labels: list[str], prediction_labels: lis
     predicted labels and returns the metrics.
     """
     # only take unique
+    # TODO: discuss if this is cheating
     truth_set = set(truth_labels)
     prediction_set = set(prediction_labels)
     # make them lower case
@@ -120,4 +188,18 @@ def calculate_validation_metrics(truth_labels: list[str], prediction_labels: lis
     return precision, recall, f1_score
 
 
-test_metrics()
+def aggregate_metrics(file_name):
+    """TODO"""
+    df = pd.read_json(file_name)
+    # group by task
+    grouped = df.groupby(["task", "source"])
+    for name, group in grouped:
+        print(name)
+        print(f"Precision: {group["precision"].mean()}")
+        print(f"Recall: {group["recall"].mean()}")
+        print(f"F1 Score: {group["f1_score"].mean()}")
+        print("----------------------------------------------------")
+
+
+# calculate_metrics_from_prompts(4, "BachelorThesis/Mistral_V03_BRONCO_CARDIO")
+# aggregate_metrics("validation_results_4bit.json")
