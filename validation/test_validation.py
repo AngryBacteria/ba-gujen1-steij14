@@ -129,6 +129,7 @@ def get_attributes_only(string_input: str):
     Get all attributes from a string input. The string has to be in the typical form of a prompt output:
     extraction1 [atrribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
     """
+    # TODO: discuss which logic to use
     string_input = string_input.strip().lower()
     annotations = string_input.split("|")
     attributes = [extract_from_brackets(x) for x in annotations]

@@ -46,6 +46,8 @@ def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: i
     """
     extraction_instruction = get_ggponc_instruction(annotation_type)
     # if na_prompt is enabled use "na" as annotation type to get the right examples from the db
+    # TODO: discuss this change so after finetune it can be better separated
+    # annotation_type_output = annotation_type
     if na_prompts:
         annotation_type = "NA"
 
