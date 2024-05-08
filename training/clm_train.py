@@ -19,7 +19,7 @@ from training.utils.printing import (
     print_with_heading,
 )
 from transformers.trainer_utils import HubStrategy
-from shared.model_utils import get_tokenizer_with_template, patch_model
+from shared.model_utils import patch_tokenizer_with_template, patch_model_with_tokenizer
 from training.utils.gpu import print_gpu_support
 from training.utils.custom_callbacks import GPUMemoryUsageCallback
 from datasets import load_dataset
@@ -91,8 +91,8 @@ if config.model.lora:
 
 # Tokenizer
 print_with_heading("Load fast tokenizer")
-tokenizer = get_tokenizer_with_template(tokenizer_name=config.model.id_model)
-model = patch_model(model, tokenizer)
+tokenizer = patch_tokenizer_with_template(tokenizer_name=config.model.id_model)
+model = patch_model_with_tokenizer(model, tokenizer)
 
 
 # Dataset

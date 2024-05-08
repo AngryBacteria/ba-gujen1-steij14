@@ -21,10 +21,6 @@ from shared.logger import logger
 # any annotations. The aggregation also includes the aggregation of NER documents.
 
 
-bronco_collection = get_collection("corpus", "bronco")
-bronco_ner_collection = get_collection("corpus", "bronco_ner")
-
-
 def get_bronco_instruction(annotation_type: str, add_level_of_truth: bool):
     """Helper function for getting the instruction strings for a given annotation type.
     :param annotation_type: The type of annotation to get the instruction string for. Can be
@@ -87,6 +83,7 @@ def get_bronco_prompts(
     if na_prompts:
         annotation_type = "NA"
 
+    bronco_collection = get_collection("corpus", "bronco")
     documents = bronco_collection.find({"type": annotation_type})
     for document in documents:
         if minimal_length > 0 and len(document["origin"]) < minimal_length:
@@ -188,6 +185,7 @@ def aggregate_bronco_ner():
     :return: List of NER dictionaries
     """
     ner_docs = []
+    bronco_ner_collection = get_collection("corpus", "bronco_ner")
     documents = bronco_ner_collection.find({})
     for document in documents:
         ner_tags = []
@@ -224,6 +222,7 @@ def aggregate_bronco_classification():
     :return: List of classification dictionaries
     """
     classification_docs = []
+    bronco_collection = get_collection("corpus", "bronco")
     documents = bronco_collection.find({})
     for document in documents:
         labels = []
@@ -360,6 +359,3 @@ def aggregate_bronco_prompts(
     )
 
     return prompts
-
-
-aggregate_bronco_classification()

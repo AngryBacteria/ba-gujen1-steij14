@@ -1,5 +1,7 @@
+import re
 from enum import Enum
 
+import torch
 from transformers import (
     AutoTokenizer,
     PreTrainedModel,
@@ -8,6 +10,7 @@ from transformers import (
 )
 
 
+# TEMPLATE
 class ChatTemplate(Enum):
     """
     Enum class to store different chat templates
@@ -19,6 +22,7 @@ class ChatTemplate(Enum):
         "bos_token": "<s>",
         "eos_token": "</s>",
         "pad_token": "</s>",
+        "generation_start": "### Antwort:",
     }
     # Alpaca instruction format. Meant for only one instruction and one response. Padding tokens for Llama3
     ALPACA_LLAMA3 = {
@@ -26,10 +30,11 @@ class ChatTemplate(Enum):
         "bos_token": "<|begin_of_text|>",
         "eos_token": "<|end_of_text|>",
         "pad_token": "<|end_of_text|>",
+        "generation_start": "### Antwort:",
     }
 
 
-def load_from_jinja(file_name="template"):
+def load_template_from_jinja(file_name="template"):
     """
     Loads a chat template from a jinja file and cleans it
     :param file_name: The name of the jinja file to load
@@ -47,7 +52,7 @@ def test_chat_template(template: ChatTemplate, add_second_conversation=False):
     :param template: The chat template to use
     :param add_second_conversation: If True, the function will add a second user input to the messages
     """
-    test = get_tokenizer_with_template(template=template)
+    test = patch_tokenizer_with_template(template=template)
 
     messages = [
         {"role": "system", "content": "This is a system prompt."},
@@ -70,7 +75,18 @@ def test_chat_template(template: ChatTemplate, add_second_conversation=False):
     return output
 
 
-def get_tokenizer_with_template(
+# MODEL AND TOKENIZER
+class ModelPrecision(Enum):
+    """
+    Enum class to store different model precisions
+    """
+
+    FOUR_BIT = 4
+    EIGHT_BIT = 8
+    SIXTEEN_BIT = 16
+
+
+def patch_tokenizer_with_template(
     tokenizer_name="LeoLM/leo-mistral-hessianai-7b",
     template=ChatTemplate.ALPACA_MISTRAL,
 ):
@@ -104,7 +120,7 @@ def get_tokenizer_with_template(
     return tokenizer
 
 
-def patch_model(model: PreTrainedModel, tokenizer: PreTrainedTokenizer):
+def patch_model_with_tokenizer(model: PreTrainedModel, tokenizer: PreTrainedTokenizer):
     """
     Helper function to patch a model with a new tokenizer. Adds special tokens and resizes the embedding layer
     :param model: The model to patch
@@ -124,3 +140,120 @@ def patch_model(model: PreTrainedModel, tokenizer: PreTrainedTokenizer):
         model.generation_config.pad_token_id = tokenizer.pad_token_id
 
     return model
+
+
+def load_model_and_tokenizer(
+    model_name: str,
+    precision: ModelPrecision,
+    patch_model=False,
+    patch_tokenizer=False,
+    template=ChatTemplate.ALPACA_MISTRAL,
+):
+    """
+    Helper function to load a model and tokenizer with a specific precision and chat template.
+    Optionally patches the model and tokenizer with the template (recommended if not pre-configured)
+    """
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name,
+        use_fast=True,
+        add_eos_token=False,
+        add_bos_token=False,
+    )
+    if precision == ModelPrecision.FOUR_BIT:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.bfloat16,
+            load_in_4bit=True,
+        )
+    elif precision == ModelPrecision.EIGHT_BIT:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.bfloat16,
+            load_in_8bit=True,
+        )
+    elif precision == ModelPrecision.SIXTEEN_BIT:
+        model = AutoModelForCausalLM.from_pretrained(
+            "BachelorThesis/Mistral_V03_BRONCO_CARDIO",
+            torch_dtype=torch.bfloat16,
+        )
+        model.to("cuda:0")
+    else:
+        raise ValueError("Precision has to be 4, 8 or 16")
+
+    if patch_model:
+        model = patch_model_with_tokenizer(model, tokenizer)
+    if patch_tokenizer:
+        tokenizer = patch_tokenizer_with_template(template=template)
+
+    return tokenizer, model
+
+
+def upload_model(
+    account_name: str,
+    repo_name: str,
+    local_model_folder="mistral_instruction_low_precision",
+):
+    """
+    Uploads a model to Huggingface.
+    """
+    model = AutoModelForCausalLM.from_pretrained(
+        local_model_folder, torch_dtype=torch.bfloat16
+    )
+    model.push_to_hub(f"{account_name}/{repo_name}", private=True)
+
+
+def upload_tokenizer(
+    account_name: str,
+    repo_name: str,
+    local_model_folder="mistral_instruction_low_precision",
+):
+    """
+    Uploads a tokenizer to Huggingface.
+    """
+    tokenizer = patch_tokenizer_with_template(tokenizer_name=local_model_folder)
+    tokenizer.push_to_hub(f"{account_name}/{repo_name}", private=True)
+
+
+# GENERATION
+def parse_model_output_only(full_output: str, template: ChatTemplate) -> str | None:
+    """
+    Parses the model output (everything after the instruction) from the whole generated text.
+    If the output could not be found return None
+    """
+    if (
+        template == ChatTemplate.ALPACA_MISTRAL
+        or template == ChatTemplate.ALPACA_LLAMA3
+    ):
+        parsed = full_output.split(template.value["generation_start"])
+        if len(parsed) > 1:
+            return parsed[1].strip()
+        else:
+            return None
+
+
+def test_generation(
+    messages=None,
+    model_name="LeoLM/leo-mistral-hessianai-7b",
+    precision=ModelPrecision.FOUR_BIT,
+):
+    """Function to test if the inference of the model works on gpu or not"""
+    if messages is None:
+        messages = [
+            {
+                "role": "system",
+                "content": "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.",
+            },
+            {
+                "role": "user",
+                "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":\n\nIn einem Roentgen Thorax zeigten sich prominente zentrale Lungengefaesszeichnung mit basoapikaler Umverteilung sowie angedeutete Kerley-B-Linien, vereinbar mit einer chronischen pulmonalvenoesen Stauungskomponente bei Hypervolaemie.',
+            },
+        ]
+    tokenizer, model = load_model_and_tokenizer(model_name, precision)
+    prompt = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
+
+    inputs = tokenizer(prompt, return_tensors="pt").to("cuda:0")
+    outputs = model.generate(**inputs, max_new_tokens=1000)
+    model_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    print(model_output)

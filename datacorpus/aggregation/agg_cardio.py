@@ -10,10 +10,6 @@ from shared.logger import logger
 # corpus. Only the MEDICATION annotation_type is included in the cardio dataset. Additional attributes can be added to
 # the medication prompts, specifically STRENGTH and FREQUENCY.
 
-cardio = get_collection("corpus", "cardio")
-cardio_heldout = get_collection("corpus", "cardio_heldout")
-cardio_ner = get_collection("corpus", "cardio_ner")
-
 
 def get_cardio_instruction(add_attributes: bool):
     """Helper function for getting the right instruction strings.
@@ -34,6 +30,7 @@ def get_cardio_medication_prompts(add_attributes: bool):
     :return: List of medication extraction prompts
     """
     prompts = []
+    cardio = get_collection("corpus", "cardio")
     documents = cardio.find({"annotations.type": "MEDICATION"})
     extraction_instruction = get_cardio_instruction(add_attributes)
 
@@ -123,6 +120,7 @@ def aggregate_cardio_ner():
     :return: List of NER annotations as dictionaries
     """
     ner_docs = []
+    cardio_ner = get_collection("corpus", "cardio_ner")
     documents = cardio_ner.find({})
     for document in documents:
         for anno in document["annotations"]:
@@ -147,10 +145,12 @@ def aggregate_cardio_pretrain_texts():
     Get all cardio pretrain texts
     :return: List of pretrain texts from cardio and cardio_heldout
     """
+    cardio = get_collection("corpus", "cardio")
     cardio_texts = [
         {"text": doc["full_text"], "task": "pretrain", "source": "cardio"}
         for doc in cardio.find({}, {"full_text": 1})
     ]
+    cardio_heldout = get_collection("corpus", "cardio_heldout")
     cardio_heldout_texts = [
         {"text": doc["full_text"], "task": "pretrain", "source": "cardio"}
         for doc in cardio_heldout.find({}, {"full_text": 1})

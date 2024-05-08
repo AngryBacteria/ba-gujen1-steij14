@@ -10,9 +10,6 @@ from shared.logger import logger
 # Aggregation of the data in the ggponc datacorpus. Includes all three types of annotations: MEDICATION, TREATMENT,
 # DIAGNOSIS. Data is saved as prompts.
 
-ggponc_collection = get_collection("corpus", "ggponc_short")
-ggponc_collection_ner = get_collection("corpus", "ggponc_short_ner")
-
 
 def get_ggponc_instruction(annotation_type: str):
     """
@@ -52,6 +49,7 @@ def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: i
         annotation_type = "NA"
 
     prompts = []
+    ggponc_collection = get_collection("corpus", "ggponc_short")
     documents = ggponc_collection.find({"annotations.type": annotation_type})
     for document in documents:
         for anno in document["annotations"]:
@@ -111,6 +109,7 @@ def aggregate_ggponc_ner():
     :return: List of NER annotations as dictionaries
     """
     ner_docs = []
+    ggponc_collection_ner = get_collection("corpus", "ggponc_short_ner")
     documents = ggponc_collection_ner.find({})
     for document in documents:
         ner_tags = []

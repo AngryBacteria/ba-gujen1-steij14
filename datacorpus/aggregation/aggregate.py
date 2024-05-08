@@ -17,7 +17,7 @@ from datacorpus.aggregation.agg_ggponc import (
 )
 from datacorpus.aggregation.agg_jsyncc import aggregate_jsyncc_pretrain_texts
 from shared.logger import logger
-from shared.model_utils import get_tokenizer_with_template
+from shared.model_utils import patch_tokenizer_with_template
 
 # Takes all aggregation functions from the individual sources and combines them into the required format for the
 # training data. Methods are available to save prompts, ner, and pretrain data into json files.
@@ -76,7 +76,7 @@ def save_all_prompts(
     # filter out unique prompts
     prompts = get_unique_prompts(prompts)
     # apply chat template and strip whitespace
-    tokenizer = get_tokenizer_with_template()
+    tokenizer = patch_tokenizer_with_template()
     prompts_df = pd.DataFrame(prompts)
     prompts_df["text"] = prompts_df["messages"].apply(
         lambda x: tokenizer.apply_chat_template(
@@ -174,5 +174,3 @@ save_all_prompts(
     na_prompts=True,
     minimal_length=15,
 )
-
-# save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True)

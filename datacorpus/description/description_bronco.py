@@ -2,7 +2,7 @@ import pandas as pd
 from pandas import DataFrame
 
 from datacorpus.utils.mongodb import get_collection
-from shared.model_utils import get_tokenizer_with_template
+from shared.model_utils import patch_tokenizer_with_template
 
 
 def save_to_csv() -> None:
@@ -152,7 +152,7 @@ def show_text_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     lengths = []
     if tokenize:
 
-        tokenizer = get_tokenizer_with_template()
+        tokenizer = patch_tokenizer_with_template()
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
@@ -185,7 +185,7 @@ def get_text_lengths(df, tokenize=False) -> tuple:
     lengths = []
     if tokenize:
 
-        tokenizer = get_tokenizer_with_template()
+        tokenizer = patch_tokenizer_with_template()
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
