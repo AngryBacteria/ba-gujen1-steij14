@@ -9,6 +9,7 @@ from training.utils.printing import print_with_heading
 
 
 def print_gpu_support(gpu_id: str):
+    """Print information about the GPU."""
     setproctitle.setproctitle("gujen1 - ba-mistralai - testing.py")
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
@@ -31,6 +32,7 @@ def print_gpu_support(gpu_id: str):
 
 
 def get_gpu_memory_usage(gpu_id: int) -> tuple[float, float]:
+    """Get the memory usage and capacity in GB for the specified GPU."""
     try:
         # NVML
         pynvml.nvmlInit()

@@ -8,7 +8,7 @@ from shared.logger import logger
 from shared.model_utils import (
     load_model_and_tokenizer,
     ModelPrecision,
-    parse_model_output_only,
+    get_model_output_only,
     ChatTemplate,
 )
 
@@ -21,7 +21,6 @@ import pandas as pd
 
 
 def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
-    # TODO: make usable for models without the LeoLm tokenizer
     tokenizer, model = load_model_and_tokenizer(model_name, precision)
 
     _dataset = load_dataset("json", data_files={"data": "prompts.jsonl"})[
@@ -58,14 +57,14 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
         output_string = tokenizer.decode(_outputs[0], skip_special_tokens=True)
         _end_time = datetime.datetime.now()
         execution_time = (_end_time - _start_time).microseconds
-        prediction_string = parse_model_output_only(
+
+        # get extractions
+        prediction_string = get_model_output_only(
             output_string, ChatTemplate.ALPACA_MISTRAL
         )
         if not prediction_string:
             logger.error("No extractions found")
             continue
-
-        # get extractions
         # TODO: replace with helper functions
         truth = get_extractions_only(truth_string)
         prediction = get_extractions_only(prediction_string)
@@ -74,7 +73,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
         logger.debug(f"Execution time: {execution_time}")
 
         # calculate metrics
-        metrics = calculate_validation_metrics(truth, prediction)
+        metrics = calculate_extraction_validation_metrics(truth, prediction)
         logger.debug(f"Metrics   : {metrics}")
 
         logger.debug("-----------------------------------------")
@@ -129,7 +128,7 @@ def remove_brackets(string_input: str):
     return cleaned_string
 
 
-def calculate_validation_metrics(truth_labels: list[str], prediction_labels: list[str]):
+def calculate_extraction_validation_metrics(truth_labels: list[str], prediction_labels: list[str]):
     """
     Calculate precision, recall and f1 score for the extraction task. Takes in two lists, the truth labels and the
     predicted labels and returns the metrics.

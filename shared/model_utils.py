@@ -215,7 +215,7 @@ def upload_tokenizer(
 
 
 # GENERATION
-def parse_model_output_only(full_output: str, template: ChatTemplate) -> str | None:
+def get_model_output_only(full_output: str, template: ChatTemplate) -> str | None:
     """
     Parses the model output (everything after the instruction) from the whole generated text.
     If the output could not be found return None
@@ -265,7 +265,12 @@ def count_tokens(
     tokenizer_name: str = None,
 ) -> int:
     """Count the tokens of a dataset with a tokenizer. Either pass a tokenizer or a tokenizer name."""
-    tokenizer = None
+    if tokenizer_instance is not None:
+        tokens = 0
+        for text in data:
+            tokens += len(tokenizer_instance(text)["input_ids"])
+        return tokens
+
     if tokenizer_name is not None:
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_name,
@@ -273,13 +278,10 @@ def count_tokens(
             add_eos_token=False,
             add_bos_token=False,
         )
-    elif tokenizer_instance is not None:
-        tokenizer = tokenizer_instance
+        tokens = 0
+        for text in data:
+            tokens += len(tokenizer(text)["input_ids"])
+        return tokens
+
     else:
         raise ValueError("Either pass a tokenizer or a tokenizer name.")
-
-    tokens = 0
-    for text in data:
-        tokens += len(tokenizer(text)["input_ids"])
-
-    return tokens

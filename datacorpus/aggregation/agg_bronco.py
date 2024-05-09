@@ -78,8 +78,7 @@ def get_bronco_prompts(
         annotation_type, add_level_of_truth
     )
     # if na_prompt is enabled use "na" as annotation type to get the right examples from the db
-    # TODO: discuss this change so after finetune it can be better separated
-    # annotation_type_output = annotation_type
+    annotation_type_output = annotation_type
     if na_prompts:
         annotation_type = "NA"
 
@@ -136,12 +135,10 @@ def get_bronco_prompts(
                     {"role": "user", "content": extraction_instruction_str.strip()},
                     {"role": "assistant", "content": extraction_string.strip()},
                 ],
-                "type": annotation_type,
+                "type": annotation_type_output,
                 "task": "extraction",
                 "source": "bronco",
-                "annotation_labels": (
-                    extraction_string if extraction_string != "Keine vorhanden" else ""
-                ),
+                "annotation_labels": (extraction_string),
             }
         )
 
@@ -167,7 +164,7 @@ def get_bronco_prompts(
                                 "content": normalization["normalization"].split(":")[1],
                             },
                         ],
-                        "type": annotation_type,
+                        "type": annotation_type_output,
                         "task": "normalization",
                         "source": "bronco",
                         "annotation_labels": normalization["normalization"].split(":")[
