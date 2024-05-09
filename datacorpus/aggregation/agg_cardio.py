@@ -3,8 +3,9 @@ from datacorpus.aggregation.prompts import (
     MEDICATION_INSTRUCTION_ATTRIBUTES,
     SYSTEM_PROMPT,
 )
-from shared.mongodb import get_collection
 from shared.logger import logger
+from shared.mongodb import get_collection
+
 
 # Aggregation code for the cardio corpus. This code is used to aggregate prompts and NER annotations from the cardio
 # corpus. Only the MEDICATION annotation_type is included in the cardio dataset. Additional attributes can be added to
@@ -138,25 +139,6 @@ def aggregate_cardio_ner():
             )
     logger.debug(f"Created {len(ner_docs)} ner datapoints from the cardio corpus.")
     return ner_docs
-
-
-def aggregate_cardio_pretrain_texts():
-    """
-    Get all cardio pretrain texts
-    :return: List of pretrain texts from cardio and cardio_heldout
-    """
-    cardio = get_collection("corpus", "cardio")
-    cardio_texts = [
-        {"text": doc["full_text"], "task": "pretrain", "source": "cardio"}
-        for doc in cardio.find({}, {"full_text": 1})
-    ]
-    cardio_heldout = get_collection("corpus", "cardio_heldout")
-    cardio_heldout_texts = [
-        {"text": doc["full_text"], "task": "pretrain", "source": "cardio"}
-        for doc in cardio_heldout.find({}, {"full_text": 1})
-    ]
-    cardio_texts = cardio_texts + cardio_heldout_texts
-    return cardio_texts
 
 
 def aggregate_cardio_prompts(attributes: bool):

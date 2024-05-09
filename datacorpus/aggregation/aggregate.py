@@ -6,21 +6,19 @@ from datacorpus.aggregation.agg_bronco import (
     aggregate_bronco_ner,
 )
 from datacorpus.aggregation.agg_cardio import (
-    aggregate_cardio_pretrain_texts,
     aggregate_cardio_prompts,
     aggregate_cardio_ner,
 )
-from datacorpus.aggregation.agg_clef import aggregate_clef_pretrain_texts
 from datacorpus.aggregation.agg_ggponc import (
     aggregate_ggponc_prompts,
     aggregate_ggponc_ner,
 )
-from datacorpus.aggregation.agg_jsyncc import aggregate_jsyncc_pretrain_texts
 from shared.logger import logger
 from shared.model_utils import patch_tokenizer_with_template
 
+
 # Takes all aggregation functions from the individual sources and combines them into the required format for the
-# training data. Methods are available to save prompts, ner, and pretrain data into json files.
+# training data. Methods are available to save prompts and ner data into json files.
 
 
 def get_unique_prompts(prompts: list[dict]) -> list[dict]:
@@ -125,41 +123,6 @@ def save_all_ner_annotations(bronco: bool, ggponc: bool, cardio: bool):
     amount = 50
     for i, example in enumerate(data["train"]):
         print(example["ner_tags"])
-        if i > amount:
-            break
-
-
-def save_all_pretrain_texts(clef=True, cardio=True, jsyncc=True):
-    """
-    Save all pretrain texts to pretrain.csv
-    :return: None
-    """
-    texts = []
-    if clef:
-        clef_texts = aggregate_clef_pretrain_texts()
-        texts.extend(clef_texts)
-
-    if cardio:
-        cardio_texts = aggregate_cardio_pretrain_texts()
-        texts.extend(cardio_texts)
-
-    if jsyncc:
-        jsyncc_texts = aggregate_jsyncc_pretrain_texts()
-        texts.extend(jsyncc_texts)
-
-    texts = get_unique_prompts(texts)
-
-    pretrain_df = pd.DataFrame(texts)
-    pretrain_df.to_json("pretrain.json", orient="records")
-    logger.debug(f"Saved {len(texts)} prompts to pretrain.json")
-
-    data = load_dataset("json", data_files={"data": "pretrain.json"})[
-        "data"
-    ].train_test_split(test_size=0.1, shuffle=True, seed=42)
-    print(data)
-    amount = 20
-    for i, example in enumerate(data["train"]):
-        print(example["text"])
         if i > amount:
             break
 

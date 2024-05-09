@@ -32,7 +32,7 @@ BATCH_SIZE = 8
 LEARNING_RATE = 2e-5
 DEBUG = True
 WANDB = False
-RUN_NAME = "BERT_NER_BRONCO"
+RUN_NAME = "GerMedBERT_NER_BRONCO_V01"
 SAVE_MODEL = False
 UPLOAD_MODEL = False
 EVALS_PER_EPOCH = 4
@@ -69,12 +69,22 @@ LABEL_LIST = [
 print_welcome_message()
 print_gpu_support(f"{GPU}")
 
+# Possible modesl
+# FacebookAI/xlm-roberta-large
+# deepset/gelectra-large
+# GerMedBERT/medbert-512
+# SciBERT
+# BioBert
+# MedBert
+# ClinicalBert
+# PubMedBert
+
 # Load tokenizer and model
 print_with_heading("Load fast tokenizer")
-tokenizer = AutoTokenizer.from_pretrained("deepset/gelectra-large")
+tokenizer = AutoTokenizer.from_pretrained("GerMedBERT/medbert-512")
 print_with_heading("Load fast tokenizer")
 model = AutoModelForTokenClassification.from_pretrained(
-    "deepset/gelectra-large",
+    "GerMedBERT/medbert-512",
     num_labels=7,
     id2label=ID2LABEL,
     label2id=LABEL2ID,
@@ -145,7 +155,7 @@ data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
 print_with_heading("Train model")
 training_args = TrainingArguments(
     # training setup
-    output_dir="bert_ner_model",
+    output_dir=RUN_NAME,
     per_device_train_batch_size=BATCH_SIZE,
     per_device_eval_batch_size=BATCH_SIZE,
     num_train_epochs=EPOCHS,
@@ -206,7 +216,7 @@ eval_results = trainer.evaluate()
 print(f"Evaluation: {eval_results}")
 
 if SAVE_MODEL:
-    trainer.save_model("bert_ner_model")
+    trainer.save_model(RUN_NAME)
 
 if UPLOAD_MODEL:
     trainer.push_to_hub()
