@@ -1,10 +1,11 @@
+import datetime
 import os
 import random
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from datacorpus.utils.mongodb import upload_data_to_mongodb
+from shared.mongodb import upload_data_to_mongodb
 
 # Creation of summaries for various sources which can be used for training the model for the task of summarizing text.
 
@@ -29,19 +30,23 @@ def create_summary_data_from_lc2():
     medical dialoges.
     """
     output = []
-    model = "gpt-3.5-turbo"
+    model = "gpt-4-turbo"
 
     files = [f for f in os.listdir(LC2_DATA_PATH) if f.endswith(".txt")]
     for file in files:
         with open(os.path.join(LC2_DATA_PATH, file), "r", encoding="utf-8") as f:
             text = f.read()
-            summary = get_summary_of_text(text, model)
+            summary, usage, openai_model, execution_time = get_summary_of_text(
+                text, model
+            )
             output.append(
                 {
                     "origin": text,
                     "summary": summary,
                     "source": "lc2",
-                    "model": model,
+                    "model": openai_model,
+                    "usage": usage,
+                    "execution_time": execution_time,
                 }
             )
 
@@ -53,20 +58,24 @@ def create_summary_data_from_clef2019(amount=50):
     Create summaries for clef 2019 data.
     """
     output = []
-    model = "gpt-3.5-turbo"
+    model = "gpt-4-turbo"
     files = [f for f in os.listdir(CLEF_PATH) if f.endswith(".txt")]
     files = random.sample(files, amount)
 
     for file in files:
         with open(os.path.join(CLEF_PATH, file), "r", encoding="utf-8") as f:
             text = f.read()
-            summary = get_summary_of_text(text, model)
+            summary, usage, openai_model, execution_time = get_summary_of_text(
+                text, model
+            )
             output.append(
                 {
                     "origin": text,
                     "summary": summary,
                     "source": "clef",
-                    "model": model,
+                    "model": openai_model,
+                    "usage": usage,
+                    "execution_time": execution_time,
                 }
             )
 
@@ -78,6 +87,7 @@ def get_summary_of_text(text: str, model: str):
     Get a summary of a given text using the OpenAI API.
     """
     text = text.strip()
+    _start_time = datetime.datetime.now()
     response = client.chat.completions.create(
         messages=[
             {
@@ -87,9 +97,12 @@ def get_summary_of_text(text: str, model: str):
         ],
         model=model,
     )
+    _end_time = datetime.datetime.now()
+    execution_time = (_end_time - _start_time).microseconds
+
     summary = response.choices[0].message.content
     summary = summary.strip()
-    return summary
+    return summary, response.usage, response.model, execution_time
 
 
 def upload_summary_data_to_mongodb():
@@ -97,10 +110,10 @@ def upload_summary_data_to_mongodb():
     Upload the summary data to the mongodb.
     """
     data_lc2 = create_summary_data_from_lc2()
-    data_clef = create_summary_data_from_clef2019(50)
+    data_clef = create_summary_data_from_clef2019(25)
 
     data = data_lc2 + data_clef
-    upload_data_to_mongodb(data, "corpus", "summarization", True, [])
+    upload_data_to_mongodb(data, "corpus", "summary", True, [])
 
 
 upload_summary_data_to_mongodb()

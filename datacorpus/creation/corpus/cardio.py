@@ -3,7 +3,7 @@ import re
 
 import pandas as pd
 
-from datacorpus.utils.mongodb import upload_data_to_mongodb
+from shared.mongodb import upload_data_to_mongodb
 from shared.logger import logger
 
 # DATA SOURCE: https://heidata.uni-heidelberg.de/dataset.xhtml?persistentId=doi:10.11588/data/AFYQDY

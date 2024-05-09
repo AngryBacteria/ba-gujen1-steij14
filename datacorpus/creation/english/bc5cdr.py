@@ -1,7 +1,7 @@
 import json
 import os.path
 
-from datacorpus.utils.mongodb import upload_data_to_mongodb
+from shared.mongodb import upload_data_to_mongodb
 
 # PAPER: https://academic.oup.com/database/article/doi/10.1093/database/baw068/2630414?login=true
 # DATA SOURCE: https://huggingface.co/datasets/tner/bc5cdr/tree/main/dataset

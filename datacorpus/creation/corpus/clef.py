@@ -1,6 +1,6 @@
 import os
 
-from datacorpus.utils.mongodb import upload_data_to_mongodb
+from shared.mongodb import upload_data_to_mongodb
 from shared.logger import logger
 
 # DATA SOURCE: https://clefehealth.imag.fr/?page_id=215

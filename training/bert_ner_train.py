@@ -28,13 +28,13 @@ from training.utils.printing import (
 from training.utils.gpu import print_gpu_support
 
 EPOCHS = 7
-BATCH_SIZE = 16
+BATCH_SIZE = 8
 LEARNING_RATE = 2e-5
 DEBUG = True
 WANDB = False
 RUN_NAME = "BERT_NER_BRONCO"
-SAVE_MODEL = True
-UPLOAD_MODEL = True
+SAVE_MODEL = False
+UPLOAD_MODEL = False
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
@@ -71,10 +71,10 @@ print_gpu_support(f"{GPU}")
 
 # Load tokenizer and model
 print_with_heading("Load fast tokenizer")
-tokenizer = AutoTokenizer.from_pretrained("GerMedBERT/medbert-512")
+tokenizer = AutoTokenizer.from_pretrained("deepset/gelectra-large")
 print_with_heading("Load fast tokenizer")
 model = AutoModelForTokenClassification.from_pretrained(
-    "GerMedBERT/medbert-512",
+    "deepset/gelectra-large",
     num_labels=7,
     id2label=ID2LABEL,
     label2id=LABEL2ID,

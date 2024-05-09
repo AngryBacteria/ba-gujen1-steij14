@@ -2,7 +2,7 @@ import json
 import os.path
 
 from datacorpus.utils.ner import parse_ner_dataset
-from datacorpus.utils.mongodb import (
+from shared.mongodb import (
     upload_data_to_mongodb,
     rename_dict_keys,
 )

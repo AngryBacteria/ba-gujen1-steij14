@@ -1,4 +1,4 @@
-from datacorpus.utils.mongodb import get_collection
+from shared.mongodb import get_collection
 
 # Agrgegation of jsyncc synthethic data into unstructured text. Can be used for masked- or causal language modelling.
 

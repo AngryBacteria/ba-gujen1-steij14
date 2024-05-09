@@ -1,7 +1,7 @@
 import pandas as pd
 from pandas import DataFrame
 
-from datacorpus.utils.mongodb import get_collection
+from shared.mongodb import get_collection
 from shared.model_utils import patch_tokenizer_with_template
 
 
@@ -151,7 +151,6 @@ def show_text_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     # calculate the lengths
     lengths = []
     if tokenize:
-
         tokenizer = patch_tokenizer_with_template()
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token

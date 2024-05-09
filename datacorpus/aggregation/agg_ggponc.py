@@ -4,7 +4,7 @@ from datacorpus.aggregation.prompts import (
     DIAGNOSIS_INSTRUCTION,
     TREATMENT_INSTRUCTION,
 )
-from datacorpus.utils.mongodb import get_collection
+from shared.mongodb import get_collection
 from shared.logger import logger
 
 # Aggregation of the data in the ggponc datacorpus. Includes all three types of annotations: MEDICATION, TREATMENT,

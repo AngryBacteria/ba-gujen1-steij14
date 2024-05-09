@@ -13,7 +13,7 @@ from datacorpus.aggregation.prompts import (
     MEDICATION_INSTRUCTION_LEVEL_OF_TRUTH,
     SYSTEM_PROMPT_NORMALIZATION,
 )
-from datacorpus.utils.mongodb import get_collection
+from shared.mongodb import get_collection
 from shared.logger import logger
 
 # Aggregation for the bronco corpus. Prompts can be created for all three annotation types (DIAGNOSIS, TREATMENT,

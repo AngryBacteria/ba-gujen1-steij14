@@ -1,4 +1,4 @@
-from datacorpus.utils.mongodb import get_collection
+from shared.mongodb import get_collection
 
 # Agrgegation of CLEF 2019 data into unstructured text. Can be used for masked- or causal language modelling.
 

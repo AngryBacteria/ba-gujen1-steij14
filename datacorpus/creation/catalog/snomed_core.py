@@ -3,7 +3,7 @@ import re
 import pandas as pd
 from pandas import DataFrame
 
-from datacorpus.utils.mongodb import upload_data_to_mongodb
+from shared.mongodb import upload_data_to_mongodb
 from shared.logger import logger
 
 # DATA SOURCE: https://www.nlm.nih.gov/research/umls/Snomed/core_subset.html

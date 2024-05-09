@@ -3,7 +3,7 @@ from datacorpus.aggregation.prompts import (
     MEDICATION_INSTRUCTION_ATTRIBUTES,
     SYSTEM_PROMPT,
 )
-from datacorpus.utils.mongodb import get_collection
+from shared.mongodb import get_collection
 from shared.logger import logger
 
 # Aggregation code for the cardio corpus. This code is used to aggregate prompts and NER annotations from the cardio

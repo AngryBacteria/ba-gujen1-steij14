@@ -257,3 +257,29 @@ def test_generation(
     outputs = model.generate(**inputs, max_new_tokens=1000)
     model_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
     print(model_output)
+
+
+def count_tokens(
+    data: list[str],
+    tokenizer_instance: PreTrainedTokenizer = None,
+    tokenizer_name: str = None,
+) -> int:
+    """Count the tokens of a dataset with a tokenizer. Either pass a tokenizer or a tokenizer name."""
+    tokenizer = None
+    if tokenizer_name is not None:
+        tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_name,
+            use_fast=True,
+            add_eos_token=False,
+            add_bos_token=False,
+        )
+    elif tokenizer_instance is not None:
+        tokenizer = tokenizer_instance
+    else:
+        raise ValueError("Either pass a tokenizer or a tokenizer name.")
+
+    tokens = 0
+    for text in data:
+        tokens += len(tokenizer(text)["input_ids"])
+
+    return tokens

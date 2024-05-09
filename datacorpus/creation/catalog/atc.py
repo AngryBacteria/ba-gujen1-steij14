@@ -1,6 +1,6 @@
 import pandas as pd
 
-from datacorpus.utils.mongodb import upload_data_to_mongodb
+from shared.mongodb import upload_data_to_mongodb
 
 # DATA SOURCE: Unknown (Medication_Pharmacode_ATC.xlsx)
 

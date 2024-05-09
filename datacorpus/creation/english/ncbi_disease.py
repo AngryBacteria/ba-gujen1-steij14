@@ -1,7 +1,7 @@
 import os
 
 from datacorpus.utils.ner import parse_ner_dataset
-from datacorpus.utils.mongodb import upload_data_to_mongodb
+from shared.mongodb import upload_data_to_mongodb
 
 # INFO: https://www.ncbi.nlm.nih.gov/CBBresearch/Dogan/DISEASE/
 # DATA SOURCE: https://github.com/spyysalo/ncbi-disease

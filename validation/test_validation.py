@@ -28,6 +28,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
         "data"
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
     test_data = _dataset["test"]
+    test_date = datetime.datetime.now()
 
     output = []
     for i, example in enumerate(test_data):
@@ -51,12 +52,12 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
             continue
 
         # get the model output
-        start_time = datetime.datetime.now()
+        _start_time = datetime.datetime.now()
         _inputs = tokenizer(instruction, return_tensors="pt").to("cuda:0")
         _outputs = model.generate(**_inputs, max_new_tokens=1000)
         output_string = tokenizer.decode(_outputs[0], skip_special_tokens=True)
-        end_time = datetime.datetime.now()
-        execution_time = end_time - start_time
+        _end_time = datetime.datetime.now()
+        execution_time = (_end_time - _start_time).microseconds
         prediction_string = parse_model_output_only(
             output_string, ChatTemplate.ALPACA_MISTRAL
         )
@@ -70,7 +71,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
         prediction = get_extractions_only(prediction_string)
         logger.debug(f"Truth         : {truth}")
         logger.debug(f"Prediction    : {prediction}")
-        logger.debug(f"Execution time: {execution_time.microseconds}")
+        logger.debug(f"Execution time: {execution_time}")
 
         # calculate metrics
         metrics = calculate_validation_metrics(truth, prediction)
@@ -82,12 +83,14 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
             {
                 "model": model_name,
                 "model_precision": precision,
-                "execution_time": execution_time.microseconds,
+                "execution_time": execution_time,
+                "date": test_date,
                 "prompt": prompt,
                 "instruction": instruction,
-                "output_string": output_string,
                 "truth_string": truth_string,
                 "truth": truth,
+                "output_string": output_string,
+                "prediction_string": prediction_string,
                 "prediction": prediction,
                 "precision": metrics[0],
                 "recall": metrics[1],
