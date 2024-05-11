@@ -9,7 +9,7 @@ from shared.model_utils import (
     load_model_and_tokenizer,
     ModelPrecision,
     get_model_output_only,
-    ChatTemplate,
+    ChatTemplate, get_extractions_only,
 )
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -103,29 +103,6 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
     df = pd.DataFrame(output)
     df.to_json(f"validation_results_{precision}bit.json", orient="records")
     return output
-
-
-def get_extractions_only(string_input: str):
-    """
-    Get all extractions from a string input. The string has to be in the typical form of a prompt output:
-    extraction1 [atrribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
-    """
-    string_input = string_input.strip().lower()
-    annotations = string_input.split("|")
-    extractions = [remove_brackets(x) for x in annotations]
-    extractions = list(set(extractions))
-
-    return extractions
-
-
-def remove_brackets(string_input: str):
-    """
-    Remove substrings enclosed in brackets from a string.
-    """
-    pattern = r"\[[^]]*\]"
-    cleaned_string = re.sub(pattern, "", string_input)
-    cleaned_string = cleaned_string.strip()
-    return cleaned_string
 
 
 def calculate_extraction_validation_metrics(

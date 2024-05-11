@@ -231,6 +231,30 @@ def get_model_output_only(full_output: str, template: ChatTemplate) -> str | Non
             return None
 
 
+def get_extractions_only(string_input: str):
+    """
+    Get all extractions from a string input. The string has to be in the typical form of a prompt output:
+    extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
+    """
+    string_input = string_input.strip().lower()
+    string_input = remove_brackets(string_input)
+    extractions = string_input.split("|")
+    extractions = [extraction.strip() for extraction in extractions]
+    extractions = list(set(extractions))
+
+    return extractions
+
+
+def remove_brackets(string_input: str):
+    """
+    Remove substrings enclosed in brackets from a string.
+    """
+    pattern = r"\[[^]]*\]"
+    cleaned_string = re.sub(pattern, "", string_input)
+    cleaned_string = cleaned_string.strip()
+    return cleaned_string
+
+
 def test_generation(
     messages=None,
     model_name="LeoLM/leo-mistral-hessianai-7b",
