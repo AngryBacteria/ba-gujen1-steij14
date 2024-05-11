@@ -255,6 +255,16 @@ def remove_brackets(string_input: str):
     return cleaned_string
 
 
+def get_extractions_with_attributes(string_input: str):
+    # TODO: return the extractiona and attributes as list, not just a string like here :(
+    string_input = string_input.strip().lower()
+    extractions = string_input.split("|")
+    extractions = [extraction.strip() for extraction in extractions]
+    extractions = list(set(extractions))
+
+    return extractions
+
+
 def test_generation(
     messages=None,
     model_name="LeoLM/leo-mistral-hessianai-7b",

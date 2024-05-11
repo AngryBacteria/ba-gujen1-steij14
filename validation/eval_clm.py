@@ -1,6 +1,5 @@
 import datetime
 import os
-import re
 
 import setproctitle
 
@@ -9,7 +8,7 @@ from shared.model_utils import (
     load_model_and_tokenizer,
     ModelPrecision,
     get_model_output_only,
-    ChatTemplate, get_extractions_only,
+    ChatTemplate, get_extractions_only, get_extractions_with_attributes,
 )
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -65,23 +64,19 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
         if not prediction_string:
             logger.error("No extractions found")
             continue
-        # TODO: replace with helper functions
+
+        # Extraction validations
         truth = get_extractions_only(truth_string)
         prediction = get_extractions_only(prediction_string)
-        logger.debug(f"Truth         : {truth}")
-        logger.debug(f"Prediction    : {prediction}")
-        logger.debug(f"Execution time: {execution_time}")
-
-        # calculate metrics
-        metrics = calculate_extraction_validation_metrics(truth, prediction)
-        logger.debug(f"Metrics   : {metrics}")
-
-        logger.debug("-----------------------------------------")
-        # TODO save params such as temp
+        logger.debug(f"Truth (extraction           : {truth}")
+        logger.debug(f"Prediction (extraction      : {prediction}")
+        logger.debug(f"Execution time (extraction) : {execution_time}")
+        metrics = calculate_string_validation_metrics(truth, prediction)
+        logger.debug(f"Metrics (extraction)        : {metrics}")
         output.append(
             {
                 "model": model_name,
-                "model_precision": precision,
+                "model_precision": precision.value,
                 "execution_time": execution_time,
                 "date": test_date,
                 "prompt": prompt,
@@ -94,26 +89,57 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
                 "precision": metrics[0],
                 "recall": metrics[1],
                 "f1_score": metrics[2],
-                "task": example["task"],
+                "task": "extraction",
                 "type": example["type"],
                 "source": example["source"],
             }
         )
+
+        # Atteribute validation
+        if example["task"] == "extraction":
+            truth = get_extractions_with_attributes(truth_string)
+            prediction = get_extractions_with_attributes(prediction_string)
+            logger.debug(f"Truth (attributes)          : {truth}")
+            logger.debug(f"Prediction (attributes)     : {prediction}")
+            logger.debug(f"Execution time (attributes) : {execution_time}")
+            metrics = calculate_string_validation_metrics(truth, prediction)
+            logger.debug(f"Metrics (attribute)         : {metrics}")
+            output.append(
+                {
+                    "model": model_name,
+                    "model_precision": precision.value,
+                    "execution_time": execution_time,
+                    "date": test_date,
+                    "prompt": prompt,
+                    "instruction": instruction,
+                    "truth_string": truth_string,
+                    "truth": truth,
+                    "output_string": output_string,
+                    "prediction_string": prediction_string,
+                    "prediction": prediction,
+                    "precision": metrics[0],
+                    "recall": metrics[1],
+                    "f1_score": metrics[2],
+                    "task": "attributes",
+                    "type": example["type"],
+                    "source": example["source"],
+                }
+            )
+
+        logger.debug(f"{150*'-'}")
     # convert to pandas df and save to json
     df = pd.DataFrame(output)
-    df.to_json(f"validation_results_{precision}bit.json", orient="records")
+    df.to_json(f"validation_results_{precision.value}bit.json", orient="records")
     return output
 
 
-def calculate_extraction_validation_metrics(
+def calculate_string_validation_metrics(
     truth_labels: list[str], prediction_labels: list[str]
 ):
     """
     Calculate precision, recall and f1 score for the extraction task. Takes in two lists, the truth labels and the
     predicted labels and returns the metrics.
     """
-    # only take unique
-    # TODO: discuss if this is cheating
     truth_set = set(truth_labels)
     prediction_set = set(prediction_labels)
     # make them lower case
