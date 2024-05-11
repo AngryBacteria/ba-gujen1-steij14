@@ -3,6 +3,11 @@ SYSTEM_PROMPT = "Du bist ein fortgeschrittener Algorithmus, der darauf spezialis
 SYSTEM_PROMPT_NORMALIZATION = "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, medizinischen Entitäten wie Medikamenten, Symptomen oder Diagnosen und Prozeduren entsprechende Codierungen zuzuordnen."
 SYSTEM_PROMPT_SUMMARIZATION = "Du bist ein fortschrittlicher Algorithmus, der darauf spezialisiert ist, aus umfangreichen Texten die Hauptpunkte zu extrahieren und sie in einer prägnanten, zusammengefassten Form darzustellen. Deine Aufgabe ist es, den Kerninhalt effektiv zu erfassen und dabei wichtige Details, Schlussfolgerungen und Argumentationsstränge beizubehalten."
 
+# SUMMARY PROMPTS
+SUMMARY_INSTRUCTION = """Bitte fasse den folgenden klinischen Text präzise zusammen. Stelle sicher, dass alle wichtigen klinischen Informationen erhalten bleiben:
+
+<<CONTEXT>>"""
+
 # MEDICATION PROMPTS
 MEDICATION_INSTRUCTION = """Extrahiere alle Medikamente aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":
 

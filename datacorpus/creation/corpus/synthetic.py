@@ -1,18 +1,21 @@
 import datetime
+import json
 import os
 import random
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from shared.logger import logger
 from shared.mongodb import upload_data_to_mongodb
 
-# Creation of summaries for various sources which can be used for training the model for the task of summarizing text.
+# Creation of data with synthetic methods such as the OpenAI API.
 
-LC2_DATA_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\divers\\lc2"
+LC2_DATA_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\synthetic\\lc2_dialogs"
+KRUMMREY_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\synthetic\\summaries_krummrey.jsonl"
 CLEF_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\clef ehealth\\docs-training"
 
-SUMMARIZATION_PROMPT = """Bitte fasse den folgenden medizinischen Text präzise zusammen. Gib mir nur die Zusammenfassung 
+SUMMARISE_TEXT_PROMPT = """Bitte fasse den folgenden medizinischen Text präzise zusammen. Gib mir nur die Zusammenfassung 
 und keinen weiteren Text. Achte darauf, alle wesentlichen medizinischen Informationen und 
 Schlüsseldaten beizubehalten:\n\n<<CONTEXT>>\n"""
 
@@ -45,15 +48,16 @@ def create_summary_data_from_lc2():
                     "summary": summary,
                     "source": "lc2",
                     "model": openai_model,
-                    "usage": usage,
+                    "token_count": usage.total_tokens,
                     "execution_time": execution_time,
+                    "task": "summarization",
                 }
             )
 
-            return output
+    return output
 
 
-def create_summary_data_from_clef2019(amount=50):
+def create_summary_data_from_clef2019(amount: int):
     """
     Create summaries for clef 2019 data.
     """
@@ -74,11 +78,33 @@ def create_summary_data_from_clef2019(amount=50):
                     "summary": summary,
                     "source": "clef",
                     "model": openai_model,
-                    "usage": usage,
+                    "token_count": usage.total_tokens,
                     "execution_time": execution_time,
+                    "task": "summarization",
                 }
             )
 
+    return output
+
+
+def get_krummrey_data():
+    output = []
+    with open(KRUMMREY_PATH, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+        for line in lines:
+            text = line.strip()
+            # read json from line
+            json_data = json.loads(text)
+            output.append(
+                {
+                    "origin": json_data["source"],
+                    "summary": json_data["summary"],
+                    "source": "krummrey",
+                    "task": "summarization",
+                }
+            )
+
+    logger.debug(f"Created {len(output)} summaries from krummrey data.")
     return output
 
 
@@ -92,28 +118,42 @@ def get_summary_of_text(text: str, model: str):
         messages=[
             {
                 "role": "user",
-                "content": SUMMARIZATION_PROMPT.replace("<<CONTEXT>>", text),
+                "content": SUMMARISE_TEXT_PROMPT.replace("<<CONTEXT>>", text),
             },
         ],
         model=model,
     )
+    summary = response.choices[0].message.content
+    summary = summary.strip()
+
     _end_time = datetime.datetime.now()
     execution_time = (_end_time - _start_time).microseconds
 
-    summary = response.choices[0].message.content
-    summary = summary.strip()
+    logger.debug(
+        f""
+        f"Created summary in {execution_time} microseconds,"
+        f"Tokens: {response.usage.total_tokens},"
+        f"Model: {model}"
+    )
     return summary, response.usage, response.model, execution_time
 
 
-def upload_summary_data_to_mongodb():
+def upload_summary_data_to_mongodb(lc2: bool, clef: bool, krummrey: bool):
     """
     Upload the summary data to the mongodb.
     """
-    data_lc2 = create_summary_data_from_lc2()
-    data_clef = create_summary_data_from_clef2019(25)
+    data = []
+    if lc2:
+        data_lc2 = create_summary_data_from_lc2()
+        data.extend(data_lc2)
+    if clef:
+        data_clef = create_summary_data_from_clef2019(50)
+        data.extend(data_clef)
+    if krummrey:
+        data_krummrey = get_krummrey_data()
+        data.extend(data_krummrey)
 
-    data = data_lc2 + data_clef
-    upload_data_to_mongodb(data, "corpus", "summary", True, [])
+    upload_data_to_mongodb(data, "corpus", "synthetic", True, [])
 
 
-upload_summary_data_to_mongodb()
+upload_summary_data_to_mongodb(True, True, True)

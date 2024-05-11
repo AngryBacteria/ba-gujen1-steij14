@@ -13,6 +13,7 @@ from datacorpus.aggregation.agg_ggponc import (
     aggregate_ggponc_prompts,
     aggregate_ggponc_ner,
 )
+from datacorpus.aggregation.agg_synthetic import aggregate_synthetic_prompts
 from shared.logger import logger
 from shared.model_utils import patch_tokenizer_with_template
 
@@ -42,6 +43,7 @@ def save_all_prompts(
     ggponc: bool,
     cardio: bool,
     normalization: bool,
+    summarization: bool,
     na_prompts: bool,
     minimal_length=15,
 ):
@@ -70,6 +72,9 @@ def save_all_prompts(
     if cardio:
         cardio_prompts = aggregate_cardio_prompts(attributes=True)
         prompts.extend(cardio_prompts)
+    if summarization:
+        synthetic_prompts = aggregate_synthetic_prompts()
+        prompts.extend(synthetic_prompts)
 
     # filter out unique prompts
     prompts = get_unique_prompts(prompts)
@@ -134,6 +139,7 @@ save_all_prompts(
     ggponc=False,
     cardio=True,
     normalization=True,
+    summarization=True,
     na_prompts=True,
     minimal_length=15,
 )

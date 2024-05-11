@@ -128,7 +128,9 @@ def remove_brackets(string_input: str):
     return cleaned_string
 
 
-def calculate_extraction_validation_metrics(truth_labels: list[str], prediction_labels: list[str]):
+def calculate_extraction_validation_metrics(
+    truth_labels: list[str], prediction_labels: list[str]
+):
     """
     Calculate precision, recall and f1 score for the extraction task. Takes in two lists, the truth labels and the
     predicted labels and returns the metrics.

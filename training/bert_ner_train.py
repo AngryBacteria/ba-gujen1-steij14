@@ -37,6 +37,7 @@ SAVE_MODEL = False
 UPLOAD_MODEL = False
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
+MODEL = "GerMedBERT/medbert-512"
 
 ID2LABEL = {
     0: "O",
@@ -81,10 +82,10 @@ print_gpu_support(f"{GPU}")
 
 # Load tokenizer and model
 print_with_heading("Load fast tokenizer")
-tokenizer = AutoTokenizer.from_pretrained("GerMedBERT/medbert-512")
+tokenizer = AutoTokenizer.from_pretrained(MODEL)
 print_with_heading("Load fast tokenizer")
 model = AutoModelForTokenClassification.from_pretrained(
-    "GerMedBERT/medbert-512",
+    MODEL,
     num_labels=7,
     id2label=ID2LABEL,
     label2id=LABEL2ID,
@@ -136,14 +137,7 @@ def compute_metrics(p: EvalPrediction):
         [LABEL_LIST[l] for (p, l) in zip(prediction, label) if l != -100]
         for prediction, label in zip(predictions, labels)
     ]
-
-    results = seqeval.compute(predictions=true_predictions, references=true_labels)
-    return {
-        "precision": results["overall_precision"],
-        "recall": results["overall_recall"],
-        "f1": results["overall_f1"],
-        "accuracy": results["overall_accuracy"],
-    }
+    return seqeval.compute(predictions=true_predictions, references=true_labels)
 
 
 tokenized_dataset = dataset.map(
