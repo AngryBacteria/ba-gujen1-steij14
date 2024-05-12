@@ -1,13 +1,13 @@
 import os
 
 import setproctitle
-from transformers.trainer_utils import HubStrategy
 
 GPU = 3
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+from transformers.trainer_utils import HubStrategy
 from training.utils.config import get_steps_per_epoch
 import evaluate
 import numpy as np
@@ -27,17 +27,17 @@ from training.utils.printing import (
 )
 from training.utils.gpu import print_gpu_support
 
-EPOCHS = 7
+EPOCHS = 4
 BATCH_SIZE = 16
 LEARNING_RATE = 2e-5
 DEBUG = True
 WANDB = True
-RUN_NAME = "GELECTRA_NER_BRONCO_CARDIO_V01"
+RUN_NAME = "GerMedBERT_NER_BRONCO_CARDIO_V01"
 SAVE_MODEL = True
 UPLOAD_MODEL = True
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 16
-MODEL = "deepset/gelectra-large"
+MODEL = "GerMedBERT/medbert-512"
 
 ID2LABEL = {
     0: "O",

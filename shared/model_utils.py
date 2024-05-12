@@ -192,26 +192,40 @@ def upload_model(
     account_name: str,
     repo_name: str,
     local_model_folder="mistral_instruction_low_precision",
+    patch=True
 ):
     """
     Uploads a model to Huggingface.
     """
-    model = AutoModelForCausalLM.from_pretrained(
-        local_model_folder, torch_dtype=torch.bfloat16
-    )
-    model.push_to_hub(f"{account_name}/{repo_name}", private=True)
+    if patch:
+        tokenizer = patch_tokenizer_with_template(tokenizer_name=local_model_folder)
+        model = AutoModelForCausalLM.from_pretrained(
+            local_model_folder, torch_dtype=torch.bfloat16
+        )
+        model = patch_model_with_tokenizer(model, tokenizer)
+        model.push_to_hub(f"{account_name}/{repo_name}", private=True)
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            local_model_folder
+        )
+        model.push_to_hub(f"{account_name}/{repo_name}", private=True)
 
 
 def upload_tokenizer(
     account_name: str,
     repo_name: str,
     local_model_folder="mistral_instruction_low_precision",
+    patch=True
 ):
     """
     Uploads a tokenizer to Huggingface.
     """
-    tokenizer = patch_tokenizer_with_template(tokenizer_name=local_model_folder)
-    tokenizer.push_to_hub(f"{account_name}/{repo_name}", private=True)
+    if patch:
+        tokenizer = patch_tokenizer_with_template(tokenizer_name=local_model_folder)
+        tokenizer.push_to_hub(f"{account_name}/{repo_name}", private=True)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(local_model_folder)
+        tokenizer.push_to_hub(f"{account_name}/{repo_name}", private=True)
 
 
 # GENERATION
