@@ -3,7 +3,7 @@ import os
 import setproctitle
 from transformers.trainer_utils import HubStrategy
 
-GPU = 0
+GPU = 2
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
@@ -28,13 +28,13 @@ from training.utils.printing import (
 from training.utils.gpu import print_gpu_support
 
 EPOCHS = 7
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 LEARNING_RATE = 4e-4
 DEBUG = True
-WANDB = False
-RUN_NAME = "GerMedBERT_NER_BRONCO_V01"
-SAVE_MODEL = False
-UPLOAD_MODEL = False
+WANDB = True
+RUN_NAME = "GELECTRA_NER_BRONCO_CARDIO_V01"
+SAVE_MODEL = True
+UPLOAD_MODEL = True
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 16
 MODEL = "deepset/gelectra-large"
@@ -49,7 +49,7 @@ ID2LABEL = {
     6: "I-DIAG",
 }
 LABEL2ID = {
-    "O": 1,
+    "O": 0,
     "B-MED": 1,
     "I-MED": 2,
     "B-TREAT": 3,
