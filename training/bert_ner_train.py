@@ -3,7 +3,7 @@ import os
 import setproctitle
 from transformers.trainer_utils import HubStrategy
 
-GPU = 2
+GPU = 3
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
@@ -29,7 +29,7 @@ from training.utils.gpu import print_gpu_support
 
 EPOCHS = 7
 BATCH_SIZE = 16
-LEARNING_RATE = 4e-4
+LEARNING_RATE = 2e-5
 DEBUG = True
 WANDB = True
 RUN_NAME = "GELECTRA_NER_BRONCO_CARDIO_V01"
@@ -138,12 +138,7 @@ def compute_metrics(p: EvalPrediction):
         for prediction, label in zip(predictions, labels)
     ]
     results = seqeval.compute(predictions=true_predictions, references=true_labels)
-    return {
-        "precision": results["overall_precision"],
-        "recall": results["overall_recall"],
-        "f1": results["overall_f1"],
-        "accuracy": results["overall_accuracy"],
-    }
+    return results
 
 
 tokenized_dataset = dataset.map(
@@ -162,6 +157,7 @@ training_args = TrainingArguments(
     # optimization setup
     optim="adamw_torch_fused",
     learning_rate=LEARNING_RATE,
+    weight_decay=0.01,
     # logging
     report_to=["none"],
     logging_strategy="steps",
