@@ -8,7 +8,9 @@ from shared.model_utils import (
     load_model_and_tokenizer,
     ModelPrecision,
     get_model_output_only,
-    ChatTemplate, get_extractions_only, get_extractions_with_attributes,
+    ChatTemplate,
+    get_extractions_only,
+    get_extractions_with_attributes,
 )
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"

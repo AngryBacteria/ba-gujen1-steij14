@@ -33,3 +33,20 @@ def parse_ner_dataset(filepath: str):
 
     logger.debug(f"Parsed {len(sentences)} NER annotations from file {filepath}")
     return sentences
+
+
+def group_ner_data(ner_docs: list[dict], block_size: int, source: str):
+    # Create blocks to reduce the number of datapoints
+    grouped_docs = []
+    temp_doc = {"words": [], "ner_tags": [], "source": source}
+    for doc in ner_docs:
+        if len(temp_doc["words"]) + len(doc["words"]) > block_size:
+            grouped_docs.append(temp_doc)
+            temp_doc = {"words": [], "ner_tags": [], "source": "cardio"}
+        temp_doc["words"].extend(doc["words"])
+        temp_doc["ner_tags"].extend(doc["ner_tags"])
+
+    if temp_doc["words"]:  # Add the last group if not empty
+        grouped_docs.append(temp_doc)
+
+    return grouped_docs

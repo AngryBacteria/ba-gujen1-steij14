@@ -13,6 +13,7 @@ from datacorpus.aggregation.prompts import (
     MEDICATION_INSTRUCTION_LEVEL_OF_TRUTH,
     SYSTEM_PROMPT_NORMALIZATION,
 )
+from datacorpus.utils.ner import group_ner_data
 from shared.mongodb import get_collection
 from shared.logger import logger
 
@@ -176,8 +177,9 @@ def get_bronco_prompts(
     return extraction_prompts, normalization_prompts
 
 
-def aggregate_bronco_ner():
+def aggregate_bronco_ner(block_size: int):
     """
+    :param block_size: The size of the blocks to create. -1 means no block grouping
     Get all NER documents from the bronco corpus and convert them to the right format for training
     :return: List of NER dictionaries
     """
@@ -209,7 +211,13 @@ def aggregate_bronco_ner():
                 "source": "bronco",
             }
         )
-    logger.debug(f"Created {len(ner_docs)} ner datapoints from the bronco corpus.")
+
+    if block_size > 1:
+        ner_docs = group_ner_data(ner_docs, block_size, "bronco")
+
+    logger.debug(
+        f"Created {len(ner_docs)} ner datapoints from the bronco corpus (block_size={block_size})."
+    )
     return ner_docs
 
 

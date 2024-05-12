@@ -29,15 +29,15 @@ from training.utils.gpu import print_gpu_support
 
 EPOCHS = 7
 BATCH_SIZE = 8
-LEARNING_RATE = 2e-5
+LEARNING_RATE = 4e-4
 DEBUG = True
 WANDB = False
 RUN_NAME = "GerMedBERT_NER_BRONCO_V01"
 SAVE_MODEL = False
 UPLOAD_MODEL = False
 EVALS_PER_EPOCH = 4
-LOGS_PER_EPOCH = 2
-MODEL = "GerMedBERT/medbert-512"
+LOGS_PER_EPOCH = 16
+MODEL = "deepset/gelectra-large"
 
 ID2LABEL = {
     0: "O",
@@ -189,8 +189,7 @@ else:
 if WANDB:
     training_args.report_to = ["wandb"]
     os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
-    if RUN_NAME != "":
-        training_args.run_name = RUN_NAME
+    training_args.run_name = RUN_NAME
 
 
 trainer = Trainer(

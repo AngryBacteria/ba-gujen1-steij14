@@ -4,6 +4,7 @@ from datacorpus.aggregation.prompts import (
     DIAGNOSIS_INSTRUCTION,
     TREATMENT_INSTRUCTION,
 )
+from datacorpus.utils.ner import group_ner_data
 from shared.mongodb import get_collection
 from shared.logger import logger
 
@@ -97,8 +98,9 @@ def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: i
     return prompts
 
 
-def aggregate_ggponc_ner():
+def aggregate_ggponc_ner(block_size: int):
     """
+    :param block_size: The size of the blocks to create. -1 means no block grouping
     Get all NER documents from the ggponc corpus.
     Filter out all NER tags that are not MEDICATION, TREATMENT, or DIAGNOSIS.
     :return: List of NER annotations as dictionaries
@@ -108,7 +110,7 @@ def aggregate_ggponc_ner():
     documents = ggponc_collection_ner.find({})
     for document in documents:
         ner_tags = []
-        for tag in documents["ner_tags"]:
+        for tag in document["ner_tags"]:
             if tag == "B-MED":
                 ner_tags.append(1)
             if tag == "I-MED":
@@ -127,6 +129,14 @@ def aggregate_ggponc_ner():
         ner_docs.append(
             {"words": document["words"], "ner_tags": ner_tags, "source": "ggponc"}
         )
+
+    if block_size > 1:
+        ner_docs = group_ner_data(ner_docs, block_size, "ggpponc")
+
+    logger.debug(
+        f"Created {len(ner_docs)} ner datapoints from the ggponc corpus [block_size={block_size})"
+    )
+    return ner_docs
 
 
 def aggregate_ggponc_prompts(

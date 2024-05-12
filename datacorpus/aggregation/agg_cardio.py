@@ -3,6 +3,7 @@ from datacorpus.aggregation.prompts import (
     MEDICATION_INSTRUCTION_ATTRIBUTES,
     SYSTEM_PROMPT,
 )
+from datacorpus.utils.ner import group_ner_data
 from shared.logger import logger
 from shared.mongodb import get_collection
 
@@ -114,8 +115,9 @@ def get_cardio_medication_prompts(add_attributes: bool):
     return prompts
 
 
-def aggregate_cardio_ner():
+def aggregate_cardio_ner(block_size: int):
     """
+    :param block_size: The size of the blocks to create. -1 means no block grouping
     Aggregate all NER annotations from the cardio corpus into a format usable for training.
     Filters out all NER tags that are not MEDICATION, TREATMENT, or DIAGNOSIS and replaces them with the respective id.
     :return: List of NER annotations as dictionaries
@@ -137,7 +139,12 @@ def aggregate_cardio_ner():
             ner_docs.append(
                 {"words": anno["words"], "ner_tags": ner_tags, "source": "cardio"}
             )
-    logger.debug(f"Created {len(ner_docs)} ner datapoints from the cardio corpus.")
+    if block_size > 1:
+        ner_docs = group_ner_data(ner_docs, block_size, "cardio")
+
+    logger.debug(
+        f"Created {len(ner_docs)} ner datapoints from the cardio corpus [block_size={block_size})"
+    )
     return ner_docs
 
 

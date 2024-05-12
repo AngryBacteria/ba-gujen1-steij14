@@ -108,13 +108,13 @@ def save_all_prompts(
 def save_all_ner_annotations(bronco: bool, ggponc: bool, cardio: bool):
     ner_annotations = []
     if bronco:
-        bronco_ner_annotations = aggregate_bronco_ner()
+        bronco_ner_annotations = aggregate_bronco_ner(1)
         ner_annotations.extend(bronco_ner_annotations)
     if ggponc:
-        ggponc_ner_annotations = aggregate_ggponc_ner()
+        ggponc_ner_annotations = aggregate_ggponc_ner(64)
         ner_annotations.extend(ggponc_ner_annotations)
     if cardio:
-        cardio_ner_annotations = aggregate_cardio_ner()
+        cardio_ner_annotations = aggregate_cardio_ner(64)
         ner_annotations.extend(cardio_ner_annotations)
 
     ner_annotations_df = pd.DataFrame(ner_annotations)
@@ -132,7 +132,7 @@ def save_all_ner_annotations(bronco: bool, ggponc: bool, cardio: bool):
             break
 
 
-# save_all_ner_annotations(bronco=True, ggponc=False, cardio=False)
+# save_all_ner_annotations(bronco=True, ggponc=False, cardio=True)
 
 save_all_prompts(
     bronco=True,
