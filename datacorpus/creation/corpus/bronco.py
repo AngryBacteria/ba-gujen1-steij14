@@ -244,6 +244,9 @@ def parse_annotation_data_ner(file_number: int) -> list[dict[str, list]]:
 
 
 def count_bronco_tokens() -> int:
+    """
+    Count the tokens in the bronco dataset
+    """
     texts = []
     for i in range(1, 6):
         with open(os.path.join(path_text, f"randomSentSet{i}.txt"), "r") as file:

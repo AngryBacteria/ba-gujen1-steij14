@@ -6,6 +6,9 @@ from shared.mongodb import get_collection
 
 
 def save_to_csv():
+    """
+    Saves the collection to a csv file. This way the database can be queried only once.
+    """
     synthetic_collection = get_collection("corpus", "synthetic")
     synthetic_cursor = synthetic_collection.find({})
     output = []
@@ -17,11 +20,20 @@ def save_to_csv():
 
 
 def read_from_csv() -> DataFrame:
+    """
+    Reads the collection data.
+    """
     df = pd.read_csv("synthetic_description.csv", sep="|", na_filter=False)
     return df
 
 
 def show_text_length_boxplot(df: DataFrame, text_type: str, tokenize: bool = False):
+    """
+    Boxplot showing the length of the text.
+    :param df: DataFrame the data
+    :param text_type: the type of text to count (origin or summary)
+    :param tokenize: whether to tokenize the text or count by characters
+    """
     import plotly.express as px
 
     # calculate the lengths

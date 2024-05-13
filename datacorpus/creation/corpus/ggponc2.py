@@ -171,6 +171,9 @@ def get_ggponc_ner(refactor=True):
 
 
 def count_ggponc_tokens():
+    """
+    Count the tokens in the GGPONC dataset.
+    """
     texts = []
     data_short = load_json(os.path.join(fine_annotations_folder, "short", "all.json"))
     for document in data_short:

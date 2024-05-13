@@ -120,6 +120,7 @@ tokenized_dataset = _dataset.map(
         "source",
         "annotation_labels",
         "na_prompt",
+        "normalization_labels",
     ],
 )
 print(

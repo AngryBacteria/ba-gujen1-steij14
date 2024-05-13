@@ -350,6 +350,9 @@ def parse_cardio_heldout_text():
 
 
 def count_cardio_tokens():
+    """
+    Count the tokens of all the cardio documents.
+    """
     texts = []
     txt_files = [file for file in os.listdir(TXT_FOLDER_PATH) if file.endswith(".txt")]
     for txt_file in txt_files:

@@ -91,13 +91,13 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
                 "precision": metrics[0],
                 "recall": metrics[1],
                 "f1_score": metrics[2],
-                "task": "extraction",
+                "task": example["task"],
                 "type": example["type"],
                 "source": example["source"],
             }
         )
 
-        # Atteribute validation
+        # Attribute validation
         if example["task"] == "extraction":
             truth = get_extractions_with_attributes(truth_string)
             prediction = get_extractions_with_attributes(prediction_string)

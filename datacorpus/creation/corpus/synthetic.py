@@ -140,6 +140,9 @@ def get_summary_of_text(text: str, model: str):
 
 
 def count_synthetic_tokens():
+    """
+    Count the tokens of the synthetic data. Separated into origin, summary and total count
+    """
     texts_origin = []
     texts_summary = []
     synthetic_collection = get_collection("corpus", "synthetic")
