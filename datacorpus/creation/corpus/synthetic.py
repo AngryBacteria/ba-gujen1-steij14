@@ -177,4 +177,4 @@ def upload_summary_data_to_mongodb(lc2: bool, clef: bool, krummrey: bool):
 
 
 # print(count_synthetic_tokens())
-upload_summary_data_to_mongodb(True, True, True)
+upload_summary_data_to_mongodb(True, False, True)

@@ -56,6 +56,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
         _inputs = tokenizer(instruction, return_tensors="pt").to("cuda:0")
         _outputs = model.generate(**_inputs, max_new_tokens=1000)
         output_string = tokenizer.decode(_outputs[0], skip_special_tokens=True)
+        output_string_raw = tokenizer.decode(_outputs[0], skip_special_tokens=False)
         _end_time = datetime.datetime.now()
         execution_time = (_end_time - _start_time).microseconds
 
@@ -86,6 +87,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
                 "truth_string": truth_string,
                 "truth": truth,
                 "output_string": output_string,
+                "output_string_raw": output_string_raw,
                 "prediction_string": prediction_string,
                 "prediction": prediction,
                 "precision": metrics[0],
@@ -171,16 +173,13 @@ def calculate_string_validation_metrics(
 def aggregate_metrics(file_name):
     """TODO"""
     df = pd.read_json(file_name)
-    # group by task
-    grouped = df.groupby(["task", "source"])
+    grouped = df.groupby(["task", "source", "type"])
     for name, group in grouped:
         logger.debug(name)
         logger.debug(f"Precision: {group["precision"].mean()}")
         logger.debug(f"Recall: {group["recall"].mean()}")
         logger.debug(f"F1 Score: {group["f1_score"].mean()}")
-        logger.debug("----------------------------------------------------")
+        logger.debug(f"{60*'-'}")
 
 
-calculate_metrics_from_prompts(
-    ModelPrecision.FOUR_BIT, "BachelorThesis/Mistral_V03_BRONCO_CARDIO"
-)
+aggregate_metrics("validation_results_4bit.json")
