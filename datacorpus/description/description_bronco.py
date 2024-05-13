@@ -152,9 +152,6 @@ def show_text_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     lengths = []
     if tokenize:
         tokenizer = patch_tokenizer_with_template()
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-
         for index, row in df.iterrows():
             paragraph_length = len(tokenizer.tokenize(row["origin"]))
             lengths.append(paragraph_length)
@@ -185,9 +182,6 @@ def get_text_lengths(df, tokenize=False) -> tuple:
     if tokenize:
 
         tokenizer = patch_tokenizer_with_template()
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-
         for index, row in df.iterrows():
             paragraph_length = len(tokenizer.tokenize(row["origin"]))
             lengths.append(paragraph_length)

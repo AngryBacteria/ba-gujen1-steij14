@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from shared.logger import logger
-from shared.mongodb import upload_data_to_mongodb
+from shared.model_utils import count_tokens
+from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # Creation of data with synthetic methods such as the OpenAI API.
 
@@ -138,6 +139,22 @@ def get_summary_of_text(text: str, model: str):
     return summary, response.usage, response.model, execution_time
 
 
+def count_synthetic_tokens():
+    texts_origin = []
+    texts_summary = []
+    synthetic_collection = get_collection("corpus", "synthetic")
+    documents = synthetic_collection.find({})
+    for doc in documents:
+        texts_origin.append(doc["origin"])
+        texts_summary.append(doc["summary"])
+
+    tokens_origin = count_tokens(texts_origin, None, "LeoLM/leo-mistral-hessianai-7b")
+    tokens_summary = count_tokens(texts_summary, None, "LeoLM/leo-mistral-hessianai-7b")
+    tokens = tokens_summary + tokens_origin
+
+    return tokens_origin, tokens_summary, tokens
+
+
 def upload_summary_data_to_mongodb(lc2: bool, clef: bool, krummrey: bool):
     """
     Upload the summary data to the mongodb.
@@ -156,4 +173,5 @@ def upload_summary_data_to_mongodb(lc2: bool, clef: bool, krummrey: bool):
     upload_data_to_mongodb(data, "corpus", "synthetic", True, [])
 
 
-upload_summary_data_to_mongodb(True, True, True)
+# print(count_synthetic_tokens())
+# upload_summary_data_to_mongodb(True, True, True)

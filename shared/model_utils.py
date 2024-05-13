@@ -192,7 +192,7 @@ def upload_model(
     account_name: str,
     repo_name: str,
     local_model_folder="mistral_instruction_low_precision",
-    patch=True
+    patch=True,
 ):
     """
     Uploads a model to Huggingface.
@@ -205,9 +205,7 @@ def upload_model(
         model = patch_model_with_tokenizer(model, tokenizer)
         model.push_to_hub(f"{account_name}/{repo_name}", private=True)
     else:
-        model = AutoModelForCausalLM.from_pretrained(
-            local_model_folder
-        )
+        model = AutoModelForCausalLM.from_pretrained(local_model_folder)
         model.push_to_hub(f"{account_name}/{repo_name}", private=True)
 
 
@@ -215,7 +213,7 @@ def upload_tokenizer(
     account_name: str,
     repo_name: str,
     local_model_folder="mistral_instruction_low_precision",
-    patch=True
+    patch=True,
 ):
     """
     Uploads a tokenizer to Huggingface.
