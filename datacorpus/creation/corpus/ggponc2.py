@@ -2,6 +2,7 @@ import json
 import os.path
 
 from datacorpus.utils.ner import parse_ner_dataset
+from shared.model_utils import count_tokens
 from shared.mongodb import (
     upload_data_to_mongodb,
     rename_dict_keys,
@@ -10,7 +11,7 @@ from shared.logger import logger
 
 # DATA SOURCE: https://www.leitlinienprogramm-onkologie.de/projekte/ggponc-deutsch
 
-fine_annotations_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fine"
+fine_annotations_folder = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fine"
 fine_annotations_ner_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\conll\\fine"
 
 
@@ -169,6 +170,16 @@ def get_ggponc_ner(refactor=True):
     return data_short_ner, data_long_ner
 
 
+def count_ggponc_tokens():
+    texts = []
+    data_short = load_json(os.path.join(fine_annotations_folder, "short", "all.json"))
+    for document in data_short:
+        for passage in document["passages"]:
+            texts.append(passage["text"])
+
+    return count_tokens(texts, None, "LeoLM/leo-mistral-hessianai-7b")
+
+
 def build_ggponc_db():
     data_short_json, data_long_json = get_ggponc_json()
     data_short_ner, data_long_ner = get_ggponc_ner()
@@ -182,4 +193,5 @@ def build_ggponc_db():
     upload_data_to_mongodb(data_long_ner, "corpus", "ggponc_long_ner", True, [])
 
 
+# print(count_ggponc_tokens())
 build_ggponc_db()

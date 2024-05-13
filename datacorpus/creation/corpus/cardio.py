@@ -3,13 +3,14 @@ import re
 
 import pandas as pd
 
+from shared.model_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb
 from shared.logger import logger
 
 # DATA SOURCE: https://heidata.uni-heidelberg.de/dataset.xhtml?persistentId=doi:10.11588/data/AFYQDY
 
 TSV_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\tsv"
-TXT_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt"
+TXT_FOLDER_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt"
 TXT_HELDOUT_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_heldout"
 
 
@@ -348,6 +349,19 @@ def parse_cardio_heldout_text():
     return heldout_text
 
 
+def count_cardio_tokens():
+    texts = []
+    txt_files = [file for file in os.listdir(TXT_FOLDER_PATH) if file.endswith(".txt")]
+    for txt_file in txt_files:
+        with open(
+            os.path.join(TXT_FOLDER_PATH, txt_file), "r", encoding="utf-8"
+        ) as file:
+            full_text = file.read().strip()
+            texts.append(full_text)
+
+    return count_tokens(texts, None, "LeoLM/leo-mistral-hessianai-7b")
+
+
 def build_cardio_db():
     annotations = parse_annotations()
     annotations_ner = parse_ner_annotations()
@@ -357,4 +371,5 @@ def build_cardio_db():
     upload_data_to_mongodb(heldout_text, "corpus", "cardio_heldout", True, [])
 
 
+# print(count_cardio_tokens())
 build_cardio_db()

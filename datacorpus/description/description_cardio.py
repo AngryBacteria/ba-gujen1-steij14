@@ -261,3 +261,7 @@ def show_top_labels_barplot(df: DataFrame, annotation_types=None) -> None:
         title=f"Distribution of Top 20 annotation labels (n = {total_number}, types = {desired_types_string})",
     )
     fig.show()
+
+
+df = read_from_csv("cardio_full_text.csv")
+show_lengths_boxplot(df, tokenize=True)

@@ -1,11 +1,12 @@
 import os.path
 
+from shared.model_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb
 from shared.logger import logger
 
 # DATA SOURCE: https://www2.informatik.hu-berlin.de/~leser/bronco/index.html
 
-path_text = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\textFiles"
+path_text = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\textFiles"
 path_annotation_brat = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\bratFiles"
 path_annotation_conll = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\conllIOBTags"
 
@@ -242,6 +243,16 @@ def parse_annotation_data_ner(file_number: int) -> list[dict[str, list]]:
     return sentences
 
 
+def count_bronco_tokens() -> int:
+    texts = []
+    for i in range(1, 6):
+        with open(os.path.join(path_text, f"randomSentSet{i}.txt"), "r") as file:
+            annotations_text = file.read()
+            texts.append(annotations_text.strip())
+
+    return count_tokens(texts, None, "LeoLM/leo-mistral-hessianai-7b")
+
+
 def create_bronco_db() -> None:
     """
     Create the bronco database in MongoDB
@@ -261,4 +272,5 @@ def create_bronco_db() -> None:
     upload_data_to_mongodb(data_ner, "corpus", "bronco_ner", True, [])
 
 
+# print(count_bronco_tokens())
 create_bronco_db()
