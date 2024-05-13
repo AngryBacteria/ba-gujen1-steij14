@@ -139,6 +139,7 @@ def get_bronco_prompts(
                 "type": annotation_type_output,
                 "task": "extraction",
                 "source": "bronco",
+                "na_prompt": na_prompts,
                 "annotation_labels": (extraction_string),
             }
         )
@@ -168,6 +169,7 @@ def get_bronco_prompts(
                         "type": annotation_type_output,
                         "task": "normalization",
                         "source": "bronco",
+                        "na_prompt": na_prompts,
                         "annotation_labels": normalization["normalization"].split(":")[
                             1
                         ],

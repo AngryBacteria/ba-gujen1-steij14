@@ -277,22 +277,17 @@ def show_distribution_na_notna():
     bronco_docs = list(bronco_cursor)
 
     bronnco_df = pd.DataFrame(bronco_docs)
-    bronnco_df = (
-        bronnco_df.groupby(["origin"]).agg({"type": lambda x: x.tolist()}).reset_index()
-    )
-
-    # make the items inside the type array unique
-    bronnco_df["type"] = bronnco_df["type"].apply(lambda x: list(set(x)))
-    value_counts = bronnco_df["type"].value_counts()
+    bronnco_df = bronnco_df.groupby("origin")["type"].apply(list).reset_index()
 
     # get distribution between NA and all others
     is_na = 0
     is_not_na = 0
-    for index, value in value_counts.items():
-        if index == ["NA"]:
-            is_na += value
+
+    for _, row in bronnco_df.iterrows():
+        if "NA" in row["type"]:
+            is_na += 1
         else:
-            is_not_na += value
+            is_not_na += 1
 
     # pie plot
     import plotly.express as px
@@ -303,3 +298,7 @@ def show_distribution_na_notna():
         title="Distribution of NA and Not NA in Origin Texts",
     )
     fig.show()
+
+
+df = read_from_csv()
+show_distribution_na_notna()

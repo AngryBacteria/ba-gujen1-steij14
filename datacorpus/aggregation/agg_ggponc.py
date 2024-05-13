@@ -91,6 +91,7 @@ def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: i
                     "type": annotation_type_output,
                     "task": "extraction",
                     "source": "ggponc",
+                    "na_prompt": na_prompts,
                     "annotation_labels": extraction_string,
                 }
             )

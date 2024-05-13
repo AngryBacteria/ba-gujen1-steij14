@@ -104,6 +104,7 @@ def get_cardio_medication_prompts(add_attributes: bool):
                 "type": "MEDICATION",
                 "task": "extraction",
                 "source": "cardio",
+                "na_prompt": False,
                 "annotation_labels": (
                     extraction_string if extraction_string != "Keine vorhanden" else ""
                 ),

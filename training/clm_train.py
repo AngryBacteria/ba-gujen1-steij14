@@ -112,7 +112,15 @@ tokenized_dataset = _dataset.map(
     preprocess_function,
     batched=True,
     num_proc=config.data_processing.processing_threads,
-    remove_columns=["messages", "text", "type", "task", "source", "annotation_labels"],
+    remove_columns=[
+        "messages",
+        "text",
+        "type",
+        "task",
+        "source",
+        "annotation_labels",
+        "na_prompt",
+    ],
 )
 print(
     f"Dataset length before: {len(tokenized_dataset['train']) + len(tokenized_dataset['test'])}"
