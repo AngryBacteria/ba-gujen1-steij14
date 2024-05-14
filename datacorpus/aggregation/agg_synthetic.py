@@ -2,6 +2,7 @@ from datacorpus.aggregation.prompts import (
     SYSTEM_PROMPT_SUMMARIZATION,
     SUMMARY_INSTRUCTION,
 )
+from shared.logger import logger
 from shared.mongodb import get_collection
 
 
@@ -28,4 +29,6 @@ def aggregate_synthetic_prompts():
                 "annotation_labels": doc["summary"],
             }
         )
+
+    logger.debug(f"Aggregated {len(prompts)} summary prompts from the synthetic corpus")
     return prompts

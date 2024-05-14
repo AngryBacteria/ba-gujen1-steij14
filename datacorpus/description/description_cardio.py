@@ -138,7 +138,7 @@ def get_number_of_attributes(df: DataFrame) -> dict[str, int]:
         "count_frequency": count_frequency,
         "count_strength": count_strength,
         "count_duration": count_duration,
-        "count_form": count_form
+        "count_form": count_form,
     }
 
 

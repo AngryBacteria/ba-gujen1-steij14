@@ -111,8 +111,6 @@ def get_cardio_medication_prompts(add_attributes: bool):
             }
         )
 
-    logger.debug(f"Created {len(prompts)} medication prompts from the cardio corpus.")
-
     return prompts
 
 
@@ -156,7 +154,7 @@ def aggregate_cardio_prompts(attributes: bool):
     :return: List of medication prompts
     """
     medication_prompts_cardio = get_cardio_medication_prompts(attributes)
-    logger.info(
+    logger.debug(
         f"Aggregated {len(medication_prompts_cardio)} medication prompts from the cardio corpus."
     )
     return medication_prompts_cardio

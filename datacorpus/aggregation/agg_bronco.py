@@ -362,7 +362,7 @@ def aggregate_bronco_prompts(
             prompts.extend(empty_medication_prompts)
 
     logger.debug(
-        f"Created {len(prompts)} prompts from the bronco corpus "
+        f"Aggregated {len(prompts)} prompts from the bronco corpus "
         f"[minimal length: {minimal_length}, extraction {extraction}, normalization {normalization}]."
     )
 
