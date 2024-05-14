@@ -26,6 +26,7 @@ def save_to_csv() -> None:
                         "type": anno["type"],
                         "origin": anno["origin"],
                         "text": "NA",
+                        "attributes": anno["attributes"],
                     }
                 )
             else:
@@ -73,21 +74,32 @@ def read_from_csv(file_name="cardio_description.csv") -> DataFrame:
 
 def show_type_pieplot(df: DataFrame) -> None:
     """
-    Plot the distribution of the annotation types
+    Plot the distribution of the annotation types based on the number of characters in 'origin'.
     :param df: The dataframe to plot from
     :return: None
     """
     import plotly.express as px
+    import pandas as pd
 
-    type_counts = df["type"].value_counts()
-    type_counts_df = pd.DataFrame(
-        {"type": type_counts.index, "count": type_counts.values}
-    )
+    characters_with = 0
+    characters_without = 0
+    for _, row in df.iterrows():
+        if row["type"] == "NA":
+            characters_without += len(row["origin"])
+        else:
+            print(row["type"])
+            characters_with += len(row["origin"])
+    data = {
+        "type": ["With annotation", "Without annotation"],
+        "count": [characters_with, characters_without]
+    }
+    type_counts_df = pd.DataFrame(data)
+
     fig = px.pie(
         type_counts_df,
         values="count",
         names="type",
-        title="Distribution of annotation types in Cardio Corpus",
+        title="Distribution of annotation types in Cardio Corpus based on character count",
     )
     fig.show()
 
@@ -257,5 +269,4 @@ def show_top_labels_barplot(df: DataFrame, annotation_types=None) -> None:
     fig.show()
 
 
-df = read_from_csv("cardio_full_text.csv")
-show_lengths_boxplot(df, tokenize=True)
+df = read_from_csv("cardio_description.csv")
