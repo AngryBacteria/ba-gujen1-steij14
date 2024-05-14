@@ -9,9 +9,9 @@ from shared.logger import logger
 
 # DATA SOURCE: https://heidata.uni-heidelberg.de/dataset.xhtml?persistentId=doi:10.11588/data/AFYQDY
 
-TSV_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\tsv"
+TSV_FOLDER_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\tsv"
 TXT_FOLDER_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt"
-TXT_HELDOUT_FOLDER_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_heldout"
+TXT_HELDOUT_FOLDER_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\cardiode\\txt_heldout"
 
 
 # TODO: unify anonymization (PATIENT, etc...)
@@ -196,7 +196,7 @@ def transform_cardio_annotation(annotation: dict):
                 }
             )
 
-    for relation_type in ["DURATION", "FREQUENCY", "STRENGTH"]:
+    for relation_type in ["DURATION", "FREQUENCY", "STRENGTH", "FORM"]:
         for relation in get_medication_relations(annotation, relation_type):
             pattern = r"\[.*?\]"
             search_id = relation["relation"]

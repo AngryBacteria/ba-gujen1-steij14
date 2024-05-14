@@ -301,4 +301,6 @@ def show_distribution_na_notna():
 
 
 df = read_from_csv()
-show_distribution_na_notna()
+# data used in paper (tokens calculated in create script)
+show_text_lengths_boxplot(df, tokenize=True)
+show_annotation_types_pieplot(df)

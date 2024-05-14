@@ -1,3 +1,6 @@
+import ast
+from typing import Tuple, Dict
+
 import pandas as pd
 from pandas import DataFrame
 
@@ -26,7 +29,7 @@ def save_to_csv() -> None:
                         "type": anno["type"],
                         "origin": anno["origin"],
                         "text": "NA",
-                        "attributes": anno["attributes"],
+                        "attributes": [],
                     }
                 )
             else:
@@ -37,6 +40,7 @@ def save_to_csv() -> None:
                             "type": anno["type"],
                             "origin": anno["origin"],
                             "text": text,
+                            "attributes": anno["attributes"],
                         }
                     )
 
@@ -87,11 +91,10 @@ def show_type_pieplot(df: DataFrame) -> None:
         if row["type"] == "NA":
             characters_without += len(row["origin"])
         else:
-            print(row["type"])
             characters_with += len(row["origin"])
     data = {
         "type": ["With annotation", "Without annotation"],
-        "count": [characters_with, characters_without]
+        "count": [characters_with, characters_without],
     }
     type_counts_df = pd.DataFrame(data)
 
@@ -102,6 +105,41 @@ def show_type_pieplot(df: DataFrame) -> None:
         title="Distribution of annotation types in Cardio Corpus based on character count",
     )
     fig.show()
+
+
+def get_number_of_annotations(df: DataFrame) -> int:
+    count = 0
+    for _, row in df.iterrows():
+        if row["type"] == "MEDICATION":
+            count += 1
+    return count
+
+
+def get_number_of_attributes(df: DataFrame) -> dict[str, int]:
+    count_frequency = 0
+    count_strength = 0
+    count_duration = 0
+    count_form = 0
+
+    for _, row in df.iterrows():
+        attributes = ast.literal_eval(row["attributes"])
+        for attribute in attributes:
+            for value in attribute:
+                if value["attribute_label"] == "FREQUENCY":
+                    count_frequency += 1
+                elif value["attribute_label"] == "STRENGTH":
+                    count_strength += 1
+                elif value["attribute_label"] == "DURATION":
+                    count_duration += 1
+                elif value["attribute_label"] == "FORM":
+                    count_form += 1
+
+    return {
+        "count_frequency": count_frequency,
+        "count_strength": count_strength,
+        "count_duration": count_duration,
+        "count_form": count_form
+    }
 
 
 def paragraph_lengths(df, tokenize=False) -> tuple:
@@ -269,4 +307,11 @@ def show_top_labels_barplot(df: DataFrame, annotation_types=None) -> None:
     fig.show()
 
 
+# save_to_csv()
 df = read_from_csv("cardio_description.csv")
+df2 = read_from_csv("cardio_full_text.csv")
+# data used in paper (tokens calculated in create script)
+show_type_pieplot(df)
+show_lengths_boxplot(df2, tokenize=True)
+print(get_number_of_annotations(df))
+print(get_number_of_attributes(df))
