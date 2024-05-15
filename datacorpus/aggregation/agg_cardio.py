@@ -52,7 +52,8 @@ def get_cardio_medication_prompts(add_attributes: bool):
                 attributes = anno["attributes"]
 
                 for name, attr_list in zip(names, attributes):
-                    # Preparing attributes string for each text, skipping 'DURATION' and 'FORM' attributes (because of anonymization they are often nonsense)
+                    # Preparing attributes string for each text, skipping 'DURATION' and 'FORM' attributes (because
+                    # of anonymization they are often nonsense)
                     filtered_attributes = [
                         attr
                         for attr in attr_list
@@ -105,9 +106,7 @@ def get_cardio_medication_prompts(add_attributes: bool):
                 "task": "extraction",
                 "source": "cardio",
                 "na_prompt": False,
-                "annotation_labels": (
-                    extraction_string if extraction_string != "Keine vorhanden" else ""
-                ),
+                "annotation_labels": extraction_string,
             }
         )
 

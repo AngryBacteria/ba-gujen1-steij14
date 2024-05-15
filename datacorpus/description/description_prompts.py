@@ -4,9 +4,7 @@ from datasets import load_dataset
 from shared.model_utils import count_tokens
 
 # load the dataset
-data = load_dataset("json", data_files={"data": "prompts.jsonl"})[
-    "data"
-]
+data = load_dataset("json", data_files={"data": "prompts.jsonl"})["data"]
 extraction_prompts = []
 normalization_prompts = []
 summary_prompts = []

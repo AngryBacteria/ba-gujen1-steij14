@@ -1,8 +1,8 @@
 import datetime
-import json
 import os
 import random
 
+from datasets import load_dataset
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -13,7 +13,6 @@ from shared.mongodb import upload_data_to_mongodb, get_collection
 # Creation of data with synthetic methods such as the OpenAI API.
 
 LC2_DATA_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\synthetic\\lc2_dialogs"
-KRUMMREY_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\synthetic\\summaries_krummrey.jsonl"
 CLEF_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\clef ehealth\\docs-training"
 
 SUMMARISE_TEXT_PROMPT = """Bitte fasse den folgenden medizinischen Text präzise zusammen. Gib mir nur die Zusammenfassung 
@@ -88,24 +87,19 @@ def create_summary_data_from_clef2019(amount: int):
     return output
 
 
-def get_krummrey_data():
+def get_dev4med_data():
+    dataset = load_dataset("Dev4Med/Notfallberichte-German-100")
     output = []
-    with open(KRUMMREY_PATH, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-        for line in lines:
-            text = line.strip()
-            # read json from line
-            json_data = json.loads(text)
-            output.append(
-                {
-                    "origin": json_data["source"],
-                    "summary": json_data["summary"],
-                    "source": "krummrey",
-                    "task": "summarization",
-                }
-            )
-
-    logger.debug(f"Created {len(output)} summaries from krummrey data.")
+    for data in dataset["train"]:
+        output.append(
+            {
+                "origin": data["source"].strip(),
+                "summary": data["summary"].strip(),
+                "source": "Dev4Med/Notfallberichte-German-100",
+                "task": "summarization",
+            }
+        )
+    logger.debug(f"Created {len(output)} summaries from Dev4Med data.")
     return output
 
 
@@ -158,7 +152,7 @@ def count_synthetic_tokens():
     return tokens_origin, tokens_summary, tokens
 
 
-def upload_summary_data_to_mongodb(lc2: bool, clef: bool, krummrey: bool):
+def upload_summary_data_to_mongodb(lc2: bool, clef: bool, dev4med: bool):
     """
     Upload the summary data to the mongodb.
     """
@@ -169,9 +163,9 @@ def upload_summary_data_to_mongodb(lc2: bool, clef: bool, krummrey: bool):
     if clef:
         data_clef = create_summary_data_from_clef2019(50)
         data.extend(data_clef)
-    if krummrey:
-        data_krummrey = get_krummrey_data()
-        data.extend(data_krummrey)
+    if dev4med:
+        data_dev4med = get_dev4med_data()
+        data.extend(data_dev4med)
 
     upload_data_to_mongodb(data, "corpus", "synthetic", True, [])
 
