@@ -22,6 +22,16 @@ import pandas as pd
 
 
 def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
+    """
+    Calculates the metrics precision, recall and f1 score for the extraction task. The model makes a precision which
+    is then compared to the ground truth (the full prompt with answer). The model is evaluated on the prompts.jsonl
+    data. The results are saved to a file. The extraction/normalization task is evaluated with and without attributes.
+    Right now the attribute metrics are not saved in an intelligent way, this should be done (TODO: do it).
+    :param precision: The precision to load the model in (16bit recommended)
+    :param model_name: The name of the model to load
+    :return: None the data is saved to a file
+    """
+
     tokenizer, model = load_model_and_tokenizer(model_name, precision)
 
     _dataset = load_dataset("json", data_files={"data": "prompts.jsonl"})[
@@ -68,7 +78,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
             logger.error("No extractions found")
             continue
 
-        # Extraction validations
+        # Extraction and normalization validations
         truth = get_extractions_only(truth_string)
         prediction = get_extractions_only(prediction_string)
         logger.debug(f"Truth (extraction           : {truth}")
@@ -82,19 +92,21 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
                 "model_precision": precision.value,
                 "execution_time": execution_time,
                 "date": test_date,
-                "prompt": prompt,
-                "instruction": instruction,
-                "truth_string": truth_string,
-                "truth": truth,
-                "output_string": output_string,
-                "output_string_raw": output_string_raw,
-                "prediction_string": prediction_string,
-                "prediction": prediction,
+                "prompt": prompt,  # the full prompt that was used (with answers)
+                "instruction": instruction,  # the instruction that was used (prompt without answers)
+                "truth_string": truth_string,  # The full truth (prompt output) as a string
+                "truth": truth,  # The extraction seperated from the truth string
+                "output_string": output_string,  # The full model output as a string
+                "output_string_raw": output_string_raw,  # The full model output (with prompt) as a string with special tokens
+                "prediction_string": prediction_string,  # The model output as a string
+                "prediction": prediction,  # The extraction seperated from the model output
                 "precision": metrics[0],
                 "recall": metrics[1],
                 "f1_score": metrics[2],
                 "task": example["task"],
-                "type": example["type"],
+                "type": example[
+                    "type"
+                ],  # Type of annotation (DIAGNOSIS, MEDICATION, TREATMENT)
                 "source": example["source"],
             }
         )
@@ -119,6 +131,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
                     "truth_string": truth_string,
                     "truth": truth,
                     "output_string": output_string,
+                    "output_string_raw": output_string_raw,
                     "prediction_string": prediction_string,
                     "prediction": prediction,
                     "precision": metrics[0],
@@ -130,7 +143,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
                 }
             )
 
-        logger.debug(f"{150*'-'}")
+        logger.debug(f"{150 * '-'}")
     # convert to pandas df and save to json
     df = pd.DataFrame(output)
     df.to_json(f"validation_results_{precision.value}bit.json", orient="records")
@@ -143,6 +156,8 @@ def calculate_string_validation_metrics(
     """
     Calculate precision, recall and f1 score for the extraction task. Takes in two lists, the truth labels and the
     predicted labels and returns the metrics.
+    :param truth_labels: The truth labels as a list
+    :param prediction_labels: The predicted labels as a list
     """
     truth_set = set(truth_labels)
     prediction_set = set(prediction_labels)
@@ -170,7 +185,7 @@ def calculate_string_validation_metrics(
     return precision, recall, f1_score
 
 
-def aggregate_metrics(file_name):
+def aggregate_metrics(file_name: str):
     """TODO"""
     df = pd.read_json(file_name)
     grouped = df.groupby(["task", "source", "type"])
@@ -179,7 +194,7 @@ def aggregate_metrics(file_name):
         logger.debug(f"Precision: {group["precision"].mean()}")
         logger.debug(f"Recall: {group["recall"].mean()}")
         logger.debug(f"F1 Score: {group["f1_score"].mean()}")
-        logger.debug(f"{60*'-'}")
+        logger.debug(f"{60 * '-'}")
 
 
 aggregate_metrics("validation_results_4bit.json")

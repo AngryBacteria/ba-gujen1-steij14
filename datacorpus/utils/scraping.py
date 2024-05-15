@@ -1,6 +1,8 @@
 from bs4 import Tag, BeautifulSoup
 from markdownify import markdownify as md
 
+# Utilities for working with website data. Includes mostly scraping.
+
 # List of unwanted tags to ignore
 ignore_list = [
     "Weblinks",

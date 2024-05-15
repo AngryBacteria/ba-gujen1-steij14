@@ -6,7 +6,8 @@ from shared.mongodb import get_collection
 
 def calculate_lookup_accuracy():
     """
-    Calculate the accuracy for the normalization task with a simple database lookup.
+    TODO: test and implement
+    Calculate the accuracy for the normalization task with a simple database lookup as prediction.
     """
     atc_collection = get_collection("catalog", "atc")
     icd_collection = get_collection("catalog", "icd10gm")

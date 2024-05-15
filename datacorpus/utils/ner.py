@@ -1,8 +1,13 @@
 from shared.logger import logger
 
 
+# Utilities to handle NER data
+
+
 def load_conll_annotations_file(filepath: str) -> str:
-    """Load a CoNLL file from disk and return the text as a string."""
+    """Load a CoNLL file from disk and return the text as a string.
+    :param filepath: The path to the CoNLL file.
+    """
     with open(filepath, "r", encoding="utf-8") as file:
         text = file.read()
     return text
@@ -36,6 +41,13 @@ def parse_ner_dataset(filepath: str):
 
 
 def group_ner_data(ner_docs: list[dict], block_size: int, source: str):
+    """
+    Group NER data into blocks of a certain size. This is useful to reduce the number of datapoints.
+    :param ner_docs: List of ner documents. Required to have two arrays, ner_tags and words/tokens.
+    :param block_size: The size of blocks to group by (in characters).
+    :param source: The source of the data (useful as label later)
+    :return: Same documents but grouped into blocks.
+    """
     # Create blocks to reduce the number of datapoints
     grouped_docs = []
     temp_doc = {"words": [], "ner_tags": [], "source": source}

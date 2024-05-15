@@ -20,9 +20,9 @@ from shared.mongodb import get_collection
 from shared.logger import logger
 
 
-# Aggregation for the bronco corpus. Prompts can be created for all three annotation types (DIAGNOSIS, TREATMENT,
-# MEDICATION) and can be created with or without the level of truth. Prompts can also be created for examples without
-# any annotations. The aggregation also includes the aggregation of NER documents.
+# Aggregation for the bronco database collection. Prompts can be created for all three annotation types (DIAGNOSIS,
+# TREATMENT and MEDICATION) and can be created with or without the level of truth. Prompts can also be created for
+# texts without any annotations. The aggregation also includes the aggregation of NER documents.
 
 
 def get_bronco_instruction(annotation_type: str, add_level_of_truth: bool):
@@ -415,14 +415,3 @@ def aggregate_bronco_prompts(
     )
 
     return prompts
-
-
-huhs = aggregate_bronco_prompts(True, True, True, True, True, True, 15)
-huhs = random.sample(huhs, 2)
-for huh in huhs:
-    print(huh["type"], huh["na_prompt"])
-    print(huh["messages"][1]["content"])
-    print(huh["messages"][2]["content"])
-    print(
-        "----------------------------------------------------------------------------"
-    )

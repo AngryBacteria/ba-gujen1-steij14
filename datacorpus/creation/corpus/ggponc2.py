@@ -25,6 +25,11 @@ def load_json(filename) -> dict:
 
 
 def get_normalized_entity_type(entity_type: str) -> str:
+    """
+    Normalize the entity types to be compatible with the other datasets.
+    :param entity_type: The entity type to normalize.
+    :return: The normalized entity type.
+    """
     if entity_type == "Diagnosis_or_Pathology":
         return "DIAGNOSIS"
     elif entity_type == "Clinical_Drug":

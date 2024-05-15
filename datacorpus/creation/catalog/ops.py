@@ -3,16 +3,25 @@ import pandas as pd
 
 from shared.mongodb import upload_data_to_mongodb
 
+# Paths to the various OPS classification files. Includes metadata and alphabet
 OPS_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\p1smt2017\\Klassifikationsdateien\\ops2017syst_kodes.txt"
 OPS_DREISTELLER_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\p1smt2017\\Klassifikationsdateien\\ops2017syst_dreisteller.txt"
-OPS_GRUPPEN_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\p1smt2017\\Klassifikationsdateien\\ops2017syst_gruppen.txt"
-OPS_KAPITEL_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\p1smt2017\\Klassifikationsdateien\\ops2017syst_kapitel.txt"
+OPS_GROUPS_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\p1smt2017\\Klassifikationsdateien\\ops2017syst_gruppen.txt"
+OPS_CHAPTERS_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\p1smt2017\\Klassifikationsdateien\\ops2017syst_kapitel.txt"
 OPS_ALPHABET_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\p2set2017\\ops2017alpha_edvtxt_20161028.txt"
 
 
 def upload_ops_metadata(
-    add_dreisteller=True, add_groups=True, add_chapters=True, add_alphabet=True
+    add_dreisteller=True, add_groups=False, add_chapters=False, add_alphabet=True
 ):
+    """
+    Parse and upload the OPS metadata and optionally alphabet data (for synonyms) to the MongoDB database.
+    :param add_dreisteller: If the dreisteller ops data should be added (recommended)
+    :param add_groups: If the groups ops data should be added (not recommended)
+    :param add_chapters: If the chapters ops data should be added (not recommended)
+    :param add_alphabet: If the alphabet ops data should be added (recommended)
+    :return: Nothing, data is uploaded
+    """
     df = pd.read_csv(OPS_CSV_PATH, sep=";", encoding="utf-8")
     df.columns = [
         "Ebene",
@@ -65,7 +74,7 @@ def upload_ops_metadata(
             )
 
     if add_groups:
-        df_groups = pd.read_csv(OPS_GRUPPEN_CSV_PATH, sep=";", encoding="utf-8")
+        df_groups = pd.read_csv(OPS_GROUPS_CSV_PATH, sep=";", encoding="utf-8")
         df_groups.columns = ["KapNr", "GrVon", "GrBis", "Titel"]
         for _, row in df_groups.iterrows():
             if pd.isna(row["Titel"]) or pd.isna(row["GrVon"]) or pd.isna(row["GrBis"]):
@@ -81,7 +90,7 @@ def upload_ops_metadata(
             )
 
     if add_chapters:
-        df_chapters = pd.read_csv(OPS_KAPITEL_CSV_PATH, sep=";", encoding="utf-8")
+        df_chapters = pd.read_csv(OPS_CHAPTERS_CSV_PATH, sep=";", encoding="utf-8")
         df_chapters.columns = ["KapNr", "Titel"]
         for _, row in df_chapters.iterrows():
             if pd.isna(row["Titel"]):

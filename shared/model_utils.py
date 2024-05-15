@@ -13,7 +13,8 @@ from transformers import (
 # TEMPLATE
 class ChatTemplate(Enum):
     """
-    Enum class to store different chat templates
+    Enum class to store different chat templates. Includes the template itself, the bos, eos and pad tokens and the
+    generation start token. With the generation start token the answer of the llm can be easily extracted from the rest.
     """
 
     # Alpaca instruction format. Meant for only one instruction and one response. Padding tokens for Mistral
@@ -36,7 +37,8 @@ class ChatTemplate(Enum):
 
 def load_template_from_jinja(file_name="template"):
     """
-    Loads a chat template from a jinja file and cleans it
+    Loads a chat template from a jinja file and cleans it.
+    More templates can be found here https://github.com/chujiezheng/chat_templates
     :param file_name: The name of the jinja file to load
     """
     chat_template = open(f"{file_name}.jinja").read()
@@ -48,7 +50,8 @@ def load_template_from_jinja(file_name="template"):
 
 def test_chat_template(template: ChatTemplate, add_second_conversation=False):
     """
-    Test function to apply a chat template to a list of messages and print the output
+    Test function to apply a chat template to a list of messages and print the output.
+    Only useful to see if the template works as expected.
     :param template: The chat template to use
     :param add_second_conversation: If True, the function will add a second user input to the messages
     """
@@ -78,12 +81,13 @@ def test_chat_template(template: ChatTemplate, add_second_conversation=False):
 # MODEL AND TOKENIZER
 class ModelPrecision(Enum):
     """
-    Enum class to store different model precisions
+    Enum class that represents the possible model precisions
     """
 
     FOUR_BIT = 4
     EIGHT_BIT = 8
     SIXTEEN_BIT = 16
+    THIRTY_TWO_BIT = 32
 
 
 def patch_tokenizer_with_template(
@@ -91,7 +95,8 @@ def patch_tokenizer_with_template(
     template=ChatTemplate.ALPACA_MISTRAL,
 ):
     """
-    Helper function to load a tokenizer with a specific chat template and special tokens
+    Helper function to load a tokenizer with a specific chat template and special tokens.
+    Patches both model and tokenizer to use those new tokens.
     :param tokenizer_name: The name of the tokenizer to load
     :param template: The chat template to use
     """
@@ -177,8 +182,14 @@ def load_model_and_tokenizer(
             torch_dtype=torch.bfloat16,
         )
         model.to("cuda:0")
+    elif precision == ModelPrecision.THIRTY_TWO_BIT:
+        model = AutoModelForCausalLM.from_pretrained(
+            "BachelorThesis/Mistral_V03_BRONCO_CARDIO",
+            torch_dtype=torch.float,
+        )
+        model.to("cuda:0")
     else:
-        raise ValueError("Precision has to be 4, 8 or 16")
+        raise ValueError("Precision has to be 4, 8, 16 or 32")
 
     if patch_model:
         model = patch_model_with_tokenizer(model, tokenizer)
@@ -196,6 +207,11 @@ def upload_model(
 ):
     """
     Uploads a model to Huggingface.
+    :param account_name: The name of the account to upload to. Can also be an organization.
+    :param repo_name: The name of the repository to upload to or create.
+    :param local_model_folder: The name of the local model folder to upload
+    :param patch: If True, the model will be patched with the template before uploading
+    :return:
     """
     if patch:
         tokenizer = patch_tokenizer_with_template(tokenizer_name=local_model_folder)
@@ -217,6 +233,11 @@ def upload_tokenizer(
 ):
     """
     Uploads a tokenizer to Huggingface.
+    :param account_name: The name of the account to upload to. Can also be an organization.
+    :param repo_name: The name of the repository to upload to or create.
+    :param local_model_folder: The name of the local tokenizer folder to upload
+    :param patch: If True, the tokenizer will be patched with the template before uploading
+    :return:
     """
     if patch:
         tokenizer = patch_tokenizer_with_template(tokenizer_name=local_model_folder)
@@ -231,6 +252,9 @@ def get_model_output_only(full_output: str, template: ChatTemplate) -> str | Non
     """
     Parses the model output (everything after the instruction) from the whole generated text.
     If the output could not be found return None
+    :param full_output: The full output that the model generated.
+    :param template: The template that was used during generation.
+    :return: Only the output of the model.
     """
     if (
         template == ChatTemplate.ALPACA_MISTRAL
@@ -247,6 +271,7 @@ def get_extractions_only(string_input: str):
     """
     Get all extractions from a string input. The string has to be in the typical form of a prompt output:
     extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
+    :param string_input: The string input to get the extractions from.
     """
     string_input = string_input.strip().lower()
     string_input = remove_brackets(string_input)
@@ -260,6 +285,7 @@ def get_extractions_only(string_input: str):
 def remove_brackets(string_input: str):
     """
     Remove substrings enclosed in brackets from a string.
+    :param string_input: The string to remove the brackets from.
     """
     pattern = r"\[[^]]*\]"
     cleaned_string = re.sub(pattern, "", string_input)
@@ -268,7 +294,7 @@ def remove_brackets(string_input: str):
 
 
 def get_extractions_with_attributes(string_input: str):
-    # TODO: return the extractiona and attributes as list, not just a string like here :(
+    # TODO: return the extractions and attributes as list, not just a string like here :(
     string_input = string_input.strip().lower()
     extractions = string_input.split("|")
     extractions = [extraction.strip() for extraction in extractions]
@@ -310,7 +336,13 @@ def count_tokens(
     tokenizer_instance: PreTrainedTokenizer = None,
     tokenizer_name: str = None,
 ) -> int:
-    """Count the tokens of a dataset with a tokenizer. Either pass a tokenizer or a tokenizer name."""
+    """
+    Count the tokens of a dataset with a tokenizer. Either pass a tokenizer or a tokenizer name.
+    :param data: List of strings that will get counted.
+    :param tokenizer_instance: The tokenizer to use. If nothing is passed, the tokenizer_name will be used.
+    :param tokenizer_name: The name of the tokenizer to use. If a tokenizer is passed, this will be ignored.
+    :return: Number of tokens in the dataset.
+    """
     if tokenizer_instance is not None:
         tokens = 0
         for text in data:

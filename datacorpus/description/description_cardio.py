@@ -1,16 +1,18 @@
 import ast
-from typing import Tuple, Dict
 
 import pandas as pd
 from pandas import DataFrame
 
-from shared.mongodb import get_collection
 from shared.model_utils import patch_tokenizer_with_template
+from shared.mongodb import get_collection
+
+
+# Collection of functions to analyze the cardio dataset.
 
 
 def save_to_csv() -> None:
     """
-    Save the cardio mongodb to trimmed down csv file
+    Save the cardio mongodb collection to a trimmed down csv file
     :return: None
     """
 
@@ -50,7 +52,7 @@ def save_to_csv() -> None:
 
 def save_full_text_to_csv() -> None:
     """
-    Save the cardio mongodb (only document and its full_text) to a trimmed down csv file
+    Save the cardio mongodb collection (only full_text) to a trimmed down csv file
     :return: None
     """
 
@@ -83,7 +85,6 @@ def show_type_pieplot(df: DataFrame) -> None:
     :return: None
     """
     import plotly.express as px
-    import pandas as pd
 
     characters_with = 0
     characters_without = 0
@@ -108,6 +109,11 @@ def show_type_pieplot(df: DataFrame) -> None:
 
 
 def get_number_of_annotations(df: DataFrame) -> int:
+    """
+    Get the number of annotations of type 'MEDICATION'
+    :param df: The dataframe to analyze
+    :return: The number of annotations of type 'MEDICATION'
+    """
     count = 0
     for _, row in df.iterrows():
         if row["type"] == "MEDICATION":
@@ -116,6 +122,11 @@ def get_number_of_annotations(df: DataFrame) -> int:
 
 
 def get_number_of_attributes(df: DataFrame) -> dict[str, int]:
+    """
+    Get the number of attributes for each attribute type
+    :param df: The dataframe to analyze
+    :return: Number of attributes for each attribute type
+    """
     count_frequency = 0
     count_strength = 0
     count_duration = 0

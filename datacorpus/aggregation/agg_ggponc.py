@@ -8,8 +8,9 @@ from datacorpus.utils.ner import group_ner_data
 from shared.mongodb import get_collection
 from shared.logger import logger
 
-# Aggregation of the data in the ggponc datacorpus. Includes all three types of annotations: MEDICATION, TREATMENT,
-# DIAGNOSIS. Data is saved as prompts.
+# Aggregation of the data from the ggponc2 collection of the database. Includes all three types of annotations:
+# MEDICATION, TREATMENT and DIAGNOSIS.
+# The aggregation for NER and prompt data is supported.
 
 
 def get_ggponc_instruction(annotation_type: str):

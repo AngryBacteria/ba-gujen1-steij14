@@ -16,11 +16,20 @@ TXT_HELDOUT_FOLDER_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachho
 
 # TODO: unify anonymization (PATIENT, etc...)
 def clean_cardio_string(text: str) -> str:
+    """
+    Clean the cardio text from pseudo tags (extract date and remove parentheses).
+    :param text: The text to clean
+    :return: The cleaned text
+    """
     cleaned_text = re.sub(r"<\[Pseudo] ([^>]*)>", r"\1", text)
     return cleaned_text.strip()
 
 
 def print_unique_anonymization():
+    """
+    Prints all unique anonymization tags from the cardio documents.
+    :return: None, prints the unique anonymization tags
+    """
     tsv_files = [file for file in os.listdir(TSV_FOLDER_PATH) if file.endswith(".tsv")]
 
     unique_matches = set()
@@ -38,6 +47,11 @@ def print_unique_anonymization():
 
 
 def get_normalized_ner_tag(ner_tag: str):
+    """
+    Function to normalize the NER tags of the cardio dataset. Useful to later combine multiple datasets together.
+    :param ner_tag: The ner tag to normalize
+    :return: Normalized ner tag
+    """
     if ner_tag == "B-DRUG" or ner_tag == "B-ACTIVEING":
         return "B-MED"
     elif ner_tag == "I-DRUG" or ner_tag == "I-ACTIVEING":
@@ -47,6 +61,11 @@ def get_normalized_ner_tag(ner_tag: str):
 
 
 def transform_ner_cardio_annotations(annotations: list[str]) -> list[str]:
+    """
+    Transform the cardio NER annotations into a unified format.
+    :param annotations: List of annotation strings.
+    :return: Unified format of the annotations.
+    """
     # remove the ids from the annotations
     cleaned = []
     for anno in annotations:
@@ -118,6 +137,10 @@ def get_medication_relations(annotation: dict, relation_type: str):
 
 
 def parse_ner_annotations():
+    """
+    Parse the NER annotations of the cardio dataset.
+    :return: NER annotations in a unified format.
+    """
     # get all filenames in the folder TSV_FOLDER_PATH
     tsv_files = [file for file in os.listdir(TSV_FOLDER_PATH) if file.endswith(".tsv")]
     annotations_ner = []
@@ -177,7 +200,10 @@ def parse_ner_annotations():
 
 
 def transform_cardio_annotation(annotation: dict):
-    """Transform annotations into unified format."""
+    """
+    Transform annotations into unified format.
+    :param annotation: The annotation object
+    """
     drugs = []
     # get drugs and active ingredients
     for index, tag in enumerate(annotation["ner_tags"]):
@@ -240,6 +266,10 @@ def transform_cardio_annotation(annotation: dict):
 
 
 def parse_annotations():
+    """
+    Parse the normal annotations (non NER) of the cardio dataset.
+    :return: Annotations in a unified format.
+    """
     # get all filenames in the folder TSV_FOLDER_PATH
     tsv_files = [file for file in os.listdir(TSV_FOLDER_PATH) if file.endswith(".tsv")]
 
@@ -331,6 +361,10 @@ def parse_annotations():
 
 
 def parse_cardio_heldout_text():
+    """
+    Parse the heldout texts of the cardio dataset. They have no annotations.
+    :return: Heldout texts
+    """
     txt_files = [
         file for file in os.listdir(TXT_HELDOUT_FOLDER_PATH) if file.endswith(".txt")
     ]
@@ -352,6 +386,7 @@ def parse_cardio_heldout_text():
 def count_cardio_tokens():
     """
     Count the tokens of all the cardio documents.
+    :return: The token count of the cardio documents.
     """
     texts = []
     txt_files = [file for file in os.listdir(TXT_FOLDER_PATH) if file.endswith(".txt")]
@@ -366,6 +401,10 @@ def count_cardio_tokens():
 
 
 def build_cardio_db():
+    """
+    Build the cardio database.
+    :return: None
+    """
     annotations = parse_annotations()
     annotations_ner = parse_ner_annotations()
     heldout_text = parse_cardio_heldout_text()

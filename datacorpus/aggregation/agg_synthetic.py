@@ -6,6 +6,10 @@ from shared.logger import logger
 from shared.mongodb import get_collection
 
 
+# Aggregation of the synthetic data in the mongodb database. So far only the task summarization is supported in the
+# as no other synthetic data is available yet.
+
+
 def aggregate_synthetic_prompts():
     """
     Aggregate prompts for the synthetic dataset. Right now only summarization prompts are synthesized.

@@ -115,7 +115,8 @@ def get_cardio_medication_prompts(add_attributes: bool):
 
 def aggregate_cardio_ner(block_size: int):
     """
-    :param block_size: The size of the blocks to create. -1 means no block grouping
+    :param block_size: The size of the blocks to create. -1 means no block grouping. A block means a group of examples
+    that are concatenated into one example to reduce the number of total examples.
     Aggregate all NER annotations from the cardio corpus into a format usable for training.
     Filters out all NER tags that are not MEDICATION, TREATMENT, or DIAGNOSIS and replaces them with the respective id.
     :return: List of NER annotations as dictionaries

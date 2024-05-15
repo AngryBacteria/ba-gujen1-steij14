@@ -30,7 +30,7 @@ client = OpenAI(
 def create_summary_data_from_lc2():
     """
     Create summary data from the lc2 data used in the last semester. Consists of 26 files with synthetic
-    medical dialoges.
+    medical dialogs.
     """
     output = []
     model = "gpt-4-turbo"
@@ -60,6 +60,7 @@ def create_summary_data_from_lc2():
 def create_summary_data_from_clef2019(amount: int):
     """
     Create summaries for clef 2019 data.
+    :param amount: Amount of summaries to create.
     """
     output = []
     model = "gpt-4-turbo"
@@ -88,6 +89,9 @@ def create_summary_data_from_clef2019(amount: int):
 
 
 def get_dev4med_data():
+    """
+    Get the data from the Dev4Med dataset.
+    """
     dataset = load_dataset("Dev4Med/Notfallberichte-German-100")
     output = []
     for data in dataset["train"]:

@@ -1,13 +1,16 @@
 import pandas as pd
 from pandas import DataFrame
 
-from shared.mongodb import get_collection
 from shared.model_utils import patch_tokenizer_with_template
+from shared.mongodb import get_collection
+
+
+# Collection of functions to analyze the bronco dataset.
 
 
 def save_to_csv() -> None:
     """
-    Save the ggponc mongodb to a trimmed down csv file
+    Save the bronco mongodb collection to a trimmed down csv file
     :return: None
     """
     bronco_collection = get_collection("corpus", "bronco")
@@ -59,8 +62,8 @@ def save_to_csv() -> None:
 
 def read_from_csv() -> DataFrame:
     """
-    Read the ggponc properties from the trimmed down csv file
-    :return: ggponc properties dataframe
+    Read the bronco properties from the trimmed down csv file
+    :return: bronco properties dataframe
     """
     df = pd.read_csv("bronco_description.csv", sep="|", na_filter=False)
     return df
@@ -271,6 +274,7 @@ def show_top_normalizations_barplot(df: DataFrame, annotation_types=None) -> Non
 def show_distribution_na_notna():
     """
     Show the distribution of NA and Not NA in the origin texts
+    :returns: None (a plot is displayed)
     """
     bronco_collection = get_collection("corpus", "bronco")
     bronco_cursor = bronco_collection.find({})

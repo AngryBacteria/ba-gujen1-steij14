@@ -44,6 +44,6 @@ fh.setLevel(logging.DEBUG)
 log_format = (
     "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
 )
-formatter = logging.Formatter(log_format)
-fh.setFormatter(formatter)
+file_formatter = logging.Formatter(log_format)
+fh.setFormatter(file_formatter)
 logger.addHandler(fh)

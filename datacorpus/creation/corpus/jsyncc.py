@@ -21,6 +21,11 @@ def find_with_default(element, tag, default_value="") -> str:
 
 
 def get_jsyncc_data() -> list[dict[str, str]]:
+    """
+    Get the jsyncc data from the XML file.
+    :return: Data as list of dictionaries.
+    """
+
     tree = ET.parse(corpus_path)
     root = tree.getroot()
     documents = root.findall(".//document")
@@ -49,6 +54,10 @@ def get_jsyncc_data() -> list[dict[str, str]]:
 
 
 def build_jsyncc_db() -> None:
+    """
+    Build the jsyncc database.
+    :return: None
+    """
     corpus = get_jsyncc_data()
     upload_data_to_mongodb(corpus, "corpus", "jsyncc", True, [])
 

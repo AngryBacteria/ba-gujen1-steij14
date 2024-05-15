@@ -23,7 +23,10 @@ snomed_classes = [
 
 
 def extract_and_remove_class(row: str) -> tuple[str, str]:
-    """Extracts the class from the SNOMED_FSN column and removes it from the row."""
+    """
+    Extracts the class from the SNOMED_FSN column and removes it from the row.
+    :param row: The row to extract the class from.
+    """
     matches = re.findall(r"\(([^)]+)\)", row)
     if matches:
         last_match = matches[-1]
@@ -34,7 +37,10 @@ def extract_and_remove_class(row: str) -> tuple[str, str]:
 
 
 def load_snomed_core(print_unique_classes=False) -> DataFrame:
-    """Loads the SNOMED core subset and extracts the class as a new column."""
+    """
+    Loads the SNOMED core subset and extracts the class as a new column.
+    :param print_unique_classes: If True, prints the unique classes (only useful for debugging)
+    """
     headers = [
         "SNOMED_CID",
         "SNOMED_FSN",
@@ -91,7 +97,10 @@ def load_snomed_core(print_unique_classes=False) -> DataFrame:
 
 
 def create_snomed_db() -> None:
-    # Upload to MongoDB
+    """
+    Creates the SNOMED core subset data and uploads it to MongoDB.
+    :return: None, the data is uploaded to MongoDB.
+    """
     data = load_snomed_core().to_dict(orient="records")
     upload_data_to_mongodb(data, "catalog", "snomed_core", True, ["cid"])
 

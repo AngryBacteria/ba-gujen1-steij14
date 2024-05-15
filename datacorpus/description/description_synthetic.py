@@ -5,9 +5,12 @@ from shared.model_utils import patch_tokenizer_with_template
 from shared.mongodb import get_collection
 
 
+# Collection of functions to analyze the synthetic dataset.
+
+
 def save_to_csv():
     """
-    Saves the collection to a csv file. This way the database can be queried only once.
+    Saves the synthetic collection to a trimmed down csv file. This way the database can be queried only once.
     """
     synthetic_collection = get_collection("corpus", "synthetic")
     synthetic_cursor = synthetic_collection.find({})

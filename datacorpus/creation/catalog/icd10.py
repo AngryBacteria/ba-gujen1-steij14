@@ -9,16 +9,18 @@ from shared.logger import logger
 # DATA SOURCE: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html
 # DATA SOURCE: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-WHO/_node.html
 
+# Paths to the various ICD10gm and ICD10who files. Includes alphabet files as well
 icd10who_alphabet_csv_path1 = "icd10who2019alpha_edvtxt_teil1_20180824.txt"
 icd10who_alphabet_csv_path2 = "icd10who2019alpha_edvtxt_teil2_20180824.txt"
 icd10who_xml_path = "icd10who2019syst_claml_20180824.xml"
-
 icd10gm_alphabet_csv_path1 = "icd10gm2024alpha_edvtxt_20230929.txt"
 icd10gm_xml_path = "icd10gm2024syst_claml_20230915.xml"
 
 
 def parse_csv_icd10_alphabet(icd10gm=False) -> DataFrame:
-    """Parse an ICD-10 alphabet files and return a dataframe"""
+    """Parse an ICD-10 alphabet files and return a dataframe
+    :param icd10gm: If true, parse the ICD-10-GM , otherwise the ICD-10-WHO
+    """
     if icd10gm:
         columns = [
             "coding_type",
@@ -71,7 +73,10 @@ def parse_csv_icd10_alphabet(icd10gm=False) -> DataFrame:
 
 
 def get_title_from_xml(element: et.Element, code: str) -> str | None:
-    """Get the title from the preferred or preferredLong label of an ICD-10 element."""
+    """Get the title from the preferred or preferredLong label of an ICD-10 element.
+    :param element: The ICD-10 element to extract the title from
+    :param code: The code of the ICD-10 element (only used for logging)
+    """
     label_element = element.find(".//Rubric[@kind='preferredLong']/Label")
     if label_element is None or label_element.text is None:
         label_element = element.find(".//Rubric[@kind='preferred']/Label")
@@ -85,14 +90,19 @@ def get_title_from_xml(element: et.Element, code: str) -> str | None:
 
 
 def get_super_class_from_xml(element: et.Element) -> str | None:
-    """Get the super class code from the SuperClass element of an ICD-10 element."""
+    """Get the super class code from the SuperClass element of an ICD-10 element.
+    :param element: The ICD-10 element to extract the super class from
+    """
     super_class_element = element.find(".//SuperClass")
     super_class_code = super_class_element.get("code", None)
     return super_class_code
 
 
 def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False) -> list[dict]:
-    """Parse the ICD-10 XML file and return a list of dictionaries with category data."""
+    """Parse the ICD-10 XML file and return a list of dictionaries with category data.
+    :param icd10gm: If true, parse the ICD-10-GM , otherwise the ICD-10-WHO
+    :param add_alphabet: If true, add synonyms from the alphabet files
+    """
     if icd10gm:
         tree = et.parse(icd10gm_xml_path)
     else:
@@ -174,7 +184,9 @@ def parse_xml_icd10_categories(icd10gm=False, add_alphabet=False) -> list[dict]:
 
 
 def parse_xml_icd10_blocks(icd10gm=False) -> list[dict]:
-    """Parse the ICD-10 XML file and return a list of dictionaries with the icd block data."""
+    """Parse the ICD-10 XML file and return a list of dictionaries with the icd block data.
+    :param icd10gm: If true, parse the ICD-10-GM , otherwise the ICD-10-WHO
+    """
     if icd10gm:
         tree = et.parse(icd10gm_xml_path)
     else:
@@ -224,7 +236,9 @@ def parse_xml_icd10_blocks(icd10gm=False) -> list[dict]:
 
 
 def parse_xml_icd10_chapters(icd10gm=False) -> list[dict]:
-    """Parse the ICD-10 XML file and return a list of dictionaries with the icd chapter data."""
+    """Parse the ICD-10 XML file and return a list of dictionaries with the icd chapter data.
+    :param icd10gm: If true, parse the ICD-10-GM , otherwise the ICD-10-WHO
+    """
     if icd10gm:
         tree = et.parse(icd10gm_xml_path)
     else:
@@ -269,7 +283,10 @@ def parse_xml_icd10_chapters(icd10gm=False) -> list[dict]:
 
 
 def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False) -> None:
-    """Parse the ICD-10 XML files and create a MongoDB collection with the data."""
+    """Parse the ICD-10 XML files and create a MongoDB collection with the data.
+    :param icd10gm: If true, parse the ICD-10-GM , otherwise the ICD-10-WHO
+    :param add_alphabet: If true, add synonyms from the alphabet files
+    """
     # parse xml files and combine
     categories = parse_xml_icd10_categories(add_alphabet=add_alphabet, icd10gm=icd10gm)
     blocks = parse_xml_icd10_blocks(icd10gm=icd10gm)

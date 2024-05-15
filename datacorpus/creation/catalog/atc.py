@@ -2,8 +2,9 @@ import pandas as pd
 
 from shared.mongodb import upload_data_to_mongodb
 
-# DATA SOURCE: Unknown (Medication_Pharmacode_ATC.xlsx)
+# DATA SOURCE: Unknown origin. (Medication_Pharmacode_ATC.xlsx)
 
+# Path to the excel file
 EXCEL_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\atc\\Medication_Pharmacode_ATC.xlsx"
 
 

@@ -5,9 +5,12 @@ from shared.mongodb import get_collection
 from shared.model_utils import patch_tokenizer_with_template
 
 
+# Collection of functions to analyze the ggponc2 dataset.
+
+
 def save_to_csv() -> None:
     """
-    Save the ggponc mongodb to a trimmed down csv file
+    Save the ggponc2 mongodb collection to a trimmed down csv file
     :return: None
     """
     ggonc_collection = get_collection("corpus", "ggponc_short")
@@ -32,8 +35,8 @@ def save_to_csv() -> None:
 
 def read_from_csv() -> DataFrame:
     """
-    Read the trimmed down ggponc properties csv file
-    :return: ggponc properties dataframe
+    Read the trimmed down ggponc2 properties csv file
+    :return: ggponc2 properties dataframe
     """
     df = pd.read_csv("ggponc_description.csv", sep="|", na_filter=False)
     return df
