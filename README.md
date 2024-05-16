@@ -2,8 +2,8 @@
 TODO: project description here
 
 ## Developers
-- Nicolas Gujer ([(nicolas.gujer@protonmail.com)](mailto:nicolas.gujer@protonmail.com))
-- Jorma Steiner ()
+- Nicolas Gujer ([nicolas.gujer@protonmail.com](mailto:nicolas.gujer@protonmail.com))
+- Jorma Steiner ([jorma.steiner@students.bfh.ch](mailto:jorma.steiner@students.bfh.ch))
 
 ## Disclaimer
 This project is part of a bachelor thesis and is not meant to be used in a production environment. The code is not
