@@ -13,7 +13,7 @@ from training.utils.printing import (
     print_welcome_message,
     print_with_heading,
 )
-from training.utils.gpu import print_gpu_support
+from training.utils.gpu import print_cuda_support
 import numpy as np
 from datasets import load_dataset
 from transformers import (
@@ -43,7 +43,7 @@ label2id = {"NEGATIVE": 0, "POSITIVE": 1}
 NUM_LABELS = 2
 
 print_welcome_message()
-print_gpu_support(f"{GPU}")
+print_cuda_support(f"{GPU}")
 
 
 def preprocess_function(examples):

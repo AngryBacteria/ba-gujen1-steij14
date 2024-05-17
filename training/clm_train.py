@@ -20,7 +20,7 @@ from training.utils.printing import (
 )
 from transformers.trainer_utils import HubStrategy
 from shared.model_utils import patch_tokenizer_with_template, patch_model_with_tokenizer
-from training.utils.gpu import print_gpu_support
+from training.utils.gpu import print_cuda_support
 from training.utils.custom_callbacks import GPUMemoryUsageCallback
 from datasets import load_dataset
 from transformers import (
@@ -32,7 +32,7 @@ from transformers import (
 
 # Welcome messages
 print_welcome_message()
-print_gpu_support(f"{config.general.gpu}")
+print_cuda_support(f"{config.general.gpu}")
 
 # Model
 if config.model.lower_precision:
@@ -118,9 +118,10 @@ tokenized_dataset = _dataset.map(
         "type",
         "task",
         "source",
-        "annotation_labels",
         "na_prompt",
-        "normalization_labels",
+        "output",
+        "context",
+        "entity",
     ],
 )
 print(

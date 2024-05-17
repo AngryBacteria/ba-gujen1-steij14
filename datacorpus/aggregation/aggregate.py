@@ -37,7 +37,6 @@ def get_unique_prompts(prompts: list[dict]) -> list[dict]:
     return list(unique_prompts.values())
 
 
-# todo: ADD distribute na and not na prompts
 def save_all_prompts(
     bronco: bool,
     ggponc: bool,
@@ -67,6 +66,7 @@ def save_all_prompts(
             treatment=True,
             medication=True,
             na_prompts=na_prompts,
+            na_percentage=0.22,
         )
         prompts.extend(bronco_prompts)
     if cardio:

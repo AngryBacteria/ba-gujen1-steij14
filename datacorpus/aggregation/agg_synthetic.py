@@ -27,10 +27,13 @@ def aggregate_synthetic_prompts():
                     {"role": "user", "content": summary_instruction.strip()},
                     {"role": "assistant", "content": doc["summary"]},
                 ],
+                "type": "",
                 "task": "summary",
                 "source": doc["source"],
                 "na_prompt": False,
-                "annotation_labels": doc["summary"],
+                "context": doc["origin"],
+                "context_entity": "",
+                "output": doc["summary"],
             }
         )
 

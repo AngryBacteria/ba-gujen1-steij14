@@ -80,6 +80,7 @@ def get_cardio_medication_prompts(add_attributes: bool):
                 texts.extend(anno["text"])
 
         texts = list(set(texts))
+        texts = [text.strip() for text in texts]
         extraction_string = "|".join(texts)
         extraction_instruction_str = extraction_instruction_str.replace(
             "<<OUTPUT>>", extraction_string
@@ -101,12 +102,13 @@ def get_cardio_medication_prompts(add_attributes: bool):
                         "content": extraction_string.strip(),
                     },
                 ],
-                "text": extraction_instruction_str.strip(),
                 "type": "MEDICATION",
                 "task": "extraction",
                 "source": "cardio",
                 "na_prompt": False,
-                "annotation_labels": extraction_string,
+                "context": document["full_text"],
+                "context_entity": "",
+                "output": extraction_string.strip(),
             }
         )
 

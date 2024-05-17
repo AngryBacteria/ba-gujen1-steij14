@@ -1,6 +1,6 @@
 from transformers import TrainerCallback
 
-from training.utils.gpu import get_gpu_memory_usage
+from training.utils.gpu import get_cuda_memory_usage
 
 
 class GPUMemoryUsageCallback(TrainerCallback):
@@ -14,10 +14,10 @@ class GPUMemoryUsageCallback(TrainerCallback):
 
     def on_train_begin(self, args, state, control, **kwargs):
         self.peak_memory = 0.0
-        _, self.total_capacity = get_gpu_memory_usage(self.handle)
+        _, self.total_capacity = get_cuda_memory_usage(self.handle)
 
     def on_step_end(self, args, state, control, **kwargs):
-        allocated, _ = get_gpu_memory_usage(self.handle)
+        allocated, _ = get_cuda_memory_usage(self.handle)
         self.peak_memory = max(self.peak_memory, allocated)
         self.current_step += 1
 

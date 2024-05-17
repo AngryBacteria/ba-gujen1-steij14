@@ -25,7 +25,7 @@ from training.utils.printing import (
     print_welcome_message,
     print_with_heading,
 )
-from training.utils.gpu import print_gpu_support
+from training.utils.gpu import print_cuda_support
 
 EPOCHS = 4
 BATCH_SIZE = 16
@@ -68,7 +68,7 @@ LABEL_LIST = [
 ]
 
 print_welcome_message()
-print_gpu_support(f"{GPU}")
+print_cuda_support(f"{GPU}")
 
 # Possible modesl
 # FacebookAI/xlm-roberta-large

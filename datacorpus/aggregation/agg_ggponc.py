@@ -61,6 +61,7 @@ def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: i
 
             # remove duplicates from text
             texts = list(set(anno["text"]))
+            texts = [text.strip() for text in texts]
 
             # concatenate
             extraction_string = "|".join(texts)
@@ -69,10 +70,7 @@ def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: i
 
             extraction_prompt_str = extraction_instruction.replace(
                 "<<CONTEXT>>", anno["origin"]
-            )
-            extraction_prompt_str = extraction_prompt_str.replace(
-                "<<OUTPUT>>", extraction_string
-            )
+            ).strip()
             prompts.append(
                 {
                     "messages": [
@@ -86,14 +84,16 @@ def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: i
                         },
                         {
                             "role": "assistant",
-                            "content": extraction_string.strip(),
+                            "content": extraction_string,
                         },
                     ],
                     "type": annotation_type_output,
                     "task": "extraction",
                     "source": "ggponc",
                     "na_prompt": na_prompts,
-                    "annotation_labels": extraction_string,
+                    "context": anno["origin"],
+                    "context_entity": "",
+                    "output": extraction_string,
                 }
             )
 

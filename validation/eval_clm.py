@@ -97,7 +97,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
                 "truth_string": truth_string,  # The full truth (prompt output) as a string
                 "truth": truth,  # The extraction seperated from the truth string
                 "output_string": output_string,  # The full model output as a string
-                "output_string_raw": output_string_raw,  # The full model output (with prompt) as a string with special tokens
+                "output_string_raw": output_string_raw,  # The full model output (with prompt) as with special tokens
                 "prediction_string": prediction_string,  # The model output as a string
                 "prediction": prediction,  # The extraction seperated from the model output
                 "precision": metrics[0],
@@ -191,9 +191,9 @@ def aggregate_metrics(file_name: str):
     grouped = df.groupby(["task", "source", "type"])
     for name, group in grouped:
         logger.debug(name)
-        logger.debug(f"Precision: {group["precision"].mean()}")
-        logger.debug(f"Recall: {group["recall"].mean()}")
-        logger.debug(f"F1 Score: {group["f1_score"].mean()}")
+        logger.debug(f"Precision: {group['precision'].mean()}")
+        logger.debug(f"Recall: {group['recall'].mean()}")
+        logger.debug(f"F1 Score: {group['f1_score'].mean()}")
         logger.debug(f"{60 * '-'}")
 
 

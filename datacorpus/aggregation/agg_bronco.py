@@ -64,7 +64,7 @@ def get_bronco_na_prompts(
     annotation_type: str,
     add_level_of_truth: bool,
     minimal_length: int,
-    percentage: float,
+    na_percentage: float,
 ):
     """
     Get prompts for bronco corpus where there are no annotations for the given annotation type
@@ -72,7 +72,7 @@ def get_bronco_na_prompts(
     one of the following: DIAGNOSIS, TREATMENT, MEDICATION
     :param add_level_of_truth: If the level of truth should be added to the prompt
     :param minimal_length: Minimal length of origin texts to include
-    :param percentage: Percentage of documents that should have no annotation
+    :param na_percentage: Percentage of documents that should have no annotation
     """
 
     # Get the collection and transform it into a pandas DataFrame
@@ -91,7 +91,7 @@ def get_bronco_na_prompts(
 
     # Calculate the target number of documents based on the percentage
     number_of_docs = bronco_collection.count_documents({"type": annotation_type})
-    target_docs = int(number_of_docs * percentage)
+    target_docs = int(number_of_docs * na_percentage)
     # Filter out rows where the annotation type is not in the 'type' list
     filtered = []
     for index, row in grouped_df.iterrows():
@@ -103,25 +103,28 @@ def get_bronco_na_prompts(
     # create prompts
     prompts = []
     for data in output:
-        extraction_string = "Keine vorhanden"
         extraction_instruction, normalization_instruction = get_bronco_instruction(
             annotation_type, add_level_of_truth
         )
+
+        extraction_string = "Keine vorhanden"
         extraction_instruction_str = extraction_instruction.replace(
             "<<CONTEXT>>", data["origin"]
-        )
+        ).strip()
         prompts.append(
             {
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": extraction_instruction_str.strip()},
-                    {"role": "assistant", "content": extraction_string.strip()},
+                    {"role": "user", "content": extraction_instruction_str},
+                    {"role": "assistant", "content": extraction_string},
                 ],
                 "type": annotation_type,
                 "task": "extraction",
                 "source": "bronco",
                 "na_prompt": True,
-                "annotation_labels": extraction_string,
+                "context": data["origin"],
+                "context_entity": "",
+                "output": extraction_string,
             }
         )
 
@@ -183,6 +186,7 @@ def get_bronco_prompts(
             texts = document["text"]
         # remove duplicates from text
         texts = list(set(texts))
+        texts = [text.strip() for text in texts]
         # concatenate extraction texts
         extraction_string = "|".join(texts)
         if extraction_string == "":
@@ -190,19 +194,21 @@ def get_bronco_prompts(
 
         extraction_instruction_str = extraction_instruction.replace(
             "<<CONTEXT>>", document["origin"]
-        )
+        ).strip()
         extraction_prompts.append(
             {
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": extraction_instruction_str.strip()},
-                    {"role": "assistant", "content": extraction_string.strip()},
+                    {"role": "user", "content": extraction_instruction_str},
+                    {"role": "assistant", "content": extraction_string},
                 ],
                 "type": annotation_type,
                 "task": "extraction",
                 "source": "bronco",
                 "na_prompt": False,
-                "annotation_labels": extraction_string,
+                "context": document["origin"],
+                "context_entity": "",
+                "output": extraction_string,
             }
         )
 
@@ -213,29 +219,26 @@ def get_bronco_prompts(
                 normalization_entity = document["text"][index]
                 norm_instruction_str = normalization_instruction.replace(
                     "<<ENTITY>>", normalization_entity
-                )
+                ).strip()
                 norm_instruction_str = norm_instruction_str.replace(
                     "<<CONTEXT>>", document["origin"]
-                )
+                ).strip()
                 normalization = document["normalizations"][index][0]
+                normalization = normalization["normalization"].split(":")[1].strip()
                 normalization_prompts.append(
                     {
                         "messages": [
                             {"role": "system", "content": SYSTEM_PROMPT_NORMALIZATION},
-                            {"role": "user", "content": norm_instruction_str.strip()},
-                            {
-                                "role": "assistant",
-                                "content": normalization["normalization"].split(":")[1],
-                            },
+                            {"role": "user", "content": norm_instruction_str},
+                            {"role": "assistant", "content": normalization},
                         ],
                         "type": annotation_type,
                         "task": "normalization",
                         "source": "bronco",
                         "na_prompt": False,
-                        "normalization_labels": normalization_entity,
-                        "annotation_labels": normalization["normalization"].split(":")[
-                            1
-                        ],
+                        "context": document["origin"],
+                        "context_entity": normalization_entity,
+                        "output": extraction_string,
                     }
                 )
 
@@ -345,7 +348,8 @@ def aggregate_bronco_prompts(
     treatment: bool,
     medication: bool,
     na_prompts: bool,
-    minimal_length=30,
+    minimal_length: int,
+    na_percentage: float,
 ):
     """
     Get all prompts from bronco corpus
@@ -356,6 +360,7 @@ def aggregate_bronco_prompts(
     :param treatment: If treatment prompts should be included
     :param medication: If medication prompts should be included
     :param na_prompts: If prompts without any annotations should be included
+    :param na_percentage: The percentage of na prompts that should be included
     :return: List of prompts
     """
     prompts = []
@@ -395,17 +400,17 @@ def aggregate_bronco_prompts(
     if na_prompts and extraction:
         if diagnosis:
             empty_diagnosis_prompts = get_bronco_na_prompts(
-                "DIAGNOSIS", True, minimal_length, 0.22
+                "DIAGNOSIS", True, minimal_length, na_percentage
             )
             prompts.extend(empty_diagnosis_prompts)
         if treatment:
             empty_treatment_prompts = get_bronco_na_prompts(
-                "TREATMENT", True, minimal_length, 0.22
+                "TREATMENT", True, minimal_length, na_percentage
             )
             prompts.extend(empty_treatment_prompts)
         if medication:
             empty_medication_prompts = get_bronco_na_prompts(
-                "MEDICATION", True, minimal_length, 0.22
+                "MEDICATION", True, minimal_length, na_percentage
             )
             prompts.extend(empty_medication_prompts)
 
