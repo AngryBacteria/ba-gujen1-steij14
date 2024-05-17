@@ -420,3 +420,55 @@ def aggregate_bronco_prompts(
     )
 
     return prompts
+
+
+def aggregate_bronco_label_classification():
+    """
+    Get all documents from the bronco corpus and convert them to the right format for training
+    :return: List of classification dictionaries and label dictionaries
+    """
+    classification_docs = []
+    bronco_collection = get_collection("corpus", "bronco")
+    documents = bronco_collection.find({})
+    
+    for document in documents:
+        labels = {"DIAGNOSIS": [], "MEDICATION": [], "TREATMENT": []}
+        for index, text in enumerate(document["text"]):
+            doc_type = document["type"]
+            if doc_type in labels:
+                labels[doc_type].append(doc_type)
+
+        classification_docs.append(
+            {
+                "text": document["origin"],
+                "labels": {
+                    "DIAGNOSIS": "DIAGNOSIS" in labels["DIAGNOSIS"],
+                    "MEDICATION": "MEDICATION" in labels["MEDICATION"],
+                    "TREATMENT": "TREATMENT" in labels["TREATMENT"]
+                },
+                "source": "bronco",
+            }
+        )
+
+    data = pandas.DataFrame(classification_docs)
+    classification_docs = (
+        data.groupby("text")
+        .agg(
+            {
+                "labels": lambda x: {
+                    "DIAGNOSIS": any(sublist["DIAGNOSIS"] for sublist in x),
+                    "MEDICATION": any(sublist["MEDICATION"] for sublist in x),
+                    "TREATMENT": any(sublist["TREATMENT"] for sublist in x)
+                },
+                "source": "first",
+            }
+        )
+        .reset_index()
+        .to_dict(orient="records")
+    )
+
+    unique_labels = {"DIAGNOSIS", "MEDICATION", "TREATMENT"}
+    label2id = {label: idx for idx, label in enumerate(unique_labels)}
+    id2label = {idx: label for label, idx in label2id.items()}
+
+    return classification_docs, label2id, id2label
