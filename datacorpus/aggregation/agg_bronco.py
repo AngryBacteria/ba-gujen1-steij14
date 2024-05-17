@@ -238,7 +238,7 @@ def get_bronco_prompts(
                         "na_prompt": False,
                         "context": document["origin"],
                         "context_entity": normalization_entity,
-                        "output": extraction_string,
+                        "output": normalization,
                     }
                 )
 
