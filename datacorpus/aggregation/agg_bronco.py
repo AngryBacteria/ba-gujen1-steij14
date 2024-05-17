@@ -289,58 +289,6 @@ def aggregate_bronco_ner(block_size: int):
     return ner_docs
 
 
-def aggregate_bronco_classification():
-    """
-    Get all documents from the bronco corpus and convert them to the right format for training
-    :return: List of classification dictionaries
-    """
-    classification_docs = []
-    bronco_collection = get_collection("corpus", "bronco")
-    documents = bronco_collection.find({})
-    for document in documents:
-        labels = []
-        for index, text in enumerate(document["text"]):
-            normalizations = document["normalizations"][index]
-            for normalization in normalizations:
-                if "ICD10" in normalization["normalization"]:
-                    normalization_text = normalization["normalization"].split(":")[1]
-                    if "." in normalization_text:
-                        normalization_text = normalization_text.split(".")[0]
-                        labels.append(normalization_text)
-                    else:
-                        labels.append(normalization_text)
-
-        classification_docs.append(
-            {
-                "text": document["origin"],
-                "labels": labels,
-                "source": "bronco",
-            }
-        )
-
-    data = pandas.DataFrame(classification_docs)
-    classification_docs = (
-        data.groupby("text")
-        .agg(
-            {
-                "labels": lambda x: [
-                    sublist_label for sublist in x for sublist_label in sublist
-                ],
-                "source": "first",  # Assumes all documents from the same origin have the same source
-            }
-        )
-        .reset_index()
-        .to_dict(orient="records")
-    )
-
-    unique_labels = set()
-    for doc in classification_docs:
-        for label in doc["labels"]:
-            unique_labels.add(label)
-    label2id = {label: idx for idx, label in enumerate(unique_labels)}
-    id2label = {idx: label for label, idx in label2id.items()}
-
-
 def aggregate_bronco_prompts(
     extraction: bool,
     normalization: bool,
@@ -430,7 +378,7 @@ def aggregate_bronco_label_classification():
     classification_docs = []
     bronco_collection = get_collection("corpus", "bronco")
     documents = bronco_collection.find({})
-    
+
     for document in documents:
         labels = {"DIAGNOSIS": [], "MEDICATION": [], "TREATMENT": []}
         for index, text in enumerate(document["text"]):
@@ -444,7 +392,7 @@ def aggregate_bronco_label_classification():
                 "labels": {
                     "DIAGNOSIS": "DIAGNOSIS" in labels["DIAGNOSIS"],
                     "MEDICATION": "MEDICATION" in labels["MEDICATION"],
-                    "TREATMENT": "TREATMENT" in labels["TREATMENT"]
+                    "TREATMENT": "TREATMENT" in labels["TREATMENT"],
                 },
                 "source": "bronco",
             }
@@ -458,7 +406,7 @@ def aggregate_bronco_label_classification():
                 "labels": lambda x: {
                     "DIAGNOSIS": any(sublist["DIAGNOSIS"] for sublist in x),
                     "MEDICATION": any(sublist["MEDICATION"] for sublist in x),
-                    "TREATMENT": any(sublist["TREATMENT"] for sublist in x)
+                    "TREATMENT": any(sublist["TREATMENT"] for sublist in x),
                 },
                 "source": "first",
             }

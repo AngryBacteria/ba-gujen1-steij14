@@ -13,7 +13,7 @@ from training.utils.printing import (
     print_welcome_message,
     print_with_heading,
 )
-from training.utils.gpu import print_gpu_support
+from training.utils.gpu import print_cuda_support
 import numpy as np
 from datasets import Dataset, load_dataset
 from transformers import (
@@ -50,12 +50,14 @@ NUM_LABELS = len(label2id)
 
 
 print_welcome_message()
-print_gpu_support(f"{GPU}")
+print_cuda_support(f"{GPU}")
 
 
 # Preprocess function for tokenizing the text and converting labels to the required format
 def preprocess_function(examples):
-    tokenized_inputs = tokenizer(examples["text"], truncation=True, padding=True, max_length=512)
+    tokenized_inputs = tokenizer(
+        examples["text"], truncation=True, padding=True, max_length=512
+    )
     labels = []
     for label_dict in examples["labels"]:
         label = [0] * NUM_LABELS
@@ -65,6 +67,7 @@ def preprocess_function(examples):
         labels.append(label)
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
+
 
 # Load tokenizer
 print_with_heading("Load fast tokenizer")
@@ -88,6 +91,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
     label2id=label2id,
 )
 
+
 # Load metrics
 def compute_metrics(eval_pred: EvalPrediction):
     predictions, label_ids = eval_pred
@@ -96,6 +100,7 @@ def compute_metrics(eval_pred: EvalPrediction):
     precision = precision_score(label_ids, predictions, average="weighted")
     recall = recall_score(label_ids, predictions, average="weighted")
     return {"f1": f1, "precision": precision, "recall": recall}
+
 
 # Training arguments
 print_with_heading("Training arguments")
