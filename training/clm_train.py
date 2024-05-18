@@ -243,6 +243,7 @@ if config.general.save_model:
 
 if config.general.upload_model:
     trainer.push_to_hub()
+    tokenizer.push_to_hub(f"BachelorThesis/{config.general.run_name}")
 
 # cleanup
 if config.general.wandb_logging:
