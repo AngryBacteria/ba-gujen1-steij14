@@ -209,8 +209,6 @@ if config.model.galore:  # Setup GaLore
 if config.general.debug:  # Setup logging and debugging
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-else:
-    custom_callbacks = []
 
 if config.general.wandb_logging:  # Setup wandb logging
     training_args.report_to = ["wandb"]
@@ -235,7 +233,6 @@ trainer = Trainer(
     train_dataset=tokenized_dataset["train"],
     eval_dataset=tokenized_dataset["test"],
     data_collator=data_collator_fn,
-    callbacks=custom_callbacks,
 )
 trainer.train()
 eval_results = trainer.evaluate()
