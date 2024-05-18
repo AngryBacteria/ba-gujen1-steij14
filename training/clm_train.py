@@ -119,9 +119,9 @@ tokenized_dataset = _dataset.map(
         "task",
         "source",
         "na_prompt",
-        "output",
         "context",
-        "entity",
+        "context_entity",
+        "output",
     ],
 )
 print(
