@@ -23,7 +23,6 @@ from transformers.trainer_utils import HubStrategy
 from shared.model_utils import (
     patch_tokenizer_with_template,
     patch_model_with_tokenizer,
-    ChatTemplate,
 )
 from training.utils.gpu import print_cuda_support
 from datasets import load_dataset
@@ -192,6 +191,9 @@ EVAL_STEPS, LOGGING_STEPS = get_steps_per_epoch(
 )
 training_args.eval_steps = EVAL_STEPS
 training_args.logging_steps = LOGGING_STEPS
+print_with_heading(
+    f"Logging every {LOGGING_STEPS} steps, evaluating every {EVAL_STEPS} steps"
+)
 
 if config.general.save_model:  # Setup saving
     # Bigger than one means save every x steps
