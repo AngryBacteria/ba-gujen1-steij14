@@ -173,11 +173,7 @@ training_args = TrainingArguments(
 
 # setup steps for logging and evaluation
 EVAL_STEPS, LOGGING_STEPS = get_steps_per_epoch(
-    len(tokenized_dataset["train"]),
-    BATCH_SIZE,
-    1,
-    EVALS_PER_EPOCH,
-    LOGS_PER_EPOCH,
+    len(tokenized_dataset["train"]), BATCH_SIZE, 1, EVALS_PER_EPOCH, LOGS_PER_EPOCH, 1
 )
 training_args.eval_steps = EVAL_STEPS
 training_args.logging_steps = LOGGING_STEPS

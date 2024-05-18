@@ -2,6 +2,8 @@ import os
 
 import setproctitle
 
+from datacorpus.aggregation.agg_bronco import aggregate_bronco_label_classification
+
 GPU = 0
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
@@ -15,19 +17,18 @@ from training.utils.printing import (
 )
 from training.utils.gpu import print_cuda_support
 import numpy as np
-from datasets import load_dataset
+from datasets import Dataset
 from transformers import (
     AutoTokenizer,
     DataCollatorWithPadding,
     Trainer,
     TrainingArguments,
-    EvalPrediction,
     AutoModelForSequenceClassification,
 )
 import evaluate
 
 # Config
-EPOCHS = 2
+EPOCHS = 5
 BATCH_SIZE = 8
 LEARNING_RATE = 2e-5
 TEST_SIZE = 0.2
@@ -38,16 +39,14 @@ SAVE_MODEL = False
 EVALS_PER_EPOCH = 8
 LOGS_PER_EPOCH = 2
 
-id2label = {0: "NEGATIVE", 1: "POSITIVE"}
-label2id = {"NEGATIVE": 0, "POSITIVE": 1}
-NUM_LABELS = 2
+data, id2label, label2id, NUM_LABELS = aggregate_bronco_label_classification()
 
 print_welcome_message()
 print_cuda_support(f"{GPU}")
 
 
 def preprocess_function(examples):
-    return tokenizer(examples["text"], truncation=True, padding=True, max_length=512)
+    return tokenizer(examples["origin"], truncation=True, padding=True, max_length=512)
 
 
 # Load tokenizer
@@ -56,8 +55,8 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 # Load dataset
 print_with_heading("Load dataset")
-imdb_dataset = load_dataset("imdb", split="train").train_test_split(test_size=TEST_SIZE)
-imdb_dataset_tokenized = imdb_dataset.map(preprocess_function, batched=True)
+dataset = Dataset.from_pandas(data).train_test_split(test_size=TEST_SIZE)
+dataset_tokenized = dataset.map(preprocess_function, batched=True)
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
 # Load model
@@ -67,15 +66,24 @@ model = AutoModelForSequenceClassification.from_pretrained(
     num_labels=NUM_LABELS,
     id2label=id2label,
     label2id=label2id,
+    problem_type="multi_label_classification",
 )
 
 # Load metric
-accuracy = evaluate.load("accuracy")
+clf_metrics = evaluate.combine(["accuracy", "f1", "precision", "recall"])
 
 
-def compute_metrics(eval_pred: EvalPrediction):
-    predictions = np.argmax(eval_pred.predictions, axis=1)
-    return accuracy.compute(predictions=predictions, references=eval_pred.label_ids)
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    predictions = sigmoid(predictions)
+    predictions = (predictions > 0.5).astype(int).reshape(-1)
+    return clf_metrics.compute(
+        predictions=predictions, references=labels.astype(int).reshape(-1)
+    )
 
 
 # Train
@@ -102,11 +110,7 @@ training_args = TrainingArguments(
 
 # setup steps for logging and evaluation
 EVAL_STEPS, LOGGING_STEPS = get_steps_per_epoch(
-    len(imdb_dataset_tokenized["train"]),
-    BATCH_SIZE,
-    1,
-    EVALS_PER_EPOCH,
-    LOGS_PER_EPOCH,
+    len(dataset_tokenized["train"]), BATCH_SIZE, 1, EVALS_PER_EPOCH, LOGS_PER_EPOCH, 1
 )
 training_args.eval_steps = EVAL_STEPS
 training_args.logging_steps = LOGGING_STEPS
@@ -126,8 +130,8 @@ if WANDB:
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=imdb_dataset_tokenized["train"],
-    eval_dataset=imdb_dataset_tokenized["test"],
+    train_dataset=dataset_tokenized["train"],
+    eval_dataset=dataset_tokenized["test"],
     tokenizer=tokenizer,
     data_collator=data_collator,
     compute_metrics=compute_metrics,
@@ -138,7 +142,6 @@ trainer.train()
 
 eval_results = trainer.evaluate()
 print(f"Evaluation: {eval_results}")
-
 
 if SAVE_MODEL:
     trainer.save_model("bert_classification_model")

@@ -1,6 +1,7 @@
 import random
 
 import pandas
+from sklearn.preprocessing import MultiLabelBinarizer
 
 from datacorpus.aggregation.prompts import (
     SYSTEM_PROMPT,
@@ -371,52 +372,34 @@ def aggregate_bronco_prompts(
 
 
 def aggregate_bronco_label_classification():
-    """
-    Get all documents from the bronco corpus and convert them to the right format for training
-    :return: List of classification dictionaries and label dictionaries
-    """
-    classification_docs = []
     bronco_collection = get_collection("corpus", "bronco")
-    documents = bronco_collection.find({})
+    documents = bronco_collection.find()
+    documents = list(documents)
+    df = pandas.DataFrame(documents)
+    grouped_df = df.groupby("origin").agg(lambda x: x.tolist()).reset_index()
 
-    for document in documents:
-        labels = {"DIAGNOSIS": [], "MEDICATION": [], "TREATMENT": []}
-        for index, text in enumerate(document["text"]):
-            doc_type = document["type"]
-            if doc_type in labels:
-                labels[doc_type].append(doc_type)
+    # make types unique
+    all_labels = []
+    for i, row in grouped_df.iterrows():
+        unique_types = list(set(row["type"]))
+        grouped_df.at[i, "type"] = unique_types
+        all_labels.append(unique_types)
 
-        classification_docs.append(
-            {
-                "text": document["origin"],
-                "labels": {
-                    "DIAGNOSIS": "DIAGNOSIS" in labels["DIAGNOSIS"],
-                    "MEDICATION": "MEDICATION" in labels["MEDICATION"],
-                    "TREATMENT": "TREATMENT" in labels["TREATMENT"],
-                },
-                "source": "bronco",
-            }
-        )
+    # transform into one-hot encoding
+    mlb = MultiLabelBinarizer()
+    one_hot_encoded = mlb.fit_transform(all_labels).astype(float)
+    grouped_df["labels"] = list(one_hot_encoded)
 
-    data = pandas.DataFrame(classification_docs)
-    classification_docs = (
-        data.groupby("text")
-        .agg(
-            {
-                "labels": lambda x: {
-                    "DIAGNOSIS": any(sublist["DIAGNOSIS"] for sublist in x),
-                    "MEDICATION": any(sublist["MEDICATION"] for sublist in x),
-                    "TREATMENT": any(sublist["TREATMENT"] for sublist in x),
-                },
-                "source": "first",
-            }
-        )
-        .reset_index()
-        .to_dict(orient="records")
-    )
+    # remove all other columns
+    grouped_df = grouped_df[["origin", "type", "labels"]]
 
-    unique_labels = {"DIAGNOSIS", "MEDICATION", "TREATMENT"}
-    label2id = {label: idx for idx, label in enumerate(unique_labels)}
-    id2label = {idx: label for label, idx in label2id.items()}
+    label2id = {label: idx for idx, label in enumerate(mlb.classes_)}
+    id2label = {idx: label for idx, label in enumerate(mlb.classes_)}
 
-    return classification_docs, label2id, id2label
+    print(label2id)
+    print(id2label)
+    num_labels = len(label2id)
+
+    logger.debug(f"Created {len(grouped_df)} classification datapoints")
+
+    return grouped_df, label2id, id2label, num_labels

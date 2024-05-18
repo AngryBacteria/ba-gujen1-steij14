@@ -116,6 +116,7 @@ def get_steps_per_epoch(
     gradient_accumulation: int,
     evals_per_epoch: int,
     logs_per_epoch: int,
+    amount_of_gpus: int,
 ) -> tuple[int, int]:
     """
     Calculate the number of steps per epoch for evaluation and logging.
@@ -123,7 +124,7 @@ def get_steps_per_epoch(
     """
     _steps_per_epoch = max(
         1,
-        round(training_examples / batch_size * gradient_accumulation),
+        round(training_examples / batch_size * gradient_accumulation * amount_of_gpus),
     )
     eval_steps = max(1, round(_steps_per_epoch / evals_per_epoch))
     logging_steps = max(1, round(_steps_per_epoch / logs_per_epoch))

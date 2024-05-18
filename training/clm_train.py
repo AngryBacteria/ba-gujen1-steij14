@@ -177,12 +177,14 @@ training_args = TrainingArguments(
 )
 
 # setup steps for logging and evaluation
+amount_of_gpus = len(config.general.gpu.split(","))
 EVAL_STEPS, LOGGING_STEPS = get_steps_per_epoch(
     len(tokenized_dataset["train"]),
     config.trainer.batch_size,
     config.trainer.gradient_accumulation_steps,
     config.trainer.evals_per_epoch,
     config.general.logs_per_epoch,
+    amount_of_gpus,
 )
 training_args.eval_steps = EVAL_STEPS
 training_args.logging_steps = LOGGING_STEPS
