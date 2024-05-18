@@ -33,7 +33,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
     """
 
     tokenizer, model = load_model_and_tokenizer(model_name, precision)
-
+    # TODO filter out long examples (over context length)
     _dataset = load_dataset("json", data_files={"data": "prompts.jsonl"})[
         "data"
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
