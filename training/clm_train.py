@@ -1,11 +1,12 @@
 import os
 
 import setproctitle
+
 from training.utils.config import parse_clm_config
 
 config = parse_clm_config()
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = f"{config.general.gpu}"
+os.environ["CUDA_VISIBLE_DEVICES"] = config.general.gpu
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 import torch
@@ -21,7 +22,6 @@ from training.utils.printing import (
 from transformers.trainer_utils import HubStrategy
 from shared.model_utils import patch_tokenizer_with_template, patch_model_with_tokenizer
 from training.utils.gpu import print_cuda_support
-from training.utils.custom_callbacks import GPUMemoryUsageCallback
 from datasets import load_dataset
 from transformers import (
     TrainingArguments,
@@ -32,7 +32,7 @@ from transformers import (
 
 # Welcome messages
 print_welcome_message()
-print_cuda_support(f"{config.general.gpu}")
+print_cuda_support(config.general.gpu)
 
 # Model
 if config.model.lower_precision:
@@ -209,7 +209,6 @@ if config.model.galore:  # Setup GaLore
 if config.general.debug:  # Setup logging and debugging
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-    custom_callbacks = [GPUMemoryUsageCallback(config.general.gpu, LOGGING_STEPS)]
 else:
     custom_callbacks = []
 

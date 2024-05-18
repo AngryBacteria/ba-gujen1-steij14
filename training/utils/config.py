@@ -38,7 +38,7 @@ class GeneralConfigCLM(BaseModel):
     wandb_logging: bool
     disable_annoying_warnings: bool
     run_name: Optional[str] = ""
-    gpu: int
+    gpu: str
     save_model: bool
     upload_model: bool
     output_dir: str
