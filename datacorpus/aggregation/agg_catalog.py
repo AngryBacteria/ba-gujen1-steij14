@@ -1,7 +1,7 @@
 import re
 
 from datacorpus.aggregation.prompts import (
-    SYSTEM_PROMPT_CODE,
+    SYSTEM_PROMPT_CATALOG,
     ATC_INSTRUCTION,
     ICD10GM_INSTRUCTION,
     OPS_INSTRUCTION,
@@ -38,36 +38,39 @@ def aggregate_catalog_prompts():
             code_instruction_str = ATC_INSTRUCTION.replace(
                 "<<ENTITY>>", doc["title"]
             ).strip()
+            output = f"Der ATC Code für {doc['title']} ist {doc['code']}"
+            prompt_type = "MEDICATION"
         elif doc["source"] == "icd10gm":
             code_instruction_str = ICD10GM_INSTRUCTION.replace(
                 "<<ENTITY>>", doc["title"]
             ).strip()
+            output = f"Der ICD10-GM Code für {doc['title']} ist {doc['code']}"
+            prompt_type = "DIAGNOSIS"
         elif doc["source"] == "ops":
             code_instruction_str = OPS_INSTRUCTION.replace(
                 "<<ENTITY>>", doc["title"]
             ).strip()
+            output = f"Der OPS-2017 Code für {doc['title']} ist {doc['code']}"
+            prompt_type = "TREATMENT"
         else:
             raise ValueError(f"Unknown source: {doc['source']}")
 
         prompts.append(
             {
                 "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT_CODE},
+                    {"role": "system", "content": SYSTEM_PROMPT_CATALOG},
                     {"role": "user", "content": code_instruction_str},
-                    {"role": "assistant", "content": doc["code"]},
+                    {"role": "assistant", "content": output},
                 ],
-                "type": "",
-                "task": "code",
+                "type": prompt_type,
+                "task": "catalog",
                 "source": doc["source"],
                 "na_prompt": False,
                 "context": doc["title"],
-                "context_entity": doc["title"],
-                "output": doc["code"],
+                "context_entity": "",
+                "output": output,
             }
         )
 
     logger.debug(f"Aggregated {len(prompts)} prompts for code task from catalogs.")
     return prompts
-
-
-aggregate_catalog_prompts()

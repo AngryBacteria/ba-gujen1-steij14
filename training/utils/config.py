@@ -124,10 +124,7 @@ def get_steps_per_epoch(
     """
     _steps_per_epoch = max(
         1,
-        round(
-            training_examples
-            / (batch_size * gradient_accumulation)
-        ),
+        round(training_examples / (batch_size * gradient_accumulation)),
     )
     eval_steps = max(1, round(_steps_per_epoch / evals_per_epoch))
     logging_steps = max(1, round(_steps_per_epoch / logs_per_epoch))

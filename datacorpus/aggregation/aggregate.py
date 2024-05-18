@@ -9,6 +9,7 @@ from datacorpus.aggregation.agg_cardio import (
     aggregate_cardio_prompts,
     aggregate_cardio_ner,
 )
+from datacorpus.aggregation.agg_catalog import aggregate_catalog_prompts
 from datacorpus.aggregation.agg_ggponc import (
     aggregate_ggponc_prompts,
     aggregate_ggponc_ner,
@@ -43,9 +44,22 @@ def save_all_prompts(
     cardio: bool,
     normalization: bool,
     summarization: bool,
+    catalog: bool,
     na_prompts: bool,
     minimal_length=15,
 ):
+    """
+    Save all prompts in a unified format to a json file and print some examples.
+    :param bronco: include prompts for the bronco dataset
+    :param ggponc: include prompts for the ggponc dataset
+    :param cardio: include prompts for the cardio dataset
+    :param normalization: include prompts for the normalization task
+    :param summarization: include prompts for the summarization task
+    :param catalog: include prompts for the catalog task
+    :param na_prompts: include prompts with NA values
+    :param minimal_length: minimal length for the prompts
+    :return:
+    """
     # get prompts from the datasets
     prompts = []
     if ggponc:
@@ -75,6 +89,9 @@ def save_all_prompts(
     if summarization:
         synthetic_prompts = aggregate_synthetic_prompts()
         prompts.extend(synthetic_prompts)
+    if catalog:
+        catalog_prompts = aggregate_catalog_prompts()
+        prompts.extend(catalog_prompts)
 
     # filter out unique prompts
     prompts = get_unique_prompts(prompts)
@@ -140,6 +157,7 @@ save_all_prompts(
     cardio=True,
     normalization=True,
     summarization=True,
+    catalog=True,
     na_prompts=True,
     minimal_length=15,
 )
