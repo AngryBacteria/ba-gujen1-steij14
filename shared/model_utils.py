@@ -106,7 +106,6 @@ def patch_tokenizer_with_template(
         use_fast=True,
         add_eos_token=False,
         add_bos_token=False,
-        padding_side="left",
     )
     # add special tokens
     tokenizer.eos_token = template.value["eos_token"]

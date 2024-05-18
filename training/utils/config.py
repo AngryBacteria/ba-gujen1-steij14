@@ -122,19 +122,13 @@ def get_steps_per_epoch(
     Calculate the number of steps per epoch for evaluation and logging.
     :return:
     """
-    if batch_size == 1:
-        _steps_per_epoch = max(
-            1,
-            round(training_examples / (2 * gradient_accumulation * amount_of_gpus)),
-        )
-    else:
-        _steps_per_epoch = max(
-            1,
-            round(
-                training_examples
-                / (batch_size * gradient_accumulation * amount_of_gpus)
-            ),
-        )
+    _steps_per_epoch = max(
+        1,
+        round(
+            training_examples
+            / (batch_size * gradient_accumulation)
+        ),
+    )
     eval_steps = max(1, round(_steps_per_epoch / evals_per_epoch))
     logging_steps = max(1, round(_steps_per_epoch / logs_per_epoch))
 
