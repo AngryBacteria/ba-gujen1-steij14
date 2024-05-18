@@ -22,7 +22,6 @@ Schlüsseldaten beizubehalten:\n\n<<CONTEXT>>\n"""
 load_dotenv()
 openai_key = os.getenv("OPENAI_KEY")
 client = OpenAI(
-    # This is the default and can be omitted
     api_key=openai_key,
 )
 
@@ -54,6 +53,7 @@ def create_summary_data_from_lc2():
                 }
             )
 
+    logger.debug(f"Created {len(output)} summaries from lc2 data.")
     return output
 
 
@@ -85,6 +85,7 @@ def create_summary_data_from_clef2019(amount: int):
                 }
             )
 
+    logger.debug(f"Created {len(output)} summaries from clef data.")
     return output
 
 
@@ -165,7 +166,7 @@ def upload_summary_data_to_mongodb(lc2: bool, clef: bool, dev4med: bool):
         data_lc2 = create_summary_data_from_lc2()
         data.extend(data_lc2)
     if clef:
-        data_clef = create_summary_data_from_clef2019(50)
+        data_clef = create_summary_data_from_clef2019(100)
         data.extend(data_clef)
     if dev4med:
         data_dev4med = get_dev4med_data()
@@ -175,4 +176,4 @@ def upload_summary_data_to_mongodb(lc2: bool, clef: bool, dev4med: bool):
 
 
 # print(count_synthetic_tokens())
-upload_summary_data_to_mongodb(True, False, True)
+upload_summary_data_to_mongodb(True, True, True)

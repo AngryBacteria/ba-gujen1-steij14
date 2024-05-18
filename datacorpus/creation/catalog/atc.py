@@ -4,8 +4,8 @@ from shared.mongodb import upload_data_to_mongodb
 
 # DATA SOURCE: Unknown origin. (Medication_Pharmacode_ATC.xlsx)
 
-# Path to the excel file
-EXCEL_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\atc\\Medication_Pharmacode_ATC.xlsx"
+# Path to the Excel file
+EXCEL_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\atc\\Medication_Pharmacode_ATC.xlsx"
 
 
 def create_atc_db() -> None:
@@ -14,12 +14,12 @@ def create_atc_db() -> None:
         "pharmacode",
         "productcode",
         "text",
-        "name",
+        "title",
         "dose",
         "form",
         "package_type",
         "package_size",
-        "atc",
+        "code",
         "ingredient",
         "manufacturer",
         "btm",
@@ -30,16 +30,16 @@ def create_atc_db() -> None:
     # Remove empty rows and strip strings
     data = data.map(lambda x: x.strip() if isinstance(x, str) else x)
     data = data[data["pharmacode"] != ""]
-    data = data[data["name"] != ""]
+    data = data[data["title"] != ""]
     data = data[data["text"] != ""]
-    data = data[data["atc"] != ""]
+    data = data[data["code"] != ""]
 
     # Fill NaN values with empty string
     data = data.fillna("")
 
-    # Group by name and atc and keep other important fields as array
+    # Group by title and atc_code and keep other important fields as array
     grouped_df = (
-        data.groupby(["name", "atc"])
+        data.groupby(["title", "code"])
         .agg(
             {
                 "pharmacode": lambda x: x.tolist(),

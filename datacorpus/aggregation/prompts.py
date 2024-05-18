@@ -3,7 +3,7 @@
 # SYSTEM PROMPTS
 SYSTEM_PROMPT = "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren."
 SYSTEM_PROMPT_NORMALIZATION = "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, medizinischen Entitäten wie Medikamenten, Symptomen oder Diagnosen und Prozeduren entsprechende Codierungen zuzuordnen."
-SYSTEM_PROMPT_SUMMARIZATION = "Du bist ein fortschrittlicher Algorithmus, der darauf spezialisiert ist, aus umfangreichen Texten die Hauptpunkte zu extrahieren und sie in einer prägnanten, zusammengefassten Form darzustellen. Deine Aufgabe ist es, den Kerninhalt effektiv zu erfassen und dabei wichtige Details, Schlussfolgerungen und Argumentationsstränge beizubehalten."
+SYSTEM_PROMPT_SUMMARIZATION = "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus umfangreichen Texten die Hauptpunkte zu extrahieren und sie in einer prägnanten, zusammengefassten Form darzustellen. Deine Aufgabe ist es, den Kerninhalt effektiv zu erfassen und dabei wichtige Details, Schlussfolgerungen und Argumentationsstränge beizubehalten."
 
 # SUMMARY PROMPTS
 SUMMARY_INSTRUCTION = """Bitte fasse den folgenden klinischen Text präzise zusammen. Stelle sicher, dass alle wichtigen klinischen Informationen erhalten bleiben:
@@ -20,7 +20,7 @@ MEDICATION_INSTRUCTION_LEVEL_OF_TRUTH = """Extrahiere alle Medikamente aus dem f
 MEDICATION_NORMALIZATION_INSTRUCTION = """Weise dem im Text genannten Medikament „<<ENTITY>>“ den entsprechenden ATC-Code zu:
 
 <<CONTEXT>>"""
-MEDICATION_INSTRUCTION_ATTRIBUTES = """Extrahiere alle Medikamente aus folgenden Text. Für jedes extrahierte Medikament, füge falls vorhanden in eckigen Klammern die FREQUENZ und DOSIERUNG des Medikaments hinzu. Falls beides nicht vorhanden ist, füge leere eckige Klammern ein. Falls keine Medikamente im Text vorhanden sind, schreibe "Keine vorhanden":
+MEDICATION_INSTRUCTION_ATTRIBUTES = """Extrahiere alle Medikamente aus dem folgenden Text. Für jedes extrahierte Medikament, füge falls vorhanden in eckigen Klammern die FREQUENZ und DOSIERUNG des Medikaments hinzu. Falls beides nicht vorhanden ist, füge leere eckige Klammern ein. Falls keine Medikamente im Text vorhanden sind, schreibe "Keine vorhanden":
 
 <<CONTEXT>>"""
 

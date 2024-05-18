@@ -14,6 +14,8 @@ by the `aggregate.py` script, which outputs the data into jsonl files. The subsc
 extraction and normalization.
 - **agg_cardio.py**: Transforms the Cardio:DE dataset into an NER and instruction tuning format. Includes only the task 
 extraction.
+- **agg_catalog.py**: Transforms medical catalog data, such as icd10gm code descriptions, into an instruction tuning
+format.
 - **agg_ggponc.py**: Transforms the GGPONC2 dataset into an NER and instruction tuning format. Includes only the task 
 extraction.
 - **agg_synthetic.py**: Transforms the synthetic data from the database into the instruction tuning format. This 
