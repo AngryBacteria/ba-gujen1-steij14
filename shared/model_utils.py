@@ -92,7 +92,7 @@ class ModelPrecision(Enum):
 
 def patch_tokenizer_with_template(
     tokenizer_name="LeoLM/leo-mistral-hessianai-7b",
-    template=ChatTemplate.ALPACA_MISTRAL,
+    template=ChatTemplate.ALPACA_LLAMA3,
 ):
     """
     Helper function to load a tokenizer with a specific chat template and special tokens.
@@ -152,7 +152,7 @@ def load_model_and_tokenizer(
     precision: ModelPrecision,
     patch_model=False,
     patch_tokenizer=False,
-    template=ChatTemplate.ALPACA_MISTRAL,
+    template=ChatTemplate.ALPACA_LLAMA3,
 ):
     """
     Helper function to load a model and tokenizer with a specific precision and chat template.
@@ -363,3 +363,10 @@ def count_tokens(
 
     else:
         raise ValueError("Either pass a tokenizer or a tokenizer name.")
+
+
+if __name__ == "__main__":
+    test_generation(
+        model_name="mistral_instruction_low_precision",
+        precision=ModelPrecision.SIXTEEN_BIT,
+    )

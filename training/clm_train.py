@@ -20,7 +20,11 @@ from training.utils.printing import (
     print_with_heading,
 )
 from transformers.trainer_utils import HubStrategy
-from shared.model_utils import patch_tokenizer_with_template, patch_model_with_tokenizer
+from shared.model_utils import (
+    patch_tokenizer_with_template,
+    patch_model_with_tokenizer,
+    ChatTemplate,
+)
 from training.utils.gpu import print_cuda_support
 from datasets import load_dataset
 from transformers import (
@@ -242,6 +246,7 @@ print(f"Evaluation: {eval_results}")
 
 if config.general.save_model:
     trainer.save_model(config.general.output_dir)
+    tokenizer.save_pretrained(config.general.output_dir)
 
 if config.general.upload_model:
     trainer.push_to_hub()

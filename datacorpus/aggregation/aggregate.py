@@ -15,7 +15,7 @@ from datacorpus.aggregation.agg_ggponc import (
 )
 from datacorpus.aggregation.agg_synthetic import aggregate_synthetic_prompts
 from shared.logger import logger
-from shared.model_utils import patch_tokenizer_with_template
+from shared.model_utils import patch_tokenizer_with_template, ChatTemplate
 
 
 # Takes all aggregation functions from the individual sources and combines them into the required format for the
