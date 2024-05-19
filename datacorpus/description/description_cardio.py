@@ -318,11 +318,12 @@ def show_top_labels_barplot(df: DataFrame, annotation_types=None) -> None:
     fig.show()
 
 
-# save_to_csv()
-df = read_from_csv("cardio_description.csv")
-df2 = read_from_csv("cardio_full_text.csv")
-# data used in paper (tokens calculated in create script)
-show_type_pieplot(df)
-show_lengths_boxplot(df2, tokenize=True)
-print(get_number_of_annotations(df))
-print(get_number_of_attributes(df))
+if __name__ == "__main__":
+    # save_to_csv()
+    df = read_from_csv("cardio_description.csv")
+    df2 = read_from_csv("cardio_full_text.csv")
+    # data used in paper (tokens calculated in create script)
+    show_type_pieplot(df)
+    show_lengths_boxplot(df2, tokenize=True)
+    print(get_number_of_annotations(df))
+    print(get_number_of_attributes(df))

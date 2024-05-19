@@ -310,4 +310,5 @@ def build_doccheck_corpus(from_file=False):
     client.close()
 
 
-build_doccheck_corpus(from_file=True)
+if __name__ == "__main__":
+    build_doccheck_corpus(from_file=True)

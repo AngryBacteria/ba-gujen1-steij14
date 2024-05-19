@@ -60,4 +60,5 @@ def build_bund_db():
     client.close()
 
 
-build_bund_db()
+if __name__ == "__main__":
+    build_bund_db()

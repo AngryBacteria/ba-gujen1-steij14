@@ -201,5 +201,6 @@ def build_ggponc_db():
     upload_data_to_mongodb(data_long_ner, "corpus", "ggponc_long_ner", True, [])
 
 
-# print(count_ggponc_tokens())
-build_ggponc_db()
+if __name__ == "__main__":
+    print(count_ggponc_tokens())
+    build_ggponc_db()

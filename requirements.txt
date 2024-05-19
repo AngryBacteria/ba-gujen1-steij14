@@ -25,3 +25,5 @@ seqeval==1.2.2
 huggingface-hub==0.22.2
 safetensors==0.4.3
 openai==1.25.2
+rouge_score==0.1.2
+nltk==3.8.1

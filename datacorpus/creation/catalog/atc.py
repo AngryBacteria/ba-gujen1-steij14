@@ -61,4 +61,5 @@ def create_atc_db() -> None:
     upload_data_to_mongodb(grouped_df, "catalog", "atc", True, [])
 
 
-create_atc_db()
+if __name__ == "__main__":
+    create_atc_db()

@@ -413,5 +413,6 @@ def build_cardio_db():
     upload_data_to_mongodb(heldout_text, "corpus", "cardio_heldout", True, [])
 
 
-# print(count_cardio_tokens())
-build_cardio_db()
+if __name__ == "__main__":
+    # print(count_cardio_tokens())
+    build_cardio_db()

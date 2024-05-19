@@ -301,5 +301,6 @@ def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False) -> None:
     upload_data_to_mongodb(merged_output, "catalog", collection_name, True, ["code"])
 
 
-create_icd10_db_from_xml(icd10gm=True, add_alphabet=True)
-create_icd10_db_from_xml(icd10gm=False, add_alphabet=True)
+if __name__ == "__main__":
+    create_icd10_db_from_xml(icd10gm=True, add_alphabet=True)
+    create_icd10_db_from_xml(icd10gm=False, add_alphabet=True)

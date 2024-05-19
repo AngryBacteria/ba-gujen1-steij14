@@ -62,4 +62,5 @@ def build_jsyncc_db() -> None:
     upload_data_to_mongodb(corpus, "corpus", "jsyncc", True, [])
 
 
-build_jsyncc_db()
+if __name__ == "__main__":
+    build_jsyncc_db()

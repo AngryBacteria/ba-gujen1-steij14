@@ -105,4 +105,5 @@ def create_snomed_db() -> None:
     upload_data_to_mongodb(data, "catalog", "snomed_core", True, ["cid"])
 
 
-create_snomed_db()
+if __name__ == "__main__":
+    create_snomed_db()

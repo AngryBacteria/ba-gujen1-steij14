@@ -33,7 +33,6 @@ def get_ggponc_instruction(annotation_type: str):
     return extraction_instruction
 
 
-# TODO: add prompts with no annotation for the entity, but that have annotations for other entities
 def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: int):
     """
     Generic function to get prompts from the ggponc corpus

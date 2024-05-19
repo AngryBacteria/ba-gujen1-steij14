@@ -63,5 +63,6 @@ def show_text_length_boxplot(df: DataFrame, text_type: str, tokenize: bool = Fal
     fig.show()
 
 
-df = read_from_csv()
-show_text_length_boxplot(df, "origin", tokenize=True)
+if __name__ == "__main__":
+    df = read_from_csv()
+    show_text_length_boxplot(df, "origin", tokenize=True)

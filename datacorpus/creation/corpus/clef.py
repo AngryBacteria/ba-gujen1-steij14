@@ -50,5 +50,6 @@ for filename in os.listdir(text_files_folder_path):
         logger.debug(f"Parsed {file_id} from CLEF eHealth corpus.")
     logger.debug(f"Parsed {len(data)} documents from CLEF eHealth corpus.")
 
-# Upload to MongoDB
-upload_data_to_mongodb(data, "corpus", "clef2019", True, ["document"])
+
+if __name__ == "__main__":
+    upload_data_to_mongodb(data, "corpus", "clef2019", True, ["document"])

@@ -24,4 +24,5 @@ def build_ncbi_disease_db():
     upload_data_to_mongodb(data, "corpus_en", "ncbi_disease", True, [])
 
 
-build_ncbi_disease_db()
+if __name__ == "__main__":
+    build_ncbi_disease_db()

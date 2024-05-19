@@ -275,5 +275,6 @@ def create_bronco_db() -> None:
     upload_data_to_mongodb(data_ner, "corpus", "bronco_ner", True, [])
 
 
-# print(count_bronco_tokens())
-create_bronco_db()
+if __name__ == "__main__":
+    print(count_bronco_tokens())
+    create_bronco_db()

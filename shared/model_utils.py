@@ -1,5 +1,7 @@
 import os
 
+from shared.logger import logger
+
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 import re
@@ -276,12 +278,16 @@ def get_model_output_only(full_output: str, template: ChatTemplate) -> str | Non
     if len(parsed) > 1:
         return parsed[1].strip()
     else:
+        logger.warning(
+            f"No model output found. The template was {template.name} in the model response: {full_output}"
+        )
         return None
 
 
-def get_extractions_only(string_input: str):
+def get_extractions_without_attributes(string_input: str):
     """
-    Get all extractions from a string input. The string has to be in the typical form of a prompt output:
+    Get all extractions without attributes from a string input.
+    The string has to be in the typical form of a prompt output:
     extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
     :param string_input: The string input to get the extractions from.
     """
@@ -290,6 +296,9 @@ def get_extractions_only(string_input: str):
     extractions = string_input.split("|")
     extractions = [extraction.strip() for extraction in extractions]
     extractions = list(set(extractions))
+
+    if len(extractions) == 0:
+        logger.warning(f"No extractions found in the string: {string_input}")
 
     return extractions
 
@@ -306,11 +315,20 @@ def remove_brackets(string_input: str):
 
 
 def get_extractions_with_attributes(string_input: str):
+    """
+    Get all extractions with attributes from a string input.
+    The string has to be in the typical form of a prompt output:
+    extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
+    :param string_input: The string input to get the extractions from.
+    """
     # TODO: return the extractions and attributes as list, not just a string like here :(
     string_input = string_input.strip().lower()
     extractions = string_input.split("|")
     extractions = [extraction.strip() for extraction in extractions]
     extractions = list(set(extractions))
+
+    if len(extractions) == 0:
+        logger.warning(f"No extractions found in the string: {string_input}")
 
     return extractions
 

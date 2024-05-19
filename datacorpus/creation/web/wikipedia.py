@@ -325,4 +325,5 @@ def build_wikipedia_db(categories: list[str], from_file=True):
     client.close()
 
 
-build_wikipedia_db(relevant_categories, from_file=True)
+if __name__ == "__main__":
+    build_wikipedia_db(relevant_categories, from_file=True)

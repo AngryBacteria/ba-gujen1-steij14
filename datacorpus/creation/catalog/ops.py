@@ -120,4 +120,5 @@ def upload_ops_metadata(
     upload_data_to_mongodb(output, "catalog", "ops", True, ["code"])
 
 
-upload_ops_metadata(True, False, False, True)
+if __name__ == "__main__":
+    upload_ops_metadata(True, False, False, True)

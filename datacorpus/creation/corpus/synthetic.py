@@ -175,5 +175,6 @@ def upload_summary_data_to_mongodb(lc2: bool, clef: bool, dev4med: bool):
     upload_data_to_mongodb(data, "corpus", "synthetic", True, [])
 
 
-# print(count_synthetic_tokens())
-upload_summary_data_to_mongodb(True, True, True)
+if __name__ == "__main__":
+    print(count_synthetic_tokens())
+    upload_summary_data_to_mongodb(True, True, True)

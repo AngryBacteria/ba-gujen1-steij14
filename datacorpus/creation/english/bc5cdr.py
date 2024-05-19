@@ -45,4 +45,5 @@ def build_bc5cdr_db():
     upload_data_to_mongodb(data, "corpus_en", "bc5cdr", True, [])
 
 
-build_bc5cdr_db()
+if __name__ == "__main__":
+    build_bc5cdr_db()
