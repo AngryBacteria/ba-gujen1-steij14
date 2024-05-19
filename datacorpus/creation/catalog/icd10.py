@@ -1,9 +1,11 @@
+import re
 import xml.etree.ElementTree as et
 
 import pandas as pd
 from pandas import DataFrame
 
-from shared.mongodb import upload_data_to_mongodb
+from shared.model_utils import count_tokens
+from shared.mongodb import upload_data_to_mongodb, get_collection
 from shared.logger import logger
 
 # DATA SOURCE: https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html
@@ -301,6 +303,24 @@ def create_icd10_db_from_xml(icd10gm=True, add_alphabet=False) -> None:
     upload_data_to_mongodb(merged_output, "catalog", collection_name, True, ["code"])
 
 
+def count_icd10_tokens(icd10gm: bool):
+    """Count the number of tokens in the icd10who and icd10gm collections."""
+    if icd10gm:
+        icd10_collection = get_collection("catalog", "icd10gm")
+    else:
+        icd10_collection = get_collection("catalog", "icd10who")
+    icd10_pattern = re.compile(r"^(?!.*\.).*$", re.IGNORECASE)
+    icd10_docs = icd10_collection.find({"code": {"$regex": icd10_pattern}})
+    texts = [f"{doc['title']} {doc['code']}" for doc in icd10_docs]
+    tokens = count_tokens(texts, tokenizer_name="LeoLM/leo-mistral-hessianai-7b")
+    logger.debug(
+        f"Used {icd10_collection.count_documents({'code': {'$regex': icd10_pattern}})} ICD-10 documents."
+    )
+
+    return tokens
+
+
 if __name__ == "__main__":
-    create_icd10_db_from_xml(icd10gm=True, add_alphabet=True)
-    create_icd10_db_from_xml(icd10gm=False, add_alphabet=True)
+    print(count_icd10_tokens(True))
+    # create_icd10_db_from_xml(icd10gm=True, add_alphabet=True)
+    # create_icd10_db_from_xml(icd10gm=False, add_alphabet=True)

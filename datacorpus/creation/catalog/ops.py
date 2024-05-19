@@ -1,7 +1,11 @@
 # DATA SOURCE: https://www.bfarm.de/SharedDocs/Downloads/DE/Kodiersysteme/klassifikationen/ops/vorgaenger-bis-2020/
+import re
+
 import pandas as pd
 
-from shared.mongodb import upload_data_to_mongodb
+from shared.logger import logger
+from shared.model_utils import count_tokens
+from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # Paths to the various OPS classification files. Includes metadata and alphabet
 OPS_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\ops2024syst_kodes.txt"
@@ -120,5 +124,20 @@ def upload_ops_metadata(
     upload_data_to_mongodb(output, "catalog", "ops", True, ["code"])
 
 
+def count_ops_tokens():
+    """Count the number of tokens in the ops collection."""
+    ops_collection = get_collection("catalog", "ops")
+    ops_pattern = re.compile(r"^(?!.*\.).*$", re.IGNORECASE)
+    ops_docs = ops_collection.find({"code": {"$regex": ops_pattern}})
+    texts = [f"{doc['title']} {doc['code']}" for doc in ops_docs]
+    tokens = count_tokens(texts, tokenizer_name="LeoLM/leo-mistral-hessianai-7b")
+    logger.debug(
+        f"Used {ops_collection.count_documents({'code': {'$regex': ops_pattern}})} OPS documents."
+    )
+
+    return tokens
+
+
 if __name__ == "__main__":
-    upload_ops_metadata(True, False, False, True)
+    print(count_ops_tokens())
+    # upload_ops_metadata(True, False, False, True)

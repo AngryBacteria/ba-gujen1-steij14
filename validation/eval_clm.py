@@ -74,7 +74,7 @@ def calculate_metrics_from_prompts(
         prompt = tokenizer.apply_chat_template(
             example["messages"], tokenize=False, add_generation_prompt=True
         )
-        logger.debug("Prompt: ", prompt)
+        logger.debug(f"Prompt: {prompt}")
         # get the ground truth_string from the full_prompt
         truth_string = example["messages"][-1]["content"]
         if truth_string is None:
@@ -267,9 +267,9 @@ def aggregate_metrics(file_name: str):
 
 
 if __name__ == "__main__":
-    calculate_metrics_from_prompts(
-        ModelPrecision.FOUR_BIT,
-        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
-        4096,
-    )
-    # aggregate_metrics("validation_results_4bit.json")
+    # calculate_metrics_from_prompts(
+    #     ModelPrecision.FOUR_BIT,
+    #     "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
+    #     4096,
+    # )
+    aggregate_metrics("validation_results_4bit.json")

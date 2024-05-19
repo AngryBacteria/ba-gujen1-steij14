@@ -1,6 +1,8 @@
 import pandas as pd
 
-from shared.mongodb import upload_data_to_mongodb
+from shared.logger import logger
+from shared.model_utils import count_tokens
+from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # DATA SOURCE: Unknown origin. (Medication_Pharmacode_ATC.xlsx)
 
@@ -61,5 +63,17 @@ def create_atc_db() -> None:
     upload_data_to_mongodb(grouped_df, "catalog", "atc", True, [])
 
 
+def count_atc_tokens():
+    """Count the number of tokens in the ATC collection."""
+    atc_collection = get_collection("catalog", "atc")
+    atc_docs = atc_collection.find({})
+    texts = [f"{doc['title']} {doc['code']}" for doc in atc_docs]
+    tokens = count_tokens(texts, tokenizer_name="LeoLM/leo-mistral-hessianai-7b")
+    logger.debug(f"Used {atc_collection.count_documents({})} ATC documents.")
+
+    return tokens
+
+
 if __name__ == "__main__":
-    create_atc_db()
+    print(count_atc_tokens())
+    # create_atc_db()

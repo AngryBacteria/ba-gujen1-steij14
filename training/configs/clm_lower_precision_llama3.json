@@ -3,7 +3,7 @@
     "debug": true,
     "wandb_logging": true,
     "disable_annoying_warnings": false,
-    "run_name": "LLama3_V01_BRONCO_CARDIO_SUMMARY",
+    "run_name": "LLama3_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
     "gpu": "0,1",
     "save_model": true,
     "upload_model": true,
