@@ -100,7 +100,7 @@ class ModelPrecision(Enum):
 
 def patch_tokenizer_with_template(
     tokenizer_name="LeoLM/leo-mistral-hessianai-7b",
-    template=ChatTemplate.ALPACA_GEMMA,
+    template=ChatTemplate.ALPACA_MISTRAL,
 ):
     """
     Helper function to load a tokenizer with a specific chat template and special tokens.
@@ -160,7 +160,7 @@ def load_model_and_tokenizer(
     precision: ModelPrecision,
     patch_model=False,
     patch_tokenizer=False,
-    template=ChatTemplate.ALPACA_GEMMA,
+    template=ChatTemplate.ALPACA_MISTRAL,
 ):
     """
     Helper function to load a model and tokenizer with a specific precision and chat template.
@@ -199,10 +199,10 @@ def load_model_and_tokenizer(
     else:
         raise ValueError("Precision has to be 4, 8, 16 or 32")
 
-    if patch_model:
-        model = patch_model_with_tokenizer(model, tokenizer)
     if patch_tokenizer:
         tokenizer = patch_tokenizer_with_template(template=template)
+    if patch_model:
+        model = patch_model_with_tokenizer(model, tokenizer)
 
     return tokenizer, model
 
@@ -376,6 +376,6 @@ def count_tokens(
 
 if __name__ == "__main__":
     test_generation(
-        model_name="mistral_instruction_low_precision",
-        precision=ModelPrecision.SIXTEEN_BIT,
+        model_name="S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
+        precision=ModelPrecision.FOUR_BIT,
     )

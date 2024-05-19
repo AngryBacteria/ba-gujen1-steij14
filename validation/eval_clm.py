@@ -21,7 +21,9 @@ from datasets import load_dataset
 import pandas as pd
 
 
-def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
+def calculate_metrics_from_prompts(
+    precision: ModelPrecision, model_name: str, trained_sequence_length: int
+):
     """
     Calculates the metrics precision, recall and f1 score for the extraction task. The model makes a precision which
     is then compared to the ground truth (the full prompt with answer). The model is evaluated on the prompts.jsonl
@@ -29,6 +31,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
     Right now the attribute metrics are not saved in an intelligent way, this should be done (TODO: do it).
     :param precision: The precision to load the model in (16bit recommended)
     :param model_name: The name of the model to load
+    :param trained_sequence_length: The sequence length the model was trained on
     :return: None the data is saved to a file
     """
 
@@ -42,6 +45,18 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
 
     output = []
     for i, example in enumerate(test_data):
+        # skip examples not in the right task
+        if example["task"] not in ["extraction", "normalization"]:
+            logger.warn(f"Skipping example {i} with task {example['task']}")
+            continue
+        # skip examples that are too long
+        _tokenized = tokenizer.apply_chat_template(
+            example["messages"], tokenize=True, add_generation_prompt=True
+        )
+        if len(_tokenized) > trained_sequence_length:
+            logger.warn(f"Skipping example {i} with length {len(_tokenized)}")
+            continue
+
         # create the model_instruction for the model
         instruction = tokenizer.apply_chat_template(
             example["messages"][:-1], tokenize=False, add_generation_prompt=True
@@ -64,6 +79,7 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
         # get the model output
         _start_time = datetime.datetime.now()
         _inputs = tokenizer(instruction, return_tensors="pt").to("cuda:0")
+
         _outputs = model.generate(**_inputs, max_new_tokens=1000)
         output_string = tokenizer.decode(_outputs[0], skip_special_tokens=True)
         output_string_raw = tokenizer.decode(_outputs[0], skip_special_tokens=False)
@@ -81,11 +97,11 @@ def calculate_metrics_from_prompts(precision: ModelPrecision, model_name: str):
         # Extraction and normalization validations
         truth = get_extractions_only(truth_string)
         prediction = get_extractions_only(prediction_string)
-        logger.debug(f"Truth (extraction           : {truth}")
-        logger.debug(f"Prediction (extraction      : {prediction}")
-        logger.debug(f"Execution time (extraction) : {execution_time}")
+        logger.debug(f"Truth (extraction/normalization)          : {truth}")
+        logger.debug(f"Prediction (extraction/normalization)     : {prediction}")
+        logger.debug(f"Execution time (extraction/normalization) : {execution_time}")
         metrics = calculate_string_validation_metrics(truth, prediction)
-        logger.debug(f"Metrics (extraction)        : {metrics}")
+        logger.debug(f"Metrics (extraction/normalization)        : {metrics}")
         output.append(
             {
                 "model": model_name,
@@ -197,4 +213,10 @@ def aggregate_metrics(file_name: str):
         logger.debug(f"{60 * '-'}")
 
 
-aggregate_metrics("validation_results_4bit.json")
+if __name__ == "__main__":
+    calculate_metrics_from_prompts(
+        ModelPrecision.FOUR_BIT,
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
+        4096,
+    )
+    # aggregate_metrics("validation_results_4bit.json")
