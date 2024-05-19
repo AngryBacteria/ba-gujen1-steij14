@@ -1,10 +1,10 @@
 {
   "general": {
     "debug": true,
-    "wandb_logging": false,
+    "wandb_logging": true,
     "disable_annoying_warnings": false,
     "run_name": "Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
-    "gpu": "0",
+    "gpu": "0,1",
     "save_model": true,
     "upload_model": true,
     "output_dir": "gemma2b_instruction_base",
@@ -20,15 +20,15 @@
     "galore": false
   },
   "data_processing": {
-    "sequence_length": 8192,
+    "sequence_length": 4096,
     "processing_threads": 1,
     "test_size": 0.1
   },
   "trainer": {
     "epochs": 5,
-    "batch_size": 8,
+    "batch_size": 4,
     "evals_per_epoch": 4,
-    "optimizer": "adamw_torch_fused",
+    "optimizer": "adamw_8bit",
     "learning_rate": 0.00005,
     "warmup_steps": 100,
     "gradient_accumulation_steps": 1,

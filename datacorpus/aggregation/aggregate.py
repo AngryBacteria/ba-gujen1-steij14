@@ -157,7 +157,7 @@ save_all_prompts(
     cardio=True,
     normalization=True,
     summarization=True,
-    catalog=True,
+    catalog=False,
     na_prompts=True,
     minimal_length=15,
 )
