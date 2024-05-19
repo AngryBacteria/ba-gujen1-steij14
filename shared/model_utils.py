@@ -33,6 +33,14 @@ class ChatTemplate(Enum):
         "pad_token": "<|end_of_text|>",
         "generation_start": "### Antwort:",
     }
+    # Alpaca instruction format. Meant for only one instruction and one response. Padding tokens for Gemma
+    ALPACA_GEMMA = {
+        "template": "{% if messages[0]['role'] == 'system' %}{% set loop_messages = messages[1:] %}{% set system_message = messages[0]['content'].strip() + '\n\n' %}{% else %}{% set loop_messages = messages %}{% set system_message = '' %}{% endif %}{{ bos_token + system_message }}{% for message in loop_messages %}{% if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}{{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}{% endif %}{% if message['role'] == 'user' %}{{ '### Anweisung:\n' + message['content'].strip() + '\n\n' }}{% elif message['role'] == 'assistant' %}{{ '### Antwort:\n' + message['content'].strip() + eos_token + '\n\n' }}{% endif %}{% if loop.last and message['role'] == 'user' and add_generation_prompt %}{{ '### Antwort:\n' }}{% endif %}{% endfor %}",
+        "bos_token": "<bos>",
+        "eos_token": "<eos>",
+        "pad_token": "<pad>",
+        "generation_start": "### Antwort:",
+    }
 
 
 def load_template_from_jinja(file_name="template"):
@@ -92,7 +100,7 @@ class ModelPrecision(Enum):
 
 def patch_tokenizer_with_template(
     tokenizer_name="LeoLM/leo-mistral-hessianai-7b",
-    template=ChatTemplate.ALPACA_LLAMA3,
+    template=ChatTemplate.ALPACA_GEMMA,
 ):
     """
     Helper function to load a tokenizer with a specific chat template and special tokens.
@@ -109,7 +117,8 @@ def patch_tokenizer_with_template(
     )
     # add special tokens
     tokenizer.eos_token = template.value["eos_token"]
-    tokenizer.pad_token = template.value["pad_token"]
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = template.value["pad_token"]
     tokenizer.bos_token = template.value["bos_token"]
     tokenizer.add_special_tokens(
         {
@@ -151,7 +160,7 @@ def load_model_and_tokenizer(
     precision: ModelPrecision,
     patch_model=False,
     patch_tokenizer=False,
-    template=ChatTemplate.ALPACA_LLAMA3,
+    template=ChatTemplate.ALPACA_GEMMA,
 ):
     """
     Helper function to load a model and tokenizer with a specific precision and chat template.
@@ -257,6 +266,7 @@ def get_model_output_only(full_output: str, template: ChatTemplate) -> str | Non
     """
     if (
         template == ChatTemplate.ALPACA_MISTRAL
+        or template == ChatTemplate.ALPACA_GEMMA
         or template == ChatTemplate.ALPACA_LLAMA3
     ):
         parsed = full_output.split(template.value["generation_start"])
