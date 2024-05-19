@@ -1,3 +1,7 @@
+import os
+
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
 import re
 from enum import Enum
 
@@ -41,6 +45,10 @@ class ChatTemplate(Enum):
         "pad_token": "<pad>",
         "generation_start": "### Antwort:",
     }
+
+
+CURRENT_DEFAULT_MODEL = "LeoLM/leo-mistral-hessianai-7b"
+CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
 
 
 def load_template_from_jinja(file_name="template"):
@@ -99,8 +107,8 @@ class ModelPrecision(Enum):
 
 
 def patch_tokenizer_with_template(
-    tokenizer_name="LeoLM/leo-mistral-hessianai-7b",
-    template=ChatTemplate.ALPACA_MISTRAL,
+    tokenizer_name=CURRENT_DEFAULT_MODEL,
+    template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """
     Helper function to load a tokenizer with a specific chat template and special tokens.
@@ -160,7 +168,7 @@ def load_model_and_tokenizer(
     precision: ModelPrecision,
     patch_model=False,
     patch_tokenizer=False,
-    template=ChatTemplate.ALPACA_MISTRAL,
+    template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """
     Helper function to load a model and tokenizer with a specific precision and chat template.
@@ -186,13 +194,13 @@ def load_model_and_tokenizer(
         )
     elif precision == ModelPrecision.SIXTEEN_BIT:
         model = AutoModelForCausalLM.from_pretrained(
-            "BachelorThesis/Mistral_V03_BRONCO_CARDIO",
+            model_name,
             torch_dtype=torch.bfloat16,
         )
         model.to("cuda:0")
     elif precision == ModelPrecision.THIRTY_TWO_BIT:
         model = AutoModelForCausalLM.from_pretrained(
-            "BachelorThesis/Mistral_V03_BRONCO_CARDIO",
+            model_name,
             torch_dtype=torch.float,
         )
         model.to("cuda:0")
@@ -264,16 +272,11 @@ def get_model_output_only(full_output: str, template: ChatTemplate) -> str | Non
     :param template: The template that was used during generation.
     :return: Only the output of the model.
     """
-    if (
-        template == ChatTemplate.ALPACA_MISTRAL
-        or template == ChatTemplate.ALPACA_GEMMA
-        or template == ChatTemplate.ALPACA_LLAMA3
-    ):
-        parsed = full_output.split(template.value["generation_start"])
-        if len(parsed) > 1:
-            return parsed[1].strip()
-        else:
-            return None
+    parsed = full_output.split(template.value["generation_start"])
+    if len(parsed) > 1:
+        return parsed[1].strip()
+    else:
+        return None
 
 
 def get_extractions_only(string_input: str):
@@ -314,7 +317,7 @@ def get_extractions_with_attributes(string_input: str):
 
 def test_generation(
     messages=None,
-    model_name="LeoLM/leo-mistral-hessianai-7b",
+    model_name=CURRENT_DEFAULT_MODEL,
     precision=ModelPrecision.FOUR_BIT,
 ):
     """Function to test if the inference of the model works on gpu or not"""
@@ -377,5 +380,5 @@ def count_tokens(
 if __name__ == "__main__":
     test_generation(
         model_name="S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
-        precision=ModelPrecision.FOUR_BIT,
+        precision=ModelPrecision.SIXTEEN_BIT,
     )

@@ -2,7 +2,9 @@ import os
 
 import setproctitle
 
-from datacorpus.aggregation.agg_bronco import aggregate_bronco_label_classification
+from datacorpus.aggregation.agg_bronco import (
+    aggregate_bronco_multi_label_classification,
+)
 
 GPU = 0
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -28,7 +30,7 @@ from transformers import (
 import evaluate
 
 # Config
-EPOCHS = 5
+EPOCHS = 1
 BATCH_SIZE = 8
 LEARNING_RATE = 2e-5
 TEST_SIZE = 0.2
@@ -39,7 +41,9 @@ SAVE_MODEL = False
 EVALS_PER_EPOCH = 8
 LOGS_PER_EPOCH = 2
 
-data, id2label, label2id, NUM_LABELS = aggregate_bronco_label_classification()
+data, id2label, label2id, NUM_LABELS = aggregate_bronco_multi_label_classification(
+    "Entity_Type", "ICD10GM", False
+)
 
 print_welcome_message()
 print_cuda_support(f"{GPU}")

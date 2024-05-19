@@ -371,7 +371,16 @@ def aggregate_bronco_prompts(
     return prompts
 
 
-def aggregate_bronco_label_classification():
+def aggregate_bronco_multi_label_classification(
+    task: str, normalization_type: str, detailed: bool
+):
+    """
+    Create a bronco dataset for multi-label classification
+    :param task: The task to create the dataset for. Can be one of the following: Normalization, Entity_Type
+    :param normalization_type: The type of entity to create the dataset for.
+    Can be one of the following: ICD10GM, OSP, ATC
+    :return:
+    """
     bronco_collection = get_collection("corpus", "bronco")
     documents = bronco_collection.find()
     documents = list(documents)
@@ -380,10 +389,27 @@ def aggregate_bronco_label_classification():
 
     # make types unique
     all_labels = []
-    for i, row in grouped_df.iterrows():
-        unique_types = list(set(row["type"]))
-        grouped_df.at[i, "type"] = unique_types
-        all_labels.append(unique_types)
+    if task == "Entity_Type":
+        for i, row in grouped_df.iterrows():
+            unique_types = list(set(row["type"]))
+            all_labels.append(unique_types)
+    elif task == "Normalization":
+        for i, row in grouped_df.iterrows():
+            unique_normalizations = set()
+            for pack in row["normalizations"]:
+                for unpacked in pack:
+                    for normalization in unpacked:
+                        if normalization["normalization"].startswith(
+                            normalization_type
+                        ):
+                            norm = normalization["normalization"].split(":")[1]
+                            if not detailed:
+                                norm = norm.split(".")[0]
+                            unique_normalizations.add(norm)
+            all_labels.append(list(unique_normalizations))
+
+    else:
+        raise ValueError("Not implemented")
 
     # transform into one-hot encoding
     mlb = MultiLabelBinarizer()
@@ -391,7 +417,7 @@ def aggregate_bronco_label_classification():
     grouped_df["labels"] = list(one_hot_encoded)
 
     # remove all other columns
-    grouped_df = grouped_df[["origin", "type", "labels"]]
+    grouped_df = grouped_df[["origin", "labels"]]
 
     label2id = {label: idx for idx, label in enumerate(mlb.classes_)}
     id2label = {idx: label for idx, label in enumerate(mlb.classes_)}
@@ -400,6 +426,13 @@ def aggregate_bronco_label_classification():
     print(id2label)
     num_labels = len(label2id)
 
-    logger.debug(f"Created {len(grouped_df)} classification datapoints")
+    logger.debug(
+        f"Created {len(grouped_df)} classification datapoints with {num_labels} labels."
+    )
 
     return grouped_df, label2id, id2label, num_labels
+
+
+# if main method
+if __name__ == "__main__":
+    aggregate_bronco_multi_label_classification("Normalization", "ICD10GM", False)
