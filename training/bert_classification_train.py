@@ -42,7 +42,7 @@ EVALS_PER_EPOCH = 8
 LOGS_PER_EPOCH = 2
 
 data, id2label, label2id, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Entity_Type", "ICD10GM", False
+    "Normalization", "ICD10GM", False
 )
 
 print_welcome_message()
@@ -55,7 +55,7 @@ def preprocess_function(examples):
 
 # Load tokenizer
 print_with_heading("Load fast tokenizer")
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+tokenizer = AutoTokenizer.from_pretrained("GerMedBERT/medbert-512")
 
 # Load dataset
 print_with_heading("Load dataset")
@@ -66,7 +66,7 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 # Load model
 print_with_heading("Load model")
 model = AutoModelForSequenceClassification.from_pretrained(
-    "distilbert/distilbert-base-uncased",
+    "GerMedBERT/medbert-512",
     num_labels=NUM_LABELS,
     id2label=id2label,
     label2id=label2id,

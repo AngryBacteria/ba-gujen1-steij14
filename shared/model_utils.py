@@ -49,8 +49,8 @@ class ChatTemplate(Enum):
     }
 
 
-CURRENT_DEFAULT_MODEL = "LeoLM/leo-mistral-hessianai-7b"
-CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
+CURRENT_DEFAULT_MODEL = "meta-llama/Meta-Llama-3-8B"
+CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_LLAMA3
 
 
 def load_template_from_jinja(file_name="template"):
@@ -380,12 +380,7 @@ def count_tokens(
         return tokens
 
     if tokenizer_name is not None:
-        tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_name,
-            use_fast=True,
-            add_eos_token=False,
-            add_bos_token=False,
-        )
+        tokenizer = patch_tokenizer_with_template(tokenizer_name=tokenizer_name)
         tokens = 0
         for text in data:
             tokens += len(tokenizer(text)["input_ids"])
