@@ -13,7 +13,7 @@
   },
   "model": {
     "id_model": "google/gemma-2b",
-    "lower_precision": false,
+    "lower_precision": true,
     "attention_implementation": "sdpa",
     "lora": false,
     "qlora": false,
