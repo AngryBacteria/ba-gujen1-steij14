@@ -27,7 +27,7 @@
   "trainer": {
     "epochs": 5,
     "batch_size": 4,
-    "evals_per_epoch": 4,
+    "evals_per_epoch": 8,
     "optimizer": "adamw_8bit",
     "learning_rate": 0.00005,
     "warmup_steps": 100,
