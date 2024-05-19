@@ -4,7 +4,7 @@
     "wandb_logging": true,
     "disable_annoying_warnings": false,
     "run_name": "LLama3_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
-    "gpu": "0",
+    "gpu": "1",
     "save_model": true,
     "upload_model": true,
     "output_dir": "llama_instruction_low_precision",
