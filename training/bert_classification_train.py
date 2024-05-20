@@ -42,7 +42,7 @@ EVALS_PER_EPOCH = 8
 LOGS_PER_EPOCH = 2
 
 data, id2label, label2id, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Normalization", "ICD10GM", False
+    "Normalization", "ATC", False
 )
 
 print_welcome_message()

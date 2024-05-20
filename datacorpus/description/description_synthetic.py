@@ -1,7 +1,7 @@
 import pandas as pd
 from pandas import DataFrame
 
-from shared.model_utils import patch_tokenizer_with_template
+from shared.model_utils import load_tokenizer_with_template
 from shared.mongodb import get_collection
 
 
@@ -42,7 +42,7 @@ def show_text_length_boxplot(df: DataFrame, text_type: str, tokenize: bool = Fal
     # calculate the lengths
     lengths = []
     if tokenize:
-        tokenizer = patch_tokenizer_with_template()
+        tokenizer = load_tokenizer_with_template()
 
         for index, row in df.iterrows():
             paragraph_length = len(tokenizer.tokenize(row[text_type]))

@@ -13,6 +13,7 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizer,
     AutoModelForCausalLM,
+    BitsAndBytesConfig,
 )
 
 
@@ -49,8 +50,8 @@ class ChatTemplate(Enum):
     }
 
 
-CURRENT_DEFAULT_MODEL = "meta-llama/Meta-Llama-3-8B"
-CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_LLAMA3
+CURRENT_DEFAULT_MODEL = "google/gemma-2b"
+CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
 
 
 def load_template_from_jinja(file_name="template"):
@@ -73,7 +74,7 @@ def test_chat_template(template: ChatTemplate, add_second_conversation=False):
     :param template: The chat template to use
     :param add_second_conversation: If True, the function will add a second user input to the messages
     """
-    test = patch_tokenizer_with_template(template=template)
+    test = load_tokenizer_with_template(template=template)
 
     messages = [
         {"role": "system", "content": "This is a system prompt."},
@@ -108,7 +109,7 @@ class ModelPrecision(Enum):
     THIRTY_TWO_BIT = 32
 
 
-def patch_tokenizer_with_template(
+def load_tokenizer_with_template(
     tokenizer_name=CURRENT_DEFAULT_MODEL,
     template=CURRENT_DEFAULT_TEMPLATE,
 ):
@@ -170,6 +171,8 @@ def load_model_and_tokenizer(
     precision: ModelPrecision,
     patch_model=False,
     patch_tokenizer=False,
+    use_flash_attn=False,
+    device="cuda",
     template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """
@@ -182,35 +185,37 @@ def load_model_and_tokenizer(
         add_eos_token=False,
         add_bos_token=False,
     )
+
+    # set correct config
+    attn_implementation = "flash_attention_2" if use_flash_attn else "sdpa"
     if precision == ModelPrecision.FOUR_BIT:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.bfloat16,
-            load_in_4bit=True,
-        )
+        bnb_config = BitsAndBytesConfig(load_in_4bit=True)
+        model_config = {"quantization_config": bnb_config}
     elif precision == ModelPrecision.EIGHT_BIT:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.bfloat16,
-            load_in_8bit=True,
-        )
+        bnb_config = BitsAndBytesConfig(load_in_8bit=True)
+        model_config = {"quantization_config": bnb_config}
     elif precision == ModelPrecision.SIXTEEN_BIT:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.bfloat16,
-        )
-        model.to("cuda:0")
+        model_config = {"torch_dtype": torch.bfloat16}
     elif precision == ModelPrecision.THIRTY_TWO_BIT:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.float,
-        )
-        model.to("cuda:0")
+        model_config = {"torch_dtype": torch.float}
     else:
         raise ValueError("Precision has to be 4, 8, 16 or 32")
+    model_config.update(
+        {
+            "attn_implementation": attn_implementation,
+        }
+    )
+
+    # "to" function is not supported with 8/4 bit models
+    if precision == ModelPrecision.FOUR_BIT or precision == ModelPrecision.EIGHT_BIT:
+        model = AutoModelForCausalLM.from_pretrained(model_name, **model_config)
+    else:
+        model = AutoModelForCausalLM.from_pretrained(model_name, **model_config).to(
+            device
+        )
 
     if patch_tokenizer:
-        tokenizer = patch_tokenizer_with_template(template=template)
+        tokenizer = load_tokenizer_with_template(template=template)
     if patch_model:
         model = patch_model_with_tokenizer(model, tokenizer)
 
@@ -232,7 +237,7 @@ def upload_model(
     :return:
     """
     if patch:
-        tokenizer = patch_tokenizer_with_template(tokenizer_name=local_model_folder)
+        tokenizer = load_tokenizer_with_template(tokenizer_name=local_model_folder)
         model = AutoModelForCausalLM.from_pretrained(
             local_model_folder, torch_dtype=torch.bfloat16
         )
@@ -258,7 +263,7 @@ def upload_tokenizer(
     :return:
     """
     if patch:
-        tokenizer = patch_tokenizer_with_template(tokenizer_name=local_model_folder)
+        tokenizer = load_tokenizer_with_template(tokenizer_name=local_model_folder)
         tokenizer.push_to_hub(f"{account_name}/{repo_name}", private=True)
     else:
         tokenizer = AutoTokenizer.from_pretrained(local_model_folder)
@@ -334,31 +339,42 @@ def get_extractions_with_attributes(string_input: str):
 
 
 def test_generation(
-    messages=None,
     model_name=CURRENT_DEFAULT_MODEL,
     precision=ModelPrecision.FOUR_BIT,
 ):
     """Function to test if the inference of the model works on gpu or not"""
-    if messages is None:
-        messages = [
-            {
-                "role": "system",
-                "content": "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.",
-            },
-            {
-                "role": "user",
-                "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":\n\nIn einem Roentgen Thorax zeigten sich prominente zentrale Lungengefaesszeichnung mit basoapikaler Umverteilung sowie angedeutete Kerley-B-Linien, vereinbar mit einer chronischen pulmonalvenoesen Stauungskomponente bei Hypervolaemie.',
-            },
-        ]
-    tokenizer, model = load_model_and_tokenizer(model_name, precision)
-    prompt = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
+    messages1 = [
+        {
+            "role": "system",
+            "content": "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.",
+        },
+        {
+            "role": "user",
+            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":\n\nIn einem Roentgen Thorax zeigten sich prominente zentrale Lungengefaesszeichnung mit basoapikaler Umverteilung sowie angedeutete Kerley-B-Linien, vereinbar mit einer chronischen pulmonalvenoesen Stauungskomponente bei Hypervolaemie.',
+        },
+    ]
+    messages2 = [
+        {
+            "role": "system",
+            "content": "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.",
+        },
+        {
+            "role": "user",
+            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":\n\nDer Patient hat Kopfschmerzen.',
+        },
+    ]
+    messages_concat = [messages1, messages2]
 
-    inputs = tokenizer(prompt, return_tensors="pt").to("cuda:0")
-    outputs = model.generate(**inputs, max_new_tokens=1000)
-    model_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    print(model_output)
+    tokenizer, model = load_model_and_tokenizer(model_name, precision)
+    for messages in messages_concat:
+        prompt = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
+        outputs = model.generate(**inputs, max_new_tokens=1000)
+        model_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        print(model_output)
+        print(30 * "-")
 
 
 def count_tokens(
@@ -380,7 +396,7 @@ def count_tokens(
         return tokens
 
     if tokenizer_name is not None:
-        tokenizer = patch_tokenizer_with_template(tokenizer_name=tokenizer_name)
+        tokenizer = load_tokenizer_with_template(tokenizer_name=tokenizer_name)
         tokens = 0
         for text in data:
             tokens += len(tokenizer(text)["input_ids"])

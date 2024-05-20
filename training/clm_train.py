@@ -21,7 +21,7 @@ from training.utils.printing import (
 )
 from transformers.trainer_utils import HubStrategy
 from shared.model_utils import (
-    patch_tokenizer_with_template,
+    load_tokenizer_with_template,
     patch_model_with_tokenizer,
 )
 from training.utils.gpu import print_cuda_support
@@ -94,7 +94,7 @@ if config.model.lora:
 
 # Tokenizer
 print_with_heading("Load fast tokenizer")
-tokenizer = patch_tokenizer_with_template(tokenizer_name=config.model.id_model)
+tokenizer = load_tokenizer_with_template(tokenizer_name=config.model.id_model)
 model = patch_model_with_tokenizer(model, tokenizer)
 
 

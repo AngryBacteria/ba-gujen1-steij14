@@ -37,6 +37,7 @@ def calculate_metrics_from_prompts(
     """
 
     tokenizer, model = load_model_and_tokenizer(model_name, precision)
+    model_name = model_name.split("\\")[-1]
     _dataset = load_dataset("json", data_files={"data": "prompts.jsonl"})[
         "data"
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
@@ -130,6 +131,7 @@ def calculate_metrics_from_prompts(
                         "type"
                     ],  # Type of annotation (DIAGNOSIS, MEDICATION, TREATMENT)
                     "source": example["source"],
+                    "na_prompt": example["na_prompt"],
                 }
             )
             print(output)
@@ -153,17 +155,21 @@ def calculate_metrics_from_prompts(
                     "truth_string": truth_string,  # The full truth (prompt output) as a string
                     "truth": truth,  # The extraction seperated from the truth string
                     "output_string": output_string,  # The full model output as a string
-                    "output_string_raw": output_string_raw,  # The full model output (with prompt) as with special tokens
+                    "output_string_raw": output_string_raw,
+                    # The full model output (with prompt) as with special tokens
                     "prediction_string": prediction_string,  # The model output as a string
                     "prediction": prediction,  # The extraction seperated from the model output
                     "precision": metrics[0],
                     "recall": metrics[1],
                     "f1_score": metrics[2],
-                    "task": example["task"],
+                    "task": example[
+                        "task"
+                    ],  # The task of the example (extraction, normalization, catalog, summary)
                     "type": example[
                         "type"
                     ],  # Type of annotation (DIAGNOSIS, MEDICATION, TREATMENT)
-                    "source": example["source"],
+                    "source": example["source"],  # data source
+                    "na_prompt": example["na_prompt"],
                 }
             )
 
@@ -196,13 +202,16 @@ def calculate_metrics_from_prompts(
                     "task": "attributes",
                     "type": example["type"],
                     "source": example["source"],
+                    "na_prompt": example["na_prompt"],
                 }
             )
 
         logger.debug(f"{150 * '-'}")
     # convert to pandas df and save to json
     df = pd.DataFrame(output)
-    df.to_json(f"validation_results_{precision.value}bit.json", orient="records")
+    df.to_json(
+        f"validation_results_{precision.value}bit_{model_name}.json", orient="records"
+    )
     return output
 
 
@@ -267,9 +276,9 @@ def aggregate_metrics(file_name: str):
 
 
 if __name__ == "__main__":
-    # calculate_metrics_from_prompts(
-    #     ModelPrecision.FOUR_BIT,
-    #     "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
-    #     4096,
-    # )
-    aggregate_metrics("validation_results_4bit.json")
+    calculate_metrics_from_prompts(
+        ModelPrecision.EIGHT_BIT,
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
+        4096,
+    )
+    aggregate_metrics("validation_results_8bit_Gemma2b_V01_BRONCO_CARDIO_SUMMARY.json")

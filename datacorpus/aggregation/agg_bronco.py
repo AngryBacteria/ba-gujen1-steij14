@@ -376,6 +376,7 @@ def aggregate_bronco_multi_label_classification(
 ):
     """
     Create a bronco dataset for multi-label classification
+    :param detailed:
     :param task: The task to create the dataset for. Can be one of the following: Normalization, Entity_Type
     :param normalization_type: The type of entity to create the dataset for.
     Can be one of the following: ICD10GM, OSP, ATC
