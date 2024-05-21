@@ -1,8 +1,10 @@
 import os
+import time
 
 from shared.logger import logger
 
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import re
 from enum import Enum
@@ -14,6 +16,7 @@ from transformers import (
     PreTrainedTokenizer,
     AutoModelForCausalLM,
     BitsAndBytesConfig,
+    PreTrainedTokenizerFast,
 )
 
 
@@ -48,6 +51,28 @@ class ChatTemplate(Enum):
         "pad_token": "<pad>",
         "generation_start": "### Antwort:",
     }
+
+
+class GenDevice(Enum):
+    """Enum to represent device types that can be used to generate text with an LLM"""
+
+    CPU = "cpu"
+    MPS = "mps"
+    CUDA = "cuda"
+    CUDA0 = "cuda:0"
+    CUDA1 = "cuda:1"
+    CUDA01 = "cuda:0,1"
+
+
+class ModelPrecision(Enum):
+    """
+    Enum class that represents the possible model precisions
+    """
+
+    FOUR_BIT = 4
+    EIGHT_BIT = 8
+    SIXTEEN_BIT = 16
+    THIRTY_TWO_BIT = 32
 
 
 CURRENT_DEFAULT_MODEL = "google/gemma-2b"
@@ -98,17 +123,6 @@ def test_chat_template(template: ChatTemplate, add_second_conversation=False):
 
 
 # MODEL AND TOKENIZER
-class ModelPrecision(Enum):
-    """
-    Enum class that represents the possible model precisions
-    """
-
-    FOUR_BIT = 4
-    EIGHT_BIT = 8
-    SIXTEEN_BIT = 16
-    THIRTY_TWO_BIT = 32
-
-
 def load_tokenizer_with_template(
     tokenizer_name=CURRENT_DEFAULT_MODEL,
     template=CURRENT_DEFAULT_TEMPLATE,
@@ -172,7 +186,7 @@ def load_model_and_tokenizer(
     patch_model=False,
     patch_tokenizer=False,
     use_flash_attn=False,
-    device="cuda",
+    device=GenDevice.CPU,
     template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """
@@ -195,9 +209,12 @@ def load_model_and_tokenizer(
         bnb_config = BitsAndBytesConfig(load_in_8bit=True)
         model_config = {"quantization_config": bnb_config}
     elif precision == ModelPrecision.SIXTEEN_BIT:
-        model_config = {"torch_dtype": torch.bfloat16}
+        if device == GenDevice.CUDA:
+            model_config = {"torch_dtype": torch.bfloat16}
+        else:
+            model_config = {"torch_dtype": torch.float16}
     elif precision == ModelPrecision.THIRTY_TWO_BIT:
-        model_config = {"torch_dtype": torch.float}
+        model_config = {"torch_dtype": torch.float32}
     else:
         raise ValueError("Precision has to be 4, 8, 16 or 32")
     model_config.update(
@@ -211,7 +228,7 @@ def load_model_and_tokenizer(
         model = AutoModelForCausalLM.from_pretrained(model_name, **model_config)
     else:
         model = AutoModelForCausalLM.from_pretrained(model_name, **model_config).to(
-            device
+            device.value
         )
 
     if patch_tokenizer:
@@ -271,6 +288,26 @@ def upload_tokenizer(
 
 
 # GENERATION
+def generate_output(
+    prompt: str,
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
+    device=GenDevice.CUDA,
+    skip_special_tokens=True,
+    max_new_tokens=1000,
+):
+    start_time = time.perf_counter()
+
+    inputs = tokenizer(prompt, return_tensors="pt").to(device.value)
+    outputs = model.generate(**inputs, max_new_tokens=max_new_tokens)
+    model_output = tokenizer.decode(outputs[0], skip_special_tokens=skip_special_tokens)
+    end_time = time.perf_counter()
+
+    execution_time = int((end_time - start_time) * 1000)
+    logger.debug(f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}ms")
+    return model_output
+
+
 def get_model_output_only(full_output: str, template: ChatTemplate) -> str | None:
     """
     Parses the model output (everything after the instruction) from the whole generated text.
@@ -341,6 +378,7 @@ def get_extractions_with_attributes(string_input: str):
 def test_generation(
     model_name=CURRENT_DEFAULT_MODEL,
     precision=ModelPrecision.FOUR_BIT,
+    device=GenDevice.CUDA,
 ):
     """Function to test if the inference of the model works on gpu or not"""
     messages1 = [
@@ -365,15 +403,12 @@ def test_generation(
     ]
     messages_concat = [messages1, messages2]
 
-    tokenizer, model = load_model_and_tokenizer(model_name, precision)
+    tokenizer, model = load_model_and_tokenizer(model_name, precision, device=device)
     for messages in messages_concat:
         prompt = tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
-        inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
-        outputs = model.generate(**inputs, max_new_tokens=1000)
-        model_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        print(model_output)
+        print(generate_output(prompt, model, tokenizer, device=GenDevice.MPS))
         print(30 * "-")
 
 
@@ -408,6 +443,7 @@ def count_tokens(
 
 if __name__ == "__main__":
     test_generation(
-        model_name="S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
+        model_name="BachelorThesis/Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
         precision=ModelPrecision.SIXTEEN_BIT,
+        device=GenDevice.MPS,
     )
