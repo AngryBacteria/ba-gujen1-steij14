@@ -2,7 +2,7 @@ import os
 
 import setproctitle
 
-GPU = 3
+GPU = 0
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
@@ -27,15 +27,15 @@ from training.utils.printing import (
 )
 from training.utils.gpu import print_cuda_support
 
-EPOCHS = 4
-BATCH_SIZE = 16
+EPOCHS = 10
+BATCH_SIZE = 32
 LEARNING_RATE = 2e-5
 DEBUG = True
 WANDB = True
-RUN_NAME = "GerMedBERT_NER_BRONCO_CARDIO_V01"
+RUN_NAME = "GerMedBERT_NER_BRONCO_CARDIO_V02"
 SAVE_MODEL = True
 UPLOAD_MODEL = True
-EVALS_PER_EPOCH = 4
+EVALS_PER_EPOCH = 2
 LOGS_PER_EPOCH = 16
 MODEL = "GerMedBERT/medbert-512"
 
@@ -99,29 +99,39 @@ dataset = load_dataset("json", data_files={"data": "ner.jsonl"})[
 seqeval = evaluate.load("seqeval")
 
 
+def align_labels_with_tokens(labels, word_ids):
+    new_labels = []
+    current_word = None
+    for word_id in word_ids:
+        if word_id != current_word:
+            # Start of a new word!
+            current_word = word_id
+            label = -100 if word_id is None else labels[word_id]
+            new_labels.append(label)
+        elif word_id is None:
+            # Special token
+            new_labels.append(-100)
+        else:
+            # Same word as previous token
+            label = labels[word_id]
+            # If the label is B-XXX we change it to I-XXX
+            if label % 2 == 1:
+                label += 1
+            new_labels.append(label)
+    return new_labels
+
+
 def tokenize_and_align_labels(examples):
     tokenized_inputs = tokenizer(
         examples["words"], truncation=True, is_split_into_words=True, max_length=512
     )
-    labels = []
-    for i, label in enumerate(examples["ner_tags"]):
-        word_ids = tokenized_inputs.word_ids(
-            batch_index=i
-        )  # Map tokens to their respective word.
-        previous_word_idx = None
-        label_ids = []
-        for word_idx in word_ids:  # Set the special tokens to -100.
-            if word_idx is None:
-                label_ids.append(-100)
-            elif (
-                word_idx != previous_word_idx
-            ):  # Only label the first token of a given word.
-                label_ids.append(label[word_idx])
-            else:
-                label_ids.append(-100)
-            previous_word_idx = word_idx
-        labels.append(label_ids)
-    tokenized_inputs["labels"] = labels
+    all_labels = examples["ner_tags"]
+    new_labels = []
+    for i, labels in enumerate(all_labels):
+        word_ids = tokenized_inputs.word_ids(i)
+        new_labels.append(align_labels_with_tokens(labels, word_ids))
+
+    tokenized_inputs["labels"] = new_labels
     return tokenized_inputs
 
 
@@ -187,7 +197,6 @@ if WANDB:
     training_args.report_to = ["wandb"]
     os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
     training_args.run_name = RUN_NAME
-
 
 trainer = Trainer(
     model=model,

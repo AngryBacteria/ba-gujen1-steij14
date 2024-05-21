@@ -149,15 +149,16 @@ def save_all_ner_annotations(bronco: bool, ggponc: bool, cardio: bool):
             break
 
 
-# save_all_ner_annotations(bronco=True, ggponc=False, cardio=True)
+if __name__ == "__main__":
+    # save_all_ner_annotations(bronco=True, ggponc=False, cardio=True)
 
-save_all_prompts(
-    bronco=True,
-    ggponc=False,
-    cardio=True,
-    normalization=True,
-    summarization=True,
-    catalog=True,
-    na_prompts=True,
-    minimal_length=15,
-)
+    save_all_prompts(
+        bronco=True,
+        ggponc=False,
+        cardio=True,
+        normalization=True,
+        summarization=True,
+        catalog=True,
+        na_prompts=True,
+        minimal_length=15,
+    )
