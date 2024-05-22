@@ -95,7 +95,7 @@ def calculate_metrics_from_prompts(
         # get the model output
         _start_time = datetime.datetime.now()
         _inputs = tokenizer(instruction, return_tensors="pt").to("cuda:0")
-        _outputs = model.generate(**_inputs)
+        _outputs = model.generate(**_inputs, max_new_tokens=9999)
         output_string = tokenizer.decode(_outputs[0], skip_special_tokens=True)
         output_string_raw = tokenizer.decode(_outputs[0], skip_special_tokens=False)
         _end_time = datetime.datetime.now()

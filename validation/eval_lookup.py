@@ -1,12 +1,15 @@
+import datetime
+import re
+
 import pandas as pd
 from datasets import load_dataset
 
+from shared.logger import logger
 from shared.mongodb import get_collection
 
 
-def calculate_lookup_accuracy():
+def calculate_db_lookup_accuracy():
     """
-    TODO: test and implement
     Calculate the accuracy for the normalization task with a simple database lookup as prediction.
     """
     atc_collection = get_collection("catalog", "atc")
@@ -17,47 +20,84 @@ def calculate_lookup_accuracy():
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
     test_data = _dataset["test"]
 
+    test_date = datetime.datetime.now()
     outputs = []
     for example in test_data:
 
         if example["task"] != "normalization":
+            logger.warning(
+                f"Skipping example with task {example['task']} because it is not a normalization."
+            )
             continue
 
-        lookup_term = example["normalization_labels"].lower().strip()
-        truth = example["annotation_labels"].lower().strip()
+        lookup_term = example["context_entity"].lower().strip()
+        truth = example["output"].lower().strip()
+        regx = re.compile(f"^{lookup_term}", re.IGNORECASE)
 
+        _start_time = datetime.datetime.now()
         if example["type"] == "MEDICATION":
-            doc = atc_collection.find_one({"name": lookup_term})
+            doc = atc_collection.find_one({"title": regx})
             if doc is None:
-                continue
-            prediction = doc["atc"].lower().strip()
+                prediction = "404"
+            else:
+                prediction = doc["code"].lower().strip()
         elif example["type"] == "DIAGNOSIS":
-            print("DIAGNOSIS")
-            doc = icd_collection.find_one({"title": lookup_term})
+            doc = icd_collection.find_one({"title": regx})
             if doc is None:
-                continue
-            prediction = doc["atc"].lower().strip()
+                prediction = "404"
+            else:
+                prediction = doc["code"].lower().strip()
         elif example["type"] == "TREATMENT":
-            print("TREATMENT")
-            doc = ops_collection.find_one({"title": lookup_term})
+            doc = ops_collection.find_one({"title": regx})
             if doc is None:
-                continue
-            prediction = doc["code"].lower().strip()
+                prediction = "404"
+            else:
+                prediction = doc["code"].lower().strip()
         else:
             continue
+        _end_time = datetime.datetime.now()
+        execution_time = (_end_time - _start_time).microseconds
 
+        metric = 1 if truth == prediction else 0
+        logger.debug(f"Prediction: {prediction}, Truth: {truth}, Metric: {metric}")
         outputs.append(
             {
-                "lookup_term": lookup_term,
+                "model": "db_lookup",
+                "model_precision": "",
+                "execution_time": execution_time,
+                "date": test_date,
+                "prompt": "",
+                "instruction": "",
+                "truth_string": "",
                 "truth": truth,
+                "output_string": "",
+                "output_string_raw": "",
+                "prediction_string": "",
                 "prediction": prediction,
-                "correct": truth == prediction,
+                "precision": metric,
+                "recall": metric,
+                "f1": metric,
+                "task": example["task"],
+                "type": example["type"],
+                "source": example["source"],
+                "na_prompt": example["na_prompt"],
             }
         )
 
     # save to csv
     df = pd.DataFrame(outputs)
-    df.to_csv("normalization_lookup_validation.csv", index=False)
+    df.to_csv("validation_results_normalization_db_lookup.csv", index=False)
 
 
-calculate_lookup_accuracy()
+def aggregate_norm_results():
+    df = pd.read_csv("validation_results_normalization_db_lookup.csv")
+    grouped = df.groupby(["type"])
+    for name, group in grouped:
+        logger.debug(name)
+        logger.debug(group["precision"].mean())
+        logger.debug(f"{60 * '-'}")
+
+
+if __name__ == "__main__":
+    # calculate_lookup_accuracy()
+    aggregate_norm_results()

@@ -307,21 +307,21 @@ def generate_output(
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
     device=GenDevice.CUDA_0,
-    skip_special_tokens=True,
-    max_new_tokens=1000,
-):
+    max_new_tokens=9999,
+) -> tuple[str, str]:
     start_time = time.perf_counter()
 
     inputs = tokenizer(prompt, return_tensors="pt").to(device.value)
     outputs = model.generate(**inputs, max_new_tokens=max_new_tokens)
-    model_output = tokenizer.decode(outputs[0], skip_special_tokens=skip_special_tokens)
+    model_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    model_output_raw = tokenizer.decode(outputs[0], skip_special_tokens=False)
     end_time = time.perf_counter()
 
     execution_time = int((end_time - start_time) * 1000)
     logger.debug(
         f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}ms"
     )
-    return model_output
+    return model_output, model_output_raw
 
 
 def get_model_output_only(
@@ -430,7 +430,8 @@ def test_generation(
         prompt = tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
-        print(generate_output(prompt, model, tokenizer, device=device))
+        output, _ = generate_output(prompt, model, tokenizer, device=device)
+        print(output)
         print(30 * "-")
 
 
