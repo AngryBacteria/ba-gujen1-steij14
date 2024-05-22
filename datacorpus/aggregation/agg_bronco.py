@@ -317,7 +317,7 @@ def aggregate_bronco_prompts(
     if diagnosis:
         diagnosis_prompts, diagnosis_norm_prompts = get_bronco_prompts(
             "DIAGNOSIS",
-            False,
+            True,
             minimal_length,
         )
         if extraction:
@@ -327,7 +327,7 @@ def aggregate_bronco_prompts(
     if treatment:
         treatment_prompts, treatment_norm_prompts = get_bronco_prompts(
             "TREATMENT",
-            False,
+            True,
             minimal_length,
         )
         if extraction:
@@ -337,7 +337,7 @@ def aggregate_bronco_prompts(
     if medication:
         medication_prompts, medication_norm_prompts = get_bronco_prompts(
             "MEDICATION",
-            False,
+            True,
             minimal_length,
         )
         if extraction:

@@ -1,3 +1,5 @@
+from statistics import mean
+
 import setproctitle
 import os
 
@@ -17,6 +19,7 @@ from shared.model_utils import (
     ChatTemplate,
     get_extractions_without_attributes,
     get_extractions_with_attributes,
+    get_extractions_with_attributes_grouped,
 )
 
 
@@ -87,7 +90,7 @@ def calculate_metrics_from_prompts(
         if prompt is None or prompt == "":
             logger.error("No prompt found")
             continue
-        logger.debug(f"Prompt: {prompt}")
+        logger.debug(f"Prompt [{i}]: {prompt}")
 
         # get the ground truth_string from the full_prompt
         truth_string: str = example["messages"][-1]["content"]
@@ -101,9 +104,9 @@ def calculate_metrics_from_prompts(
         _outputs = model.generate(**_inputs, max_new_tokens=9999)
         output_string = tokenizer.decode(_outputs[0], skip_special_tokens=True)
         output_string_raw = tokenizer.decode(_outputs[0], skip_special_tokens=False)
-        gvram_allocated, gvram_capacity = get_cuda_memory_usage(0)
         _end_time = datetime.datetime.now()
         execution_time = (_end_time - _start_time).microseconds
+        gvram_allocated, gvram_capacity = get_cuda_memory_usage(0)
 
         # get model prediction
         prediction_string = get_model_output_only(
@@ -189,10 +192,34 @@ def calculate_metrics_from_prompts(
 
         # ATTRIBUTES
         if example["task"] == "extraction":
+            # normal text output for saving
             truth = get_extractions_with_attributes(truth_string)
             prediction = get_extractions_with_attributes(prediction_string)
-            metrics = calculate_string_f1_validation_metrics(truth, prediction)
-            logger.debug(f"Metrics (attribute)      : {metrics}")
+
+            # structured output for calculating metrics
+            truths = get_extractions_with_attributes_grouped(truth_string)
+            predictions = get_extractions_with_attributes_grouped(prediction_string)
+            metrics_temp_precision = []
+            metrics_temp_recall = []
+            metrics_temp_f1 = []
+            for key, value in predictions.items():
+                if key in truths:
+                    metrics_temp = calculate_string_f1_validation_metrics(
+                        value, truths[key]
+                    )
+                    metrics_temp_precision.append(metrics_temp[0])
+                    metrics_temp_recall.append(metrics_temp[1])
+                    metrics_temp_f1.append(metrics_temp[2])
+
+            mean_precision = (
+                mean(metrics_temp_precision) if metrics_temp_precision else 0
+            )
+            mean_recall = mean(metrics_temp_recall) if metrics_temp_recall else 0
+            mean_f1 = mean(metrics_temp_f1) if metrics_temp_f1 else 0
+
+            logger.debug(
+                f"Metrics (attribute)      : ({mean_precision}, {mean_recall}, {mean_f1})"
+            )
             logger.debug(f"Truth (attributes)       : {truth}")
             logger.debug(f"Prediction (attributes)  : {prediction}")
             output.append(
@@ -209,9 +236,9 @@ def calculate_metrics_from_prompts(
                     "output_string_raw": output_string_raw,
                     "prediction_string": prediction_string,
                     "prediction": prediction,
-                    "precision": metrics[0],
-                    "recall": metrics[1],
-                    "f1_score": metrics[2],
+                    "precision": mean_precision,
+                    "recall": mean_recall,
+                    "f1_score": mean_f1,
                     "task": "attributes",
                     "type": example["type"],
                     "source": example["source"],
@@ -265,18 +292,27 @@ def calculate_metrics_from_prompts(
 
 
 def calculate_string_f1_validation_metrics(
-    truth_labels: list[str], prediction_labels: list[str]
+    truth_labels: list[str], prediction_labels: list[str], origin=""
 ):
     """
     Calculate precision, recall and f1 score for the extraction task. Takes in two lists, the truth labels and the
     predicted labels and returns the metrics.
+    :param origin: The original text that the predictions are based on. Is used to check if the predictions even exist
+    in the original text
     :param truth_labels: The truth labels as a list
     :param prediction_labels: The predicted labels as a list
     """
-    # TODO: maybe to make results better: filter out strings that are not in original text --> no false positives
+    if len(truth_labels) == 0 and len(prediction_labels) == 0:
+        return 1.0, 1.0, 1.0
+
     # lower case and strip
     truth_set = {x.lower().strip() for x in truth_labels}
     prediction_set = {x.lower().strip() for x in prediction_labels}
+
+    # remove strings from prediction set that are not in the original text
+    # TODO: maybe to make results better: filter out strings that are not in original text --> no false positives
+    if origin and origin != "":
+        prediction_set = {x for x in prediction_set if x in origin}
 
     # get unique
     truth_set = set(truth_set)
@@ -329,12 +365,13 @@ def aggregate_metrics(file_name: str):
 
 
 if __name__ == "__main__":
-    # calculate_metrics_from_prompts(
-    #     ModelPrecision.SIXTEEN_BIT,
-    #     "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
-    #     "Gemma2b_V02",
-    #     4096,
-    # )
-    aggregate_metrics(
-        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\RESULTATE\\validation_results_16bit_Gemma2b_V02.json"
+    calculate_metrics_from_prompts(
+        ModelPrecision.SIXTEEN_BIT,
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
+        "Gemma2b_V02",
+        4096,
+        ["extraction"],
     )
+    # aggregate_metrics(
+    #    "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\RESULTATE\\validation_results_16bit_LeoMistral.json"
+    # )

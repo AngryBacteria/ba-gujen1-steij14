@@ -427,6 +427,43 @@ def get_extractions_with_attributes(string_input: str):
     return extractions
 
 
+def get_extractions_with_attributes_grouped(string_input: str):
+    """
+    Get all extractions with attributes from a string input.
+    The string has to be in the typical form of a prompt output:
+    extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
+    :param string_input: The string input to get the extractions from.
+    :return: Dict with extraction as key and attributes as value.
+    """
+    import re
+
+    # Regular expression to match "extraction[attribute1|attribute2]"
+    pattern = re.compile(r"([^\[\]]+)(?:\[([^\[\]]*)])?")
+
+    # Split the string by "|" outside of brackets
+    parts = pattern.findall(string_input)
+    extraction_dict = {}
+    for part in parts:
+        extraction = part[0].replace("|", "").strip()
+        attributes = part[1].strip()
+        if attributes:
+            # Split the attributes by "|" and strip spaces
+            attribute_list = [attr.strip() for attr in attributes.split("|")]
+        else:
+            attribute_list = []
+
+        # Add the extraction and its attributes to the dictionary
+        attribute_list = [attr.replace("|", "").strip() for attr in attribute_list]
+
+        # group if same extraction is found twice
+        if extraction_dict.get(extraction):
+            extraction_dict[extraction].extend(attribute_list)
+        else:
+            extraction_dict[extraction] = attribute_list
+
+    return extraction_dict
+
+
 def test_generation(
     model_name=CURRENT_DEFAULT_MODEL,
     precision=ModelPrecision.FOUR_BIT,

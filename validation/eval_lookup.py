@@ -8,7 +8,7 @@ from shared.logger import logger
 from shared.mongodb import get_collection
 
 
-def calculate_db_lookup_accuracy():
+def calculate_simple_db_lookup_accuracy():
     """
     Calculate the accuracy for the normalization task with a simple database lookup as prediction.
     """
@@ -42,13 +42,27 @@ def calculate_db_lookup_accuracy():
             else:
                 prediction = doc["code"].lower().strip()
         elif example["type"] == "DIAGNOSIS":
-            doc = icd_collection.find_one({"title": regx})
+            doc = icd_collection.find_one(
+                {
+                    "$or": [
+                        {"title": regx},
+                        {"synonyms": {"$elemMatch": {"$regex": regx}}},
+                    ]
+                }
+            )
             if doc is None:
                 prediction = "404"
             else:
                 prediction = doc["code"].lower().strip()
         elif example["type"] == "TREATMENT":
-            doc = ops_collection.find_one({"title": regx})
+            doc = ops_collection.find_one(
+                {
+                    "$or": [
+                        {"title": regx},
+                        {"synonyms": {"$elemMatch": {"$regex": regx}}},
+                    ]
+                }
+            )
             if doc is None:
                 prediction = "404"
             else:
@@ -91,8 +105,10 @@ def calculate_db_lookup_accuracy():
     )
 
 
-def aggregate_norm_results():
-    df = pd.read_csv("validation_results_normalization_db_lookup.csv")
+def aggregate_simple_db_lookup():
+    df = pd.read_json(
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\RESULTATE\\validation_results_normalization_db_lookup.json"
+    )
     grouped = df.groupby(["type"])
     for name, group in grouped:
         logger.debug(name)
@@ -101,5 +117,5 @@ def aggregate_norm_results():
 
 
 if __name__ == "__main__":
-    # calculate_lookup_accuracy()
-    aggregate_norm_results()
+    # calculate_simple_db_lookup_accuracy()
+    aggregate_simple_db_lookup()

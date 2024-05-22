@@ -16,7 +16,7 @@ ATC_INSTRUCTION = """Was ist der ATC Code für das Medikament „<<ENTITY>>“?"
 ICD10GM_INSTRUCTION = (
     """Was ist der ICD10-GM Code für die Diagnose oder das Symptom „<<ENTITY>>“?"""
 )
-OPS_INSTRUCTION = """Was ist der OPS-2017 Code für die Prozedur „<<ENTITY>>“?"""
+OPS_INSTRUCTION = """Was ist der OPS Code für die Prozedur „<<ENTITY>>“?"""
 
 
 # MEDICATION PROMPTS
@@ -53,6 +53,6 @@ TREATMENT_INSTRUCTION = """Extrahiere alle klinischen Prozeduren aus dem folgend
 TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH = """Extrahiere alle klinischen Prozeduren aus dem folgenden Text. Für jede klinische Prozedur, füge in eckigen Klammern an, ob die klinische Prozedur in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] ist. Falls keine klinischen Prozeduren im Text vorkommen, schreibe "Keine vorhanden":
 
 <<CONTEXT>>"""
-TREATMENT_NORMALIZATION_INSTRUCTION = """Weise der im Text genannten klinischen Prozedur „<<ENTITY>>“ den entsprechenden OPS-2017 Code zu:
+TREATMENT_NORMALIZATION_INSTRUCTION = """Weise der im Text genannten klinischen Prozedur „<<ENTITY>>“ den entsprechenden OPS Code zu:
 
 <<CONTEXT>>"""
