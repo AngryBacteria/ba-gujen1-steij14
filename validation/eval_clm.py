@@ -319,13 +319,13 @@ def aggregate_metrics(file_name: str):
 if __name__ == "__main__":
     calculate_metrics_from_prompts(
         ModelPrecision.SIXTEEN_BIT,
-        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
+        "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
         4096,
     )
 
     calculate_metrics_from_prompts(
         ModelPrecision.FOUR_BIT,
-        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
+        "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
         4096,
     )
     # aggregate_metrics("validation_results_8bit_Gemma2b_V01_BRONCO_CARDIO_SUMMARY.json")

@@ -76,7 +76,7 @@ class ModelPrecision(Enum):
     THIRTY_TWO_BIT = 32
 
 
-CURRENT_DEFAULT_MODEL = "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY"
+CURRENT_DEFAULT_MODEL = "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG"
 CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
 
 
@@ -465,7 +465,7 @@ def count_tokens(
 
 if __name__ == "__main__":
     test_generation(
-        model_name="BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY",
+        model_name="BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
         precision=ModelPrecision.SIXTEEN_BIT,
         device=GenDevice.CUDA_0,
     )
