@@ -59,9 +59,8 @@ class GenDevice(Enum):
     CPU = "cpu"
     MPS = "mps"
     CUDA = "cuda"
-    CUDA0 = "cuda:0"
-    CUDA1 = "cuda:1"
-    CUDA01 = "cuda:0,1"
+    CUDA_0 = "cuda:0"
+    CUDA_1 = "cuda:1"
 
 
 class ModelPrecision(Enum):
@@ -180,13 +179,26 @@ def patch_model_with_tokenizer(model: PreTrainedModel, tokenizer: PreTrainedToke
     return model
 
 
+def get_best_device() -> GenDevice:
+    """
+    Function to get the best device to use for generation.
+    :return: The best device to use for generation.
+    """
+    if torch.cuda.is_available():
+        return GenDevice.CUDA_0
+    elif torch.backends.mps.is_available():
+        return GenDevice.MPS
+    else:
+        return GenDevice.CPU
+
+
 def load_model_and_tokenizer(
     model_name: str,
     precision: ModelPrecision,
     patch_model=False,
     patch_tokenizer=False,
     use_flash_attn=False,
-    device=GenDevice.CPU,
+    device=get_best_device(),
     template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """
@@ -304,11 +316,15 @@ def generate_output(
     end_time = time.perf_counter()
 
     execution_time = int((end_time - start_time) * 1000)
-    logger.debug(f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}ms")
+    logger.debug(
+        f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}ms"
+    )
     return model_output
 
 
-def get_model_output_only(full_output: str, template: ChatTemplate) -> str | None:
+def get_model_output_only(
+    full_output: str, template: ChatTemplate, lower=False
+) -> str | None:
     """
     Parses the model output (everything after the instruction) from the whole generated text.
     If the output could not be found return None
@@ -318,7 +334,10 @@ def get_model_output_only(full_output: str, template: ChatTemplate) -> str | Non
     """
     parsed = full_output.split(template.value["generation_start"])
     if len(parsed) > 1:
-        return parsed[1].strip()
+        if lower:
+            return parsed[1].strip().lower()
+        else:
+            return parsed[1].strip()
     else:
         logger.warning(
             f"No model output found. The template was {template.name} in the model response: {full_output}"
