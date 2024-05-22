@@ -95,7 +95,7 @@ def calculate_metrics_from_prompts(
         # get the model output
         _start_time = datetime.datetime.now()
         _inputs = tokenizer(instruction, return_tensors="pt").to("cuda:0")
-        _outputs = model.generate(**_inputs, max_new_tokens=1000)
+        _outputs = model.generate(**_inputs)
         output_string = tokenizer.decode(_outputs[0], skip_special_tokens=True)
         output_string_raw = tokenizer.decode(_outputs[0], skip_special_tokens=False)
         _end_time = datetime.datetime.now()
@@ -103,7 +103,7 @@ def calculate_metrics_from_prompts(
 
         # get model prediction
         prediction_string = get_model_output_only(
-            output_string, ChatTemplate.ALPACA_MISTRAL, lower=True
+            output_string, ChatTemplate.ALPACA_MISTRAL, lower=False
         )
         if not prediction_string or prediction_string == "":
             logger.error("No extractions found")
@@ -111,11 +111,11 @@ def calculate_metrics_from_prompts(
 
         # SUMMARIZATION
         if example["task"] == "summary":
-            truth = example["output"]
+            truth = truth_string.strip().lower()
             metrics = calculate_rogue_metrics(prediction_string, truth)
-            logger.debug(f"Truth (summary)          : {truth}")
-            logger.debug(f"Prediction (summary)     : {prediction_string}")
-            logger.debug(f"Metrics (summary)         : {metrics}")
+            logger.debug(f"Truth (summary)      : {truth_string}")
+            logger.debug(f"Prediction (summary) : {prediction_string}")
+            logger.debug(f"Metrics (summary)    : {metrics}")
 
             output.append(
                 {
@@ -141,16 +141,15 @@ def calculate_metrics_from_prompts(
                     "na_prompt": example["na_prompt"],
                 }
             )
-            print(output)
 
         # EXTRACTION AND NORMALIZATION
         if example["task"] == "extraction" or example["task"] == "normalization":
             truth = get_extractions_without_attributes(truth_string)
             prediction = get_extractions_without_attributes(prediction_string)
             metrics = calculate_string_f1_validation_metrics(truth, prediction)
-            logger.debug(f"Truth (extraction/normalization)          : {truth}")
-            logger.debug(f"Prediction (extraction/normalization)     : {prediction}")
-            logger.debug(f"Metrics (extraction/normalization)        : {metrics}")
+            logger.debug(f"Truth (extraction/normalization)       : {truth}")
+            logger.debug(f"Prediction (extraction/normalization)  : {prediction}")
+            logger.debug(f"Metrics (extraction/normalization)     : {metrics}")
             output.append(
                 {
                     "model": model_name,
@@ -185,9 +184,9 @@ def calculate_metrics_from_prompts(
             truth = get_extractions_with_attributes(truth_string)
             prediction = get_extractions_with_attributes(prediction_string)
             metrics = calculate_string_f1_validation_metrics(truth, prediction)
-            logger.debug(f"Metrics (attribute)         : {metrics}")
-            logger.debug(f"Truth (attributes)          : {truth}")
-            logger.debug(f"Prediction (attributes)     : {prediction}")
+            logger.debug(f"Metrics (attribute)      : {metrics}")
+            logger.debug(f"Truth (attributes)       : {truth}")
+            logger.debug(f"Prediction (attributes)  : {prediction}")
             output.append(
                 {
                     "model": model_name,
@@ -263,12 +262,13 @@ def calculate_string_f1_validation_metrics(
     :param prediction_labels: The predicted labels as a list
     """
     # TODO: maybe to make results better: filter out strings that are not in original text --> no false positives
+    # lower case and strip
+    truth_set = {x.lower().strip() for x in truth_labels}
+    prediction_set = {x.lower().strip() for x in prediction_labels}
 
-    truth_set = set(truth_labels)
-    prediction_set = set(prediction_labels)
-    # make them lower case
-    truth_set = {x.lower() for x in truth_set}
-    prediction_set = {x.lower() for x in prediction_set}
+    # get unique
+    truth_set = set(truth_set)
+    prediction_set = set(prediction_set)
 
     # calculate metrics
     true_positives = len(truth_set & prediction_set)
@@ -300,7 +300,7 @@ def calculate_rogue_metrics(prediction: str, desired: str):
     """
     rouge = evaluate.load("rouge")
     results = rouge.compute(
-        predictions=[prediction.lower()], references=[desired.lower()]
+        predictions=[prediction.lower().strip()], references=[desired.lower().strip()]
     )
     return results
 
@@ -318,9 +318,14 @@ def aggregate_metrics(file_name: str):
 
 if __name__ == "__main__":
     calculate_metrics_from_prompts(
-        ModelPrecision.EIGHT_BIT,
+        ModelPrecision.SIXTEEN_BIT,
         "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
         4096,
-        tasks_to_eval=["catalog"],
+    )
+
+    calculate_metrics_from_prompts(
+        ModelPrecision.FOUR_BIT,
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
+        4096,
     )
     # aggregate_metrics("validation_results_8bit_Gemma2b_V01_BRONCO_CARDIO_SUMMARY.json")

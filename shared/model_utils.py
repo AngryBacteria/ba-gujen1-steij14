@@ -61,6 +61,8 @@ class GenDevice(Enum):
     CUDA = "cuda"
     CUDA_0 = "cuda:0"
     CUDA_1 = "cuda:1"
+    CUDA_2 = "cuda:2"
+    CUDA_3 = "cuda:3"
 
 
 class ModelPrecision(Enum):
@@ -74,7 +76,7 @@ class ModelPrecision(Enum):
     THIRTY_TWO_BIT = 32
 
 
-CURRENT_DEFAULT_MODEL = "google/gemma-2b"
+CURRENT_DEFAULT_MODEL = "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY"
 CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
 
 
@@ -221,7 +223,7 @@ def load_model_and_tokenizer(
         bnb_config = BitsAndBytesConfig(load_in_8bit=True)
         model_config = {"quantization_config": bnb_config}
     elif precision == ModelPrecision.SIXTEEN_BIT:
-        if device == GenDevice.CUDA:
+        if device == GenDevice.CUDA_0:
             model_config = {"torch_dtype": torch.bfloat16}
         else:
             model_config = {"torch_dtype": torch.float16}
@@ -304,7 +306,7 @@ def generate_output(
     prompt: str,
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
-    device=GenDevice.CUDA,
+    device=GenDevice.CUDA_0,
     skip_special_tokens=True,
     max_new_tokens=1000,
 ):
@@ -328,6 +330,7 @@ def get_model_output_only(
     """
     Parses the model output (everything after the instruction) from the whole generated text.
     If the output could not be found return None
+    :param lower: If the output should be converted to lowercase
     :param full_output: The full output that the model generated.
     :param template: The template that was used during generation.
     :return: Only the output of the model.
@@ -397,7 +400,7 @@ def get_extractions_with_attributes(string_input: str):
 def test_generation(
     model_name=CURRENT_DEFAULT_MODEL,
     precision=ModelPrecision.FOUR_BIT,
-    device=GenDevice.CUDA,
+    device=GenDevice.CUDA_0,
 ):
     """Function to test if the inference of the model works on gpu or not"""
     messages1 = [
@@ -427,7 +430,7 @@ def test_generation(
         prompt = tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
-        print(generate_output(prompt, model, tokenizer, device=GenDevice.MPS))
+        print(generate_output(prompt, model, tokenizer, device=device))
         print(30 * "-")
 
 
@@ -462,7 +465,7 @@ def count_tokens(
 
 if __name__ == "__main__":
     test_generation(
-        model_name="BachelorThesis/Gemma2b_V01_BRONCO_CARDIO_SUMMARY",
+        model_name="BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY",
         precision=ModelPrecision.SIXTEEN_BIT,
-        device=GenDevice.MPS,
+        device=GenDevice.CUDA_0,
     )
