@@ -1,9 +1,14 @@
-import datetime
+import setproctitle
 import os
 
-import evaluate
-import setproctitle
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+import evaluate
+
+import datetime
+from shared.gpu_utils import get_cuda_memory_usage
 from shared.logger import logger
 from shared.model_utils import (
     load_model_and_tokenizer,
@@ -14,9 +19,6 @@ from shared.model_utils import (
     get_extractions_with_attributes,
 )
 
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 from datasets import load_dataset
 import pandas as pd
@@ -99,6 +101,7 @@ def calculate_metrics_from_prompts(
         _outputs = model.generate(**_inputs, max_new_tokens=9999)
         output_string = tokenizer.decode(_outputs[0], skip_special_tokens=True)
         output_string_raw = tokenizer.decode(_outputs[0], skip_special_tokens=False)
+        gvram_allocated, gvram_capacity = get_cuda_memory_usage(0)
         _end_time = datetime.datetime.now()
         execution_time = (_end_time - _start_time).microseconds
 
@@ -140,6 +143,8 @@ def calculate_metrics_from_prompts(
                     "type": example["type"],
                     "source": example["source"],
                     "na_prompt": example["na_prompt"],
+                    "gvram_allocated": gvram_allocated,
+                    "gvram_capacity": gvram_capacity,
                 }
             )
 
@@ -177,6 +182,8 @@ def calculate_metrics_from_prompts(
                     ],  # Type of annotation (DIAGNOSIS, MEDICATION, TREATMENT)
                     "source": example["source"],  # data source
                     "na_prompt": example["na_prompt"],  # if the example is empty or not
+                    "gvram_allocated": gvram_allocated,  # allocated vram by cuda
+                    "gvram_capacity": gvram_capacity,  # max vram capacity
                 }
             )
 
@@ -209,6 +216,8 @@ def calculate_metrics_from_prompts(
                     "type": example["type"],
                     "source": example["source"],
                     "na_prompt": example["na_prompt"],
+                    "gvram_allocated": gvram_allocated,
+                    "gvram_capacity": gvram_capacity,
                 }
             )
 
@@ -241,6 +250,8 @@ def calculate_metrics_from_prompts(
                     "type": example["type"],
                     "source": example["source"],
                     "na_prompt": example["na_prompt"],
+                    "gvram_allocated": gvram_allocated,
+                    "gvram_capacity": gvram_capacity,
                 }
             )
 
@@ -318,10 +329,12 @@ def aggregate_metrics(file_name: str):
 
 
 if __name__ == "__main__":
-    calculate_metrics_from_prompts(
-        ModelPrecision.SIXTEEN_BIT,
-        "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
-        "Gemma2b_V02",
-        4096,
+    # calculate_metrics_from_prompts(
+    #     ModelPrecision.SIXTEEN_BIT,
+    #     "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
+    #     "Gemma2b_V02",
+    #     4096,
+    # )
+    aggregate_metrics(
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\RESULTATE\\validation_results_16bit_Gemma2b_V02.json"
     )
-    # aggregate_metrics("validation_results_8bit_Gemma2b_V01_BRONCO_CARDIO_SUMMARY.json")

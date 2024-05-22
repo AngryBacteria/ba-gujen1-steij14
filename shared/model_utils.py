@@ -208,6 +208,20 @@ def load_model_and_tokenizer(
     """
     Helper function to load a model and tokenizer with a specific precision and chat template.
     Optionally patches the model and tokenizer with the template (recommended if not pre-configured)
+    :param model_name: The path of the model to load. Can be a huggingface repository name or a local directory.
+    For example: "BachelorThesis/LLama3_V02_BRONCO_CARDIO_SUMMARY_CATALOG"
+    :param precision: The precision to load the model in. Can be 4, 8, 16 or 32 bit. Recommended is 16 bit
+    for the best quality.
+    :param patch_model: If the model should be patched with the tokenizer vocab. Not required if the model is one
+    of ours
+    :param patch_tokenizer: If the tokenizer should be patched with the template. Not required if the tokenizer is
+    one of ours.
+    :param use_flash_attn: If the more efficient flash attention should be used. Always recommended. But it needs to
+    be installed and a CUDA device.
+    :param device: The device to use. If you have a CUDA device, it is recommended to use it. Else mps for Apple
+    Silicon devices and cpu for all other devices (will be terribly slow).
+    :param template: The chat/instruction template to use.
+    :return: Model and Tokenizer
     """
     tokenizer = AutoTokenizer.from_pretrained(
         model_name,
@@ -216,13 +230,27 @@ def load_model_and_tokenizer(
         add_bos_token=False,
     )
 
+    # get correct bnb compute dtype
+    if device.value in "cuda":
+        bnb_compute_dtype = torch.bfloat16
+    else:
+        bnb_compute_dtype = torch.float16
+
     # set correct config
     attn_implementation = "flash_attention_2" if use_flash_attn else "sdpa"
     if precision == ModelPrecision.FOUR_BIT:
-        bnb_config = BitsAndBytesConfig(load_in_4bit=True)
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=bnb_compute_dtype,
+        )
         model_config = {"quantization_config": bnb_config}
     elif precision == ModelPrecision.EIGHT_BIT:
-        bnb_config = BitsAndBytesConfig(load_in_8bit=True)
+        bnb_config = BitsAndBytesConfig(
+            load_in_8bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=bnb_compute_dtype,
+        )
         model_config = {"quantization_config": bnb_config}
     elif precision == ModelPrecision.SIXTEEN_BIT:
         if device.value in "cuda":
@@ -239,7 +267,7 @@ def load_model_and_tokenizer(
         }
     )
 
-    # "to" function is not supported with 8/4 bit models
+    # "to" function is not supported with 4/8 bit models
     if precision == ModelPrecision.FOUR_BIT or precision == ModelPrecision.EIGHT_BIT:
         model = AutoModelForCausalLM.from_pretrained(model_name, **model_config)
     else:

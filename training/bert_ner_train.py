@@ -7,6 +7,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+from shared.gpu_utils import print_cuda_support
 from transformers.trainer_utils import HubStrategy
 from training.utils.config import get_steps_per_epoch
 import evaluate
@@ -25,7 +26,6 @@ from training.utils.printing import (
     print_welcome_message,
     print_with_heading,
 )
-from training.utils.gpu import print_cuda_support
 
 EPOCHS = 10
 BATCH_SIZE = 32

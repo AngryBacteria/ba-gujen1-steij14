@@ -1,6 +1,6 @@
 from transformers import TrainerCallback
 
-from training.utils.gpu import get_cuda_memory_usage
+from shared.gpu_utils import get_cuda_memory_usage
 
 
 class GPUMemoryUsageCallback(TrainerCallback):

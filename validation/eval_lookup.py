@@ -86,7 +86,9 @@ def calculate_db_lookup_accuracy():
 
     # save to csv
     df = pd.DataFrame(outputs)
-    df.to_csv("validation_results_normalization_db_lookup.csv", index=False)
+    df.to_json(
+        "validation_results_normalization_db_lookup.json", index=False, orient="records"
+    )
 
 
 def aggregate_norm_results():

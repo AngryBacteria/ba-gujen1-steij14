@@ -12,9 +12,11 @@ SUMMARY_INSTRUCTION = """Bitte fasse den folgenden klinischen Text präzise zusa
 <<CONTEXT>>"""
 
 # CATALOG PROMPTS
-ATC_INSTRUCTION = """Was ist der ATC Code für „<<ENTITY>>“?"""
-ICD10GM_INSTRUCTION = """Was ist der ICD10-GM Code für „<<ENTITY>>“?"""
-OPS_INSTRUCTION = """Was ist der OPS-2017 Code für „<<ENTITY>>“?"""
+ATC_INSTRUCTION = """Was ist der ATC Code für das Medikament „<<ENTITY>>“?"""
+ICD10GM_INSTRUCTION = (
+    """Was ist der ICD10-GM Code für die Diagnose oder das Symptom „<<ENTITY>>“?"""
+)
+OPS_INSTRUCTION = """Was ist der OPS-2017 Code für die Prozedur „<<ENTITY>>“?"""
 
 
 # MEDICATION PROMPTS

@@ -2,6 +2,7 @@ import os
 
 import setproctitle
 
+from shared.gpu_utils import print_cuda_support
 from training.utils.config import parse_clm_config
 
 config = parse_clm_config()
@@ -24,7 +25,6 @@ from shared.model_utils import (
     load_tokenizer_with_template,
     patch_model_with_tokenizer,
 )
-from training.utils.gpu import print_cuda_support
 from datasets import load_dataset
 from transformers import (
     TrainingArguments,

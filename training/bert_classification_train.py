@@ -5,6 +5,7 @@ import setproctitle
 from datacorpus.aggregation.agg_bronco import (
     aggregate_bronco_multi_label_classification,
 )
+from shared.gpu_utils import print_cuda_support
 
 GPU = 0
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -17,7 +18,6 @@ from training.utils.printing import (
     print_welcome_message,
     print_with_heading,
 )
-from training.utils.gpu import print_cuda_support
 import numpy as np
 from datasets import Dataset
 from transformers import (
