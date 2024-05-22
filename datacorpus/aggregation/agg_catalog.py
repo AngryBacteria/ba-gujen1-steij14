@@ -50,7 +50,7 @@ def aggregate_catalog_prompts():
             code_instruction_str = OPS_INSTRUCTION.replace(
                 "<<ENTITY>>", doc["title"]
             ).strip()
-            output = f"Der OPS-2017 Code für {doc['title']} ist {doc['code']}"
+            output = f"Der OPS Code für {doc['title']} ist {doc['code']}"
             prompt_type = "TREATMENT"
         else:
             raise ValueError(f"Unknown source: {doc['source']}")

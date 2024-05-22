@@ -1,6 +1,6 @@
 from datacorpus.aggregation.prompts import (
-    MEDICATION_INSTRUCTION,
-    MEDICATION_INSTRUCTION_ATTRIBUTES,
+    MEDICATION_INSTRUCTION_GENERIC,
+    MEDICATION_INSTRUCTION_CARDIO,
     SYSTEM_PROMPT,
 )
 from datacorpus.utils.ner import group_ner_data
@@ -18,9 +18,9 @@ def get_cardio_instruction(add_attributes: bool):
     :param add_attributes: Boolean to indicate if the attributes should be added to the instruction string or not
     """
     if add_attributes:
-        extraction_instruction = MEDICATION_INSTRUCTION_ATTRIBUTES
+        extraction_instruction = MEDICATION_INSTRUCTION_CARDIO
     else:
-        extraction_instruction = MEDICATION_INSTRUCTION
+        extraction_instruction = MEDICATION_INSTRUCTION_GENERIC
 
     return extraction_instruction
 

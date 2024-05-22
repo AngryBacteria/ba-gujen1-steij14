@@ -35,7 +35,7 @@ from transformers import (
 
 # Welcome messages
 print_welcome_message()
-print_cuda_support(config.general.gpu)
+print_cuda_support()
 
 # Model
 if config.model.lower_precision:

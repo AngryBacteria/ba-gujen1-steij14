@@ -68,7 +68,7 @@ LABEL_LIST = [
 ]
 
 print_welcome_message()
-print_cuda_support(f"{GPU}")
+print_cuda_support()
 
 # Possible modesl
 # FacebookAI/xlm-roberta-large

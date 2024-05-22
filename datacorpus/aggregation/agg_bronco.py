@@ -5,15 +5,15 @@ from sklearn.preprocessing import MultiLabelBinarizer
 
 from datacorpus.aggregation.prompts import (
     SYSTEM_PROMPT,
-    MEDICATION_INSTRUCTION,
+    MEDICATION_INSTRUCTION_GENERIC,
     MEDICATION_NORMALIZATION_INSTRUCTION,
     DIAGNOSIS_NORMALIZATION_INSTRUCTION,
     TREATMENT_NORMALIZATION_INSTRUCTION,
-    TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH,
-    DIAGNOSIS_INSTRUCTION_LEVEL_OF_TRUTH,
-    DIAGNOSIS_INSTRUCTION,
-    TREATMENT_INSTRUCTION,
-    MEDICATION_INSTRUCTION_LEVEL_OF_TRUTH,
+    TREATMENT_INSTRUCTION_BRONCO,
+    DIAGNOSIS_INSTRUCTION_BRONCO,
+    DIAGNOSIS_INSTRUCTION_GENERIC,
+    TREATMENT_INSTRUCTION_GENERIC,
+    MEDICATION_INSTRUCTION_BRONCO,
     SYSTEM_PROMPT_NORMALIZATION,
 )
 from datacorpus.utils.ner import group_ner_data
@@ -26,34 +26,34 @@ from shared.logger import logger
 # texts without any annotations. The aggregation also includes the aggregation of NER documents.
 
 
-def get_bronco_instruction(annotation_type: str, add_level_of_truth: bool):
+def get_bronco_instruction(annotation_type: str, add_attributes: bool):
     """Helper function for getting the instruction strings for a given annotation type.
     :param annotation_type: The type of annotation to get the instruction string for. Can be
     one of the following: DIAGNOSIS, TREATMENT, MEDICATION
-    :param add_level_of_truth: Boolean to if the level of truth should be added to the instruction string or not
+    :param add_attributes: Boolean to if the attributes should be added to the instruction string or not
     """
-    if add_level_of_truth:
+    if add_attributes:
         if annotation_type == "DIAGNOSIS":
-            extraction_instruction = DIAGNOSIS_INSTRUCTION_LEVEL_OF_TRUTH
+            extraction_instruction = DIAGNOSIS_INSTRUCTION_BRONCO
             normalization_instruction = DIAGNOSIS_NORMALIZATION_INSTRUCTION
         elif annotation_type == "TREATMENT":
-            extraction_instruction = TREATMENT_INSTRUCTION_LEVEL_OF_TRUTH
+            extraction_instruction = TREATMENT_INSTRUCTION_BRONCO
             normalization_instruction = TREATMENT_NORMALIZATION_INSTRUCTION
         elif annotation_type == "MEDICATION":
-            extraction_instruction = MEDICATION_INSTRUCTION_LEVEL_OF_TRUTH
+            extraction_instruction = MEDICATION_INSTRUCTION_BRONCO
             normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
         else:
             raise ValueError("Invalid annotation type")
 
     else:
         if annotation_type == "DIAGNOSIS":
-            extraction_instruction = DIAGNOSIS_INSTRUCTION
+            extraction_instruction = DIAGNOSIS_INSTRUCTION_GENERIC
             normalization_instruction = DIAGNOSIS_NORMALIZATION_INSTRUCTION
         elif annotation_type == "TREATMENT":
-            extraction_instruction = TREATMENT_INSTRUCTION
+            extraction_instruction = TREATMENT_INSTRUCTION_GENERIC
             normalization_instruction = TREATMENT_NORMALIZATION_INSTRUCTION
         elif annotation_type == "MEDICATION":
-            extraction_instruction = MEDICATION_INSTRUCTION
+            extraction_instruction = MEDICATION_INSTRUCTION_GENERIC
             normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
         else:
             raise ValueError("Invalid annotation type")
@@ -63,7 +63,7 @@ def get_bronco_instruction(annotation_type: str, add_level_of_truth: bool):
 
 def get_bronco_na_prompts(
     annotation_type: str,
-    add_level_of_truth: bool,
+    add_attributes: bool,
     minimal_length: int,
     na_percentage: float,
 ):
@@ -71,7 +71,7 @@ def get_bronco_na_prompts(
     Get prompts for bronco corpus where there are no annotations for the given annotation type
     :param annotation_type: The type of annotation to get prompts for. Can be
     one of the following: DIAGNOSIS, TREATMENT, MEDICATION
-    :param add_level_of_truth: If the level of truth should be added to the prompt
+    :param add_attributes: If the attributes should be added
     :param minimal_length: Minimal length of origin texts to include
     :param na_percentage: Percentage of documents that should have no annotation
     """
@@ -105,7 +105,7 @@ def get_bronco_na_prompts(
     prompts = []
     for data in output:
         extraction_instruction, normalization_instruction = get_bronco_instruction(
-            annotation_type, add_level_of_truth
+            annotation_type, add_attributes
         )
 
         extraction_string = "Keine vorhanden"
@@ -134,21 +134,21 @@ def get_bronco_na_prompts(
 
 def get_bronco_prompts(
     annotation_type: str,
-    add_level_of_truth: bool,
+    add_attributes: bool,
     minimal_length: int,
 ):
     """
     Generic function to create the prompts for bronco corpus
     :param annotation_type: The type of annotation to get prompts for. Can be
     one of the following: DIAGNOSIS, TREATMENT, MEDICATION
-    :param add_level_of_truth: If the level of truth should be added to the text
+    :param add_attributes: If the attributes should be added to the text
     :param minimal_length: Minimal length of origin texts to include
     :return: List of prompts
     """
     extraction_prompts = []
     normalization_prompts = []
     extraction_instruction, normalization_instruction = get_bronco_instruction(
-        annotation_type, add_level_of_truth
+        annotation_type, add_attributes
     )
     bronco_collection = get_collection("corpus", "bronco")
     documents = bronco_collection.find({"type": annotation_type})
@@ -157,30 +157,33 @@ def get_bronco_prompts(
             continue
 
         texts = []
-        # add level of truth and localisation to the text
-        if add_level_of_truth:
+        # add attributes to the text
+        if add_attributes:
             for index, extraction_text in enumerate(document["text"]):
                 attributes = []
                 is_positive = True
                 for attribute in document["attributes"][index]:
-                    if (
-                        add_level_of_truth
-                        and attribute["attribute_label"] == "LevelOfTruth"
-                    ):
-                        if attribute["attribute"] == "negative":
-                            attributes.append("NEGATIV")
-                            is_positive = False
-                        if attribute["attribute"] == "speculative":
-                            attributes.append("SPEKULATIV")
-                            is_positive = False
-                        if attribute["attribute"] == "possibleFuture":
-                            attributes.append("ZUKÜNFTIG")
-                            is_positive = False
+                    if attribute["attribute"] == "negative":
+                        attributes.append("NEGATIV")
+                        is_positive = False
+                    if attribute["attribute"] == "speculative":
+                        attributes.append("SPEKULATIV")
+                        is_positive = False
+                    if attribute["attribute"] == "possibleFuture":
+                        attributes.append("ZUKÜNFTIG")
+                        is_positive = False
+
+                    if attribute["attribute"] == "R":
+                        attributes.append("RECHTS")
+                    if attribute["attribute"] == "L":
+                        attributes.append("LINKS")
+                    if attribute["attribute"] == "B":
+                        attributes.append("BEIDSEITIG")
 
                 if is_positive:
                     attributes.append("POSITIV")
                 if len(attributes) < 1:
-                    texts.append(extraction_text)
+                    raise ValueError("No attributes found, this should not happen")
                 else:
                     texts.append(f"{extraction_text} [{'|'.join(attributes)}]")
         else:

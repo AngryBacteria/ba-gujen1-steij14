@@ -1,19 +1,12 @@
-import os
-
 import pynvml
-import setproctitle
 import torch
 from pynvml import NVMLError
 
 from training.utils.printing import print_with_heading
 
 
-def print_cuda_support(gpu_id: str):
+def print_cuda_support():
     """Print information about the GPU."""
-    setproctitle.setproctitle("gujen1 - ba-mistralai - testing.py")
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
-
     print_with_heading("GPU Information")
     print(f"Is CUDA available: {torch.cuda.is_available()}")
     print(f"Number of GPUs: {torch.cuda.device_count()}")

@@ -1,8 +1,8 @@
 from datacorpus.aggregation.prompts import (
     SYSTEM_PROMPT,
-    MEDICATION_INSTRUCTION,
-    DIAGNOSIS_INSTRUCTION,
-    TREATMENT_INSTRUCTION,
+    MEDICATION_INSTRUCTION_GENERIC,
+    DIAGNOSIS_INSTRUCTION_GENERIC,
+    TREATMENT_INSTRUCTION_GENERIC,
 )
 from datacorpus.utils.ner import group_ner_data
 from shared.mongodb import get_collection
@@ -20,11 +20,11 @@ def get_ggponc_instruction(annotation_type: str):
     one of the following: DIAGNOSIS, TREATMENT, MEDICATION
     """
     if annotation_type == "DIAGNOSIS":
-        extraction_instruction = DIAGNOSIS_INSTRUCTION
+        extraction_instruction = DIAGNOSIS_INSTRUCTION_GENERIC
     elif annotation_type == "TREATMENT":
-        extraction_instruction = TREATMENT_INSTRUCTION
+        extraction_instruction = TREATMENT_INSTRUCTION_GENERIC
     elif annotation_type == "MEDICATION":
-        extraction_instruction = MEDICATION_INSTRUCTION
+        extraction_instruction = MEDICATION_INSTRUCTION_GENERIC
     else:
         raise ValueError(
             f"Annotation type {annotation_type} is not supported for ggponc prompts."

@@ -46,7 +46,7 @@ data, id2label, label2id, NUM_LABELS = aggregate_bronco_multi_label_classificati
 )
 
 print_welcome_message()
-print_cuda_support(f"{GPU}")
+print_cuda_support()
 
 
 def preprocess_function(examples):
