@@ -324,11 +324,4 @@ if __name__ == "__main__":
         "Gemma2b_V02",
         4096,
     )
-
-    calculate_metrics_from_prompts(
-        ModelPrecision.FOUR_BIT,
-        "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
-        "Gemma2b_V02",
-        4096,
-    )
     # aggregate_metrics("validation_results_8bit_Gemma2b_V01_BRONCO_CARDIO_SUMMARY.json")

@@ -194,6 +194,8 @@ def get_best_device() -> GenDevice:
         return GenDevice.CPU
 
 
+# TODO: proper dtype for 4/8 bit models and proper device map
+#  https://stackoverflow.com/questions/77301266/input-type-into-linear4bit-is-torch-float16-but-bnb-4bit-compute-type-torch-flo
 def load_model_and_tokenizer(
     model_name: str,
     precision: ModelPrecision,
@@ -223,7 +225,7 @@ def load_model_and_tokenizer(
         bnb_config = BitsAndBytesConfig(load_in_8bit=True)
         model_config = {"quantization_config": bnb_config}
     elif precision == ModelPrecision.SIXTEEN_BIT:
-        if device == GenDevice.CUDA_0:
+        if device.value in "cuda":
             model_config = {"torch_dtype": torch.bfloat16}
         else:
             model_config = {"torch_dtype": torch.float16}
