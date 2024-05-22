@@ -24,6 +24,7 @@ import pandas as pd
 
 def calculate_metrics_from_prompts(
     precision: ModelPrecision,
+    model_path: str,
     model_name: str,
     trained_sequence_length: int,
     tasks_to_eval=None,
@@ -33,17 +34,17 @@ def calculate_metrics_from_prompts(
     is then compared to the ground truth (the full prompt with answer). The model is evaluated on the prompts.jsonl
     data. The results are saved to a file. The extraction/normalization task is evaluated with and without attributes.
     Right now the attribute metrics are not saved in an intelligent way, this should be done (TODO: do it).
+    :param model_name: The name of the model. Used to save the file
     :param tasks_to_eval: The tasks that should be evaluated
     :param precision: The precision to load the model in (16bit recommended if hardware supports it)
-    :param model_name: The name of the model to load
+    :param model_path: The path of the model to load. Can be either local dir or a huggingface repository
     :param trained_sequence_length: The sequence length the model was trained on
     :return: None the data is saved to a file
     """
     if tasks_to_eval is None:
         tasks_to_eval = ["extraction", "normalization", "summary", "catalog"]
 
-    tokenizer, model = load_model_and_tokenizer(model_name, precision)
-    model_name = model_name.split("\\")[-1]
+    tokenizer, model = load_model_and_tokenizer(model_path, precision)
     _dataset = load_dataset("json", data_files={"data": "prompts.jsonl"})[
         "data"
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
@@ -320,12 +321,14 @@ if __name__ == "__main__":
     calculate_metrics_from_prompts(
         ModelPrecision.SIXTEEN_BIT,
         "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
+        "Gemma2b_V02",
         4096,
     )
 
     calculate_metrics_from_prompts(
         ModelPrecision.FOUR_BIT,
         "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
+        "Gemma2b_V02",
         4096,
     )
     # aggregate_metrics("validation_results_8bit_Gemma2b_V01_BRONCO_CARDIO_SUMMARY.json")
