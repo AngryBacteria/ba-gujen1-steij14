@@ -76,8 +76,8 @@ class ModelPrecision(Enum):
     THIRTY_TWO_BIT = 32
 
 
-CURRENT_DEFAULT_MODEL = "BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG"
-CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
+CURRENT_DEFAULT_MODEL = "meta-llama/Meta-Llama-3-8B"
+CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_LLAMA3
 
 
 def load_template_from_jinja(file_name="template"):
