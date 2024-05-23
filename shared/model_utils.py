@@ -76,8 +76,8 @@ class ModelPrecision(Enum):
     THIRTY_TWO_BIT = 32
 
 
-CURRENT_DEFAULT_MODEL = "BachelorThesis/Gemma2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
-CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
+CURRENT_DEFAULT_MODEL = "BachelorThesis/LLama3_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
+CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_LLAMA3
 
 
 def load_template_from_jinja(file_name="template"):
@@ -156,6 +156,7 @@ def load_tokenizer_with_template(
     )
     # load the chat template
     tokenizer.chat_template = template.value["template"]
+    logger.debug(f"Loaded tokenizer {tokenizer_name} with template {template.name}")
     return tokenizer
 
 
@@ -178,6 +179,9 @@ def patch_model_with_tokenizer(model: PreTrainedModel, tokenizer: PreTrainedToke
         model.generation_config.eos_token_id = tokenizer.eos_token_id
         model.generation_config.pad_token_id = tokenizer.pad_token_id
 
+    logger.debug(
+        f"Patched model {model.name_or_path} with tokenizer {tokenizer.name_or_path}"
+    )
     return model
 
 
@@ -278,6 +282,9 @@ def load_model_and_tokenizer(
     if patch_model:
         model = patch_model_with_tokenizer(model, tokenizer)
 
+    logger.debug(
+        f"Loaded model/tokenizer {model_name} with precision {precision.name} and tokenization template {template.name}"
+    )
     return tokenizer, model
 
 
@@ -355,7 +362,7 @@ def generate_output(
 
     execution_time = int((end_time - start_time) * 1000)
     logger.debug(
-        f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}ms"
+        f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}ms on {device.value}"
     )
     return model_output, model_output_raw
 

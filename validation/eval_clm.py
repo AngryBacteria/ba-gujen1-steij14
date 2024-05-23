@@ -101,7 +101,7 @@ def calculate_metrics_from_prompts(
         # get the model output
         _start_time = datetime.datetime.now()
         _inputs = tokenizer(instruction, return_tensors="pt").to("cuda:0")
-        _outputs = model.generate(**_inputs, max_new_tokens=9999)
+        _outputs = model.generate(**_inputs, max_new_tokens=2500)
         output_string = tokenizer.decode(_outputs[0], skip_special_tokens=True)
         output_string_raw = tokenizer.decode(_outputs[0], skip_special_tokens=False)
         _end_time = datetime.datetime.now()
@@ -367,10 +367,10 @@ def aggregate_metrics(file_name: str):
 if __name__ == "__main__":
     calculate_metrics_from_prompts(
         ModelPrecision.SIXTEEN_BIT,
-        "BachelorThesis/Gemma2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG",
-        "Gemma2b_V03",
+        "BachelorThesis/LLama3_V03_BRONCO_CARDIO_SUMMARY_CATALOG",
+        "LLama3_V03",
         4096,
     )
-    # aggregate_metrics(
-    #    "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\alt\\validation_results_16bit_Gemma2b_V02.json"
-    # )
+    aggregate_metrics(
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_16bit_Gemma2b_V03.json"
+    )
