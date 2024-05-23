@@ -397,7 +397,7 @@ def count_cardio_tokens():
             full_text = file.read().strip()
             texts.append(full_text)
 
-    return count_tokens(texts, None, "LeoLM/leo-mistral-hessianai-7b")
+    return count_tokens(texts)
 
 
 def build_cardio_db():

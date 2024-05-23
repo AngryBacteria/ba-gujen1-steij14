@@ -76,8 +76,8 @@ class ModelPrecision(Enum):
     THIRTY_TWO_BIT = 32
 
 
-CURRENT_DEFAULT_MODEL = "meta-llama/Meta-Llama-3-8B"
-CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_LLAMA3
+CURRENT_DEFAULT_MODEL = "BachelorThesis/Gemma2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
+CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
 
 
 def load_template_from_jinja(file_name="template"):
@@ -194,11 +194,9 @@ def get_best_device() -> GenDevice:
         return GenDevice.CPU
 
 
-# TODO: proper dtype for 4/8 bit models and proper device map
-#  https://stackoverflow.com/questions/77301266/input-type-into-linear4bit-is-torch-float16-but-bnb-4bit-compute-type-torch-flo
 def load_model_and_tokenizer(
-    model_name: str,
-    precision: ModelPrecision,
+    model_name=CURRENT_DEFAULT_MODEL,
+    precision=ModelPrecision.SIXTEEN_BIT,
     patch_model=False,
     patch_tokenizer=False,
     use_flash_attn=False,
@@ -248,8 +246,6 @@ def load_model_and_tokenizer(
     elif precision == ModelPrecision.EIGHT_BIT:
         bnb_config = BitsAndBytesConfig(
             load_in_8bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=bnb_compute_dtype,
         )
         model_config = {"quantization_config": bnb_config}
     elif precision == ModelPrecision.SIXTEEN_BIT:
@@ -276,7 +272,9 @@ def load_model_and_tokenizer(
         )
 
     if patch_tokenizer:
-        tokenizer = load_tokenizer_with_template(template=template)
+        tokenizer = load_tokenizer_with_template(
+            tokenizer_name=model_name, template=template
+        )
     if patch_model:
         model = patch_model_with_tokenizer(model, tokenizer)
 
@@ -286,11 +284,13 @@ def load_model_and_tokenizer(
 def upload_model(
     account_name: str,
     repo_name: str,
-    local_model_folder="mistral_instruction_low_precision",
-    patch=True,
+    local_model_folder: str,
+    patch: bool,
+    template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """
     Uploads a model to Huggingface.
+    :param template: The template used for patching the model
     :param account_name: The name of the account to upload to. Can also be an organization.
     :param repo_name: The name of the repository to upload to or create.
     :param local_model_folder: The name of the local model folder to upload
@@ -298,7 +298,9 @@ def upload_model(
     :return:
     """
     if patch:
-        tokenizer = load_tokenizer_with_template(tokenizer_name=local_model_folder)
+        tokenizer = load_tokenizer_with_template(
+            tokenizer_name=local_model_folder, template=template
+        )
         model = AutoModelForCausalLM.from_pretrained(
             local_model_folder, torch_dtype=torch.bfloat16
         )
@@ -312,11 +314,13 @@ def upload_model(
 def upload_tokenizer(
     account_name: str,
     repo_name: str,
-    local_model_folder="mistral_instruction_low_precision",
-    patch=True,
+    local_model_folder: str,
+    patch: bool,
+    template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """
     Uploads a tokenizer to Huggingface.
+    :param template: The template used for patching the tokenizer
     :param account_name: The name of the account to upload to. Can also be an organization.
     :param repo_name: The name of the repository to upload to or create.
     :param local_model_folder: The name of the local tokenizer folder to upload
@@ -324,7 +328,9 @@ def upload_tokenizer(
     :return:
     """
     if patch:
-        tokenizer = load_tokenizer_with_template(tokenizer_name=local_model_folder)
+        tokenizer = load_tokenizer_with_template(
+            tokenizer_name=local_model_folder, template=template
+        )
         tokenizer.push_to_hub(f"{account_name}/{repo_name}", private=True)
     else:
         tokenizer = AutoTokenizer.from_pretrained(local_model_folder)
@@ -337,7 +343,7 @@ def generate_output(
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
     device=GenDevice.CUDA_0,
-    max_new_tokens=9999,
+    max_new_tokens=2000,
 ) -> tuple[str, str]:
     start_time = time.perf_counter()
 
@@ -468,6 +474,7 @@ def test_generation(
     model_name=CURRENT_DEFAULT_MODEL,
     precision=ModelPrecision.FOUR_BIT,
     device=GenDevice.CUDA_0,
+    template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """Function to test if the inference of the model works on gpu or not"""
     messages1 = [
@@ -492,7 +499,9 @@ def test_generation(
     ]
     messages_concat = [messages1, messages2]
 
-    tokenizer, model = load_model_and_tokenizer(model_name, precision, device=device)
+    tokenizer, model = load_model_and_tokenizer(
+        model_name, precision, device=device, template=template
+    )
     for messages in messages_concat:
         prompt = tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
@@ -505,10 +514,12 @@ def test_generation(
 def count_tokens(
     data: list[str],
     tokenizer_instance: PreTrainedTokenizer = None,
-    tokenizer_name: str = None,
+    tokenizer_name=CURRENT_DEFAULT_MODEL,
+    template=CURRENT_DEFAULT_TEMPLATE,
 ) -> int:
     """
     Count the tokens of a dataset with a tokenizer. Either pass a tokenizer or a tokenizer name.
+    :param template: The template to use for the tokenizer.
     :param data: List of strings that will get counted.
     :param tokenizer_instance: The tokenizer to use. If nothing is passed, the tokenizer_name will be used.
     :param tokenizer_name: The name of the tokenizer to use. If a tokenizer is passed, this will be ignored.
@@ -520,8 +531,10 @@ def count_tokens(
             tokens += len(tokenizer_instance(text)["input_ids"])
         return tokens
 
-    if tokenizer_name is not None:
-        tokenizer = load_tokenizer_with_template(tokenizer_name=tokenizer_name)
+    elif tokenizer_name is not None:
+        tokenizer = load_tokenizer_with_template(
+            tokenizer_name=tokenizer_name, template=template
+        )
         tokens = 0
         for text in data:
             tokens += len(tokenizer(text)["input_ids"])
@@ -533,7 +546,6 @@ def count_tokens(
 
 if __name__ == "__main__":
     test_generation(
-        model_name="BachelorThesis/Gemma2b_V02_BRONCO_CARDIO_SUMMARY_CATALOG",
         precision=ModelPrecision.SIXTEEN_BIT,
         device=GenDevice.CUDA_0,
     )

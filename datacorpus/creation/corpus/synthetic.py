@@ -150,8 +150,8 @@ def count_synthetic_tokens():
         texts_origin.append(doc["origin"])
         texts_summary.append(doc["summary"])
 
-    tokens_origin = count_tokens(texts_origin, None, "LeoLM/leo-mistral-hessianai-7b")
-    tokens_summary = count_tokens(texts_summary, None, "LeoLM/leo-mistral-hessianai-7b")
+    tokens_origin = count_tokens(texts_origin)
+    tokens_summary = count_tokens(texts_summary)
     tokens = tokens_summary + tokens_origin
 
     return tokens_origin, tokens_summary, tokens

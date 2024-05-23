@@ -185,7 +185,7 @@ def count_ggponc_tokens():
         for passage in document["passages"]:
             texts.append(passage["text"])
 
-    return count_tokens(texts, None, "LeoLM/leo-mistral-hessianai-7b")
+    return count_tokens(texts)
 
 
 def build_ggponc_db():

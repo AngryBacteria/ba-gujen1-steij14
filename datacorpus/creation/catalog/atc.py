@@ -68,7 +68,7 @@ def count_atc_tokens():
     atc_collection = get_collection("catalog", "atc")
     atc_docs = atc_collection.find({})
     texts = [f"{doc['title']} {doc['code']}" for doc in atc_docs]
-    tokens = count_tokens(texts, tokenizer_name="LeoLM/leo-mistral-hessianai-7b")
+    tokens = count_tokens(texts)
     logger.debug(f"Used {atc_collection.count_documents({})} ATC documents.")
 
     return tokens

@@ -253,7 +253,7 @@ def count_bronco_tokens() -> int:
             annotations_text = file.read()
             texts.append(annotations_text.strip())
 
-    return count_tokens(texts, None, "LeoLM/leo-mistral-hessianai-7b")
+    return count_tokens(texts)
 
 
 def create_bronco_db() -> None:

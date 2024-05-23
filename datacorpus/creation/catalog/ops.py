@@ -130,7 +130,7 @@ def count_ops_tokens():
     ops_pattern = re.compile(r"^(?!.*\.).*$", re.IGNORECASE)
     ops_docs = ops_collection.find({"code": {"$regex": ops_pattern}})
     texts = [f"{doc['title']} {doc['code']}" for doc in ops_docs]
-    tokens = count_tokens(texts, tokenizer_name="LeoLM/leo-mistral-hessianai-7b")
+    tokens = count_tokens(texts)
     logger.debug(
         f"Used {ops_collection.count_documents({'code': {'$regex': ops_pattern}})} OPS documents."
     )

@@ -32,23 +32,23 @@ if __name__ == "__main__":
     print(f"{30*'-'}Extraction{30*'-'}")
     extraction_df = extraction_df.groupby(["source", "type"])
     for source, group in extraction_df:
-        tokens = count_tokens(group["text"], None, "LeoLM/leo-mistral-hessianai-7b")
+        tokens = count_tokens(group["text"])
         print(source, len(group), tokens)
 
     print(f"{30 * '-'}Normalization{30 * '-'}")
     normalization_df = normalization_df.groupby(["source", "type"])
     for source, group in normalization_df:
-        tokens = count_tokens(group["text"], None, "LeoLM/leo-mistral-hessianai-7b")
+        tokens = count_tokens(group["text"])
         print(source, len(group), tokens)
 
     print(f"{30 * '-'}Summary{30 * '-'}")
     summary_df = summary_df.groupby(["source"])
     for source, group in summary_df:
-        tokens = count_tokens(group["text"], None, "LeoLM/leo-mistral-hessianai-7b")
+        tokens = count_tokens(group["text"])
         print(source, len(group), tokens)
 
     print(f"{30 * '-'}Catalog{30 * '-'}")
     catalog_df = catalog_df.groupby(["source"])
     for source, group in catalog_df:
-        tokens = count_tokens(group["text"], None, "LeoLM/leo-mistral-hessianai-7b")
+        tokens = count_tokens(group["text"])
         print(source, len(group), tokens)

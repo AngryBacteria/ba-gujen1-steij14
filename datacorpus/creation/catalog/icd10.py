@@ -312,7 +312,7 @@ def count_icd10_tokens(icd10gm: bool):
     icd10_pattern = re.compile(r"^(?!.*\.).*$", re.IGNORECASE)
     icd10_docs = icd10_collection.find({"code": {"$regex": icd10_pattern}})
     texts = [f"{doc['title']} {doc['code']}" for doc in icd10_docs]
-    tokens = count_tokens(texts, tokenizer_name="LeoLM/leo-mistral-hessianai-7b")
+    tokens = count_tokens(texts)
     logger.debug(
         f"Used {icd10_collection.count_documents({'code': {'$regex': icd10_pattern}})} ICD-10 documents."
     )
