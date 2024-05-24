@@ -42,7 +42,7 @@ EVALS_PER_EPOCH = 8
 LOGS_PER_EPOCH = 2
 
 data, id2label, label2id, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Normalization", "ATC", False
+    "Normalization", "ICD10", False, 10, True
 )
 
 print_welcome_message()
@@ -98,7 +98,7 @@ training_args = TrainingArguments(
     per_device_eval_batch_size=BATCH_SIZE,
     num_train_epochs=EPOCHS,
     # optimization setup
-    optim="adamw_torch_fused",
+    optim="adamw_hf",
     learning_rate=LEARNING_RATE,
     # logging
     report_to=["none"],

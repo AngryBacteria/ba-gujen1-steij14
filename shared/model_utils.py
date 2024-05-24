@@ -428,7 +428,6 @@ def get_extractions_with_attributes(string_input: str):
     extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
     :param string_input: The string input to get the extractions from.
     """
-    # TODO: return the extractions and attributes as list, not just a string like here :(
     string_input = string_input.strip().lower()
     extractions = string_input.split("|")
     extractions = [extraction.strip() for extraction in extractions]

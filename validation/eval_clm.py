@@ -38,7 +38,6 @@ def calculate_metrics_from_prompts(
     Calculates the metrics precision, recall and f1 score for the extraction task. The model makes a precision which
     is then compared to the ground truth (the full prompt with answer). The model is evaluated on the prompts.jsonl
     data. The results are saved to a file. The extraction/normalization task is evaluated with and without attributes.
-    Right now the attribute metrics are not saved in an intelligent way, this should be done (TODO: do it).
     :param model_name: The name of the model. Used to save the file
     :param tasks_to_eval: The tasks that should be evaluated
     :param precision: The precision to load the model in (16bit recommended if hardware supports it)

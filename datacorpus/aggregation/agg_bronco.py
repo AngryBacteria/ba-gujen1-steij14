@@ -1,4 +1,5 @@
 import random
+from collections import Counter
 
 import pandas
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -375,13 +376,19 @@ def aggregate_bronco_prompts(
 
 
 def aggregate_bronco_multi_label_classification(
-    task: str, normalization_type: str, detailed: bool
+    task: str,
+    normalization_type: str,
+    detailed: bool,
+    top_x_labels=10,
+    include_other=True,
 ):
     """
     Create a bronco dataset for multi-label classification
-    :param detailed:
+    :param detailed: How many layers deep to go for icd10/ops codes. True means all, False means 3-4 layers.
     :param task: The task to create the dataset for. Can be one of the following: Normalization, Entity_Type
     :param normalization_type: The type of entity to create the dataset for.
+    :param top_x_labels: The number of top x labels to create the dataset for.
+    :param include_other: Whether to include a category "other" which means it is not in the top_x labels.
     Can be one of the following: ICD10GM, OSP, ATC
     :return:
     """
@@ -415,9 +422,21 @@ def aggregate_bronco_multi_label_classification(
     else:
         raise ValueError("Not implemented")
 
+    # Count label frequencies
+    label_counter = Counter(label for labels in all_labels for label in labels)
+    top_labels = {label for label, _ in label_counter.most_common(top_x_labels)}
+    # Filter labels and add "OTHER" category for labels not in top X if include_other is True
+    filtered_labels = []
+    for labels in all_labels:
+        if include_other:
+            filtered = [label if label in top_labels else "OTHER" for label in labels]
+        else:
+            filtered = [label for label in labels if label in top_labels]
+        filtered_labels.append(filtered)
+
     # transform into one-hot encoding
     mlb = MultiLabelBinarizer()
-    one_hot_encoded = mlb.fit_transform(all_labels).astype(float)
+    one_hot_encoded = mlb.fit_transform(filtered_labels).astype(float)
     grouped_df["labels"] = list(one_hot_encoded)
 
     # remove all other columns
@@ -439,4 +458,6 @@ def aggregate_bronco_multi_label_classification(
 
 # if main method
 if __name__ == "__main__":
-    aggregate_bronco_multi_label_classification("Normalization", "ICD10GM", False)
+    aggregate_bronco_multi_label_classification(
+        "Normalization", "ICD10GM", False, 10, True
+    )
