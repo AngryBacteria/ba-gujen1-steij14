@@ -2,7 +2,7 @@ import json
 import os.path
 
 from datacorpus.utils.ner import parse_ner_dataset
-from shared.model_utils import count_tokens
+from shared.clm_model_utils import count_tokens
 from shared.mongodb import (
     upload_data_to_mongodb,
     rename_dict_keys,

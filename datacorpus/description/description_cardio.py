@@ -3,7 +3,7 @@ import ast
 import pandas as pd
 from pandas import DataFrame
 
-from shared.model_utils import load_tokenizer_with_template
+from shared.clm_model_utils import load_tokenizer_with_template
 from shared.mongodb import get_collection
 
 
@@ -202,7 +202,6 @@ def show_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     # calculate the lengths
     lengths = []
     if tokenize:
-
         tokenizer = load_tokenizer_with_template()
         for index, row in df.iterrows():
             paragraph_length = len(tokenizer.tokenize(row["origin"]))
@@ -322,7 +321,6 @@ if __name__ == "__main__":
     # save_to_csv()
     df = read_from_csv("cardio_description.csv")
     df2 = read_from_csv("cardio_full_text.csv")
-    # data used in paper (tokens calculated in create script)
     show_type_pieplot(df)
     show_lengths_boxplot(df2, tokenize=True)
     print(get_number_of_annotations(df))

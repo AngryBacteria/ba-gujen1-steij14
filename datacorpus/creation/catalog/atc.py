@@ -1,7 +1,7 @@
 import pandas as pd
 
 from shared.logger import logger
-from shared.model_utils import count_tokens
+from shared.clm_model_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # DATA SOURCE: Unknown origin. (Medication_Pharmacode_ATC.xlsx)

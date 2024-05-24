@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from shared.logger import logger
-from shared.model_utils import count_tokens
+from shared.clm_model_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # Creation of data with synthetic methods such as the OpenAI API.

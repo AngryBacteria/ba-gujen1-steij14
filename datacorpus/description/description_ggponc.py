@@ -2,7 +2,7 @@ import pandas as pd
 from pandas import DataFrame
 
 from shared.mongodb import get_collection
-from shared.model_utils import load_tokenizer_with_template
+from shared.clm_model_utils import load_tokenizer_with_template
 
 
 # Collection of functions to analyze the ggponc2 dataset.

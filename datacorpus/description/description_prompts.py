@@ -1,7 +1,7 @@
 import pandas as pd
 from datasets import load_dataset
 
-from shared.model_utils import count_tokens
+from shared.clm_model_utils import count_tokens
 
 
 # Collection of functions to analyze the prompts that were created with the aggregation script.

@@ -503,7 +503,17 @@ def test_generation(
             "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":\n\nDer Patient hat Kopfschmerzen.',
         },
     ]
-    messages_concat = [messages1, messages2]
+    messages3 = [
+        {
+            "role": "system",
+            "content": "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.",
+        },
+        {
+            "role": "user",
+            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":\n\nDie Patientin Pamela Berger hatte sich heute in der Notfallaufnahme gemeldet weil sie keine starken Bauchschmerzen hatte.',
+        },
+    ]
+    messages_concat = [messages1, messages2, messages3]
 
     tokenizer, model = load_model_and_tokenizer(
         model_name, precision, device=device, template=template

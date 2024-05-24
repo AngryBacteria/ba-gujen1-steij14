@@ -3,7 +3,7 @@ import re
 
 import pandas as pd
 
-from shared.model_utils import count_tokens
+from shared.clm_model_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb
 from shared.logger import logger
 

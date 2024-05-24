@@ -4,7 +4,7 @@ import re
 import pandas as pd
 
 from shared.logger import logger
-from shared.model_utils import count_tokens
+from shared.clm_model_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # Paths to the various OPS classification files. Includes metadata and alphabet

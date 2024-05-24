@@ -1,7 +1,7 @@
 import pandas as pd
 from pandas import DataFrame
 
-from shared.model_utils import load_tokenizer_with_template
+from shared.clm_model_utils import load_tokenizer_with_template
 from shared.mongodb import get_collection
 
 
@@ -66,3 +66,4 @@ def show_text_length_boxplot(df: DataFrame, text_type: str, tokenize: bool = Fal
 if __name__ == "__main__":
     df = read_from_csv()
     show_text_length_boxplot(df, "origin", tokenize=True)
+    show_text_length_boxplot(df, "summary", tokenize=True)

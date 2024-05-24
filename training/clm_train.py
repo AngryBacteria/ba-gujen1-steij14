@@ -21,7 +21,7 @@ from training.utils.printing import (
     print_with_heading,
 )
 from transformers.trainer_utils import HubStrategy
-from shared.model_utils import (
+from shared.clm_model_utils import (
     load_tokenizer_with_template,
     patch_model_with_tokenizer,
 )

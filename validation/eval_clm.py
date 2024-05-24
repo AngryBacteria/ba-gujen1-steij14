@@ -1,7 +1,7 @@
+import os
 from statistics import mean
 
 import setproctitle
-import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -12,7 +12,7 @@ import evaluate
 import datetime
 from shared.gpu_utils import get_cuda_memory_usage
 from shared.logger import logger
-from shared.model_utils import (
+from shared.clm_model_utils import (
     load_model_and_tokenizer,
     ModelPrecision,
     get_model_output_only,
@@ -22,7 +22,6 @@ from shared.model_utils import (
     get_extractions_with_attributes_grouped,
 )
 
-
 from datasets import load_dataset
 import pandas as pd
 
@@ -31,7 +30,7 @@ def calculate_metrics_from_prompts(
     precision: ModelPrecision,
     model_path: str,
     model_name: str,
-    trained_sequence_length: int,
+    max_sequence_length: int,
     tasks_to_eval=None,
 ):
     """
@@ -42,8 +41,9 @@ def calculate_metrics_from_prompts(
     :param tasks_to_eval: The tasks that should be evaluated
     :param precision: The precision to load the model in (16bit recommended if hardware supports it)
     :param model_path: The path of the model to load. Can be either local dir or a huggingface repository
-    :param trained_sequence_length: The sequence length the model was trained on
-    :return: None the data is saved to a file
+    :param max_sequence_length: The max sequence length the model should be evaluated on. The full prompt (with answer)
+    is taken as the filter for the max sequence length.
+    :return: None, the data is saved to a file
     """
     if tasks_to_eval is None:
         tasks_to_eval = ["extraction", "normalization", "summary", "catalog"]
@@ -68,7 +68,8 @@ def calculate_metrics_from_prompts(
         _tokenized = tokenizer.apply_chat_template(
             example["messages"], tokenize=True, add_generation_prompt=True
         )
-        if len(_tokenized) >= trained_sequence_length:
+        # TODO: discuss if this makes sense
+        if len(_tokenized) >= max_sequence_length:
             logger.warning(
                 f"Skipping example {i} with length {len(_tokenized)}, because it is too long"
             )
@@ -354,22 +355,61 @@ def calculate_rogue_metrics(prediction: str, desired: str):
 
 def aggregate_metrics(file_name: str):
     df = pd.read_json(file_name)
-    grouped = df.groupby(["task", "source", "type", "na_prompt"])
+    grouped = df.groupby(["task", "source", "type"])
+
+    results = []
     for name, group in grouped:
         logger.debug(name)
-        logger.debug(f"Precision: {group['precision'].mean()}")
-        logger.debug(f"Recall: {group['recall'].mean()}")
-        logger.debug(f"F1 Score: {group['f1_score'].mean()}")
+
+        if name[0] == "summary":
+            logger.debug(f"Rouge1   : {group['rouge1'].mean()}")
+            logger.debug(f"Rouge2   : {group['rouge2'].mean()}")
+            logger.debug(f"RougeL   : {group['rougeL'].mean()}")
+            logger.debug(f"RougeLSum: {group['rougeLsum'].mean()}")
+            logger.debug(f"VRAM     : {group['gvram_allocated'].mean()}")
+            results.append(
+                {
+                    "task": name[0],
+                    "source": name[1],
+                    "type": name[2],
+                    "rouge1": group["rouge1"].mean(),
+                    "rouge2": group["rouge2"].mean(),
+                    "rougeL": group["rougeL"].mean(),
+                    "rougeLsum": group["rougeLsum"].mean(),
+                    "gvram_allocated": group["gvram_allocated"].mean(),
+                }
+            )
+
+        else:
+            logger.debug(f"Precision: {group['precision'].mean()}")
+            logger.debug(f"Recall   : {group['recall'].mean()}")
+            logger.debug(f"F1 Score : {group['f1_score'].mean()}")
+            logger.debug(f"VRAM     : {group['gvram_allocated'].mean()}")
+            results.append(
+                {
+                    "task": name[0],
+                    "source": name[1],
+                    "type": name[2],
+                    "precision": group["precision"].mean(),
+                    "recall": group["recall"].mean(),
+                    "f1_score": group["f1_score"].mean(),
+                    "gvram_allocated": group["gvram_allocated"].mean(),
+                }
+            )
+
         logger.debug(f"{60 * '-'}")
+        results_df = pd.DataFrame(results)
+        results_df.to_csv("aggregated_metrics.csv", index=False)
 
 
 if __name__ == "__main__":
-    calculate_metrics_from_prompts(
-        ModelPrecision.SIXTEEN_BIT,
-        "BachelorThesis/LLama3_V03_BRONCO_CARDIO_SUMMARY_CATALOG",
-        "LLama3_V03",
-        4096,
-    )
+    # calculate_metrics_from_prompts(
+    #     ModelPrecision.SIXTEEN_BIT,
+    #     "BachelorThesis/LLama3_V03_BRONCO_CARDIO_SUMMARY_CATALOG",
+    #     "LLama3_V03",
+    #     4096,
+    # )
+
     aggregate_metrics(
-        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_16bit_Gemma2b_V03.json"
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_4bit_Gemma2b_V03.json"
     )

@@ -1,7 +1,7 @@
 import pandas as pd
 from pandas import DataFrame
 
-from shared.model_utils import load_tokenizer_with_template
+from shared.clm_model_utils import load_tokenizer_with_template
 from shared.mongodb import get_collection
 
 
@@ -136,7 +136,7 @@ def show_localisation_pieplot(df: DataFrame, annotation_types=None) -> None:
     fig = px.pie(
         type_counts_df,
         values="count",
-        names="level_of_truth",
+        names="Localisation",
         title="Distribution of the localisation attribute",
     )
     fig.show()
@@ -306,6 +306,7 @@ def show_distribution_na_notna():
 
 if __name__ == "__main__":
     df = read_from_csv()
-    # data used in paper (tokens calculated in create script)
     show_text_lengths_boxplot(df, tokenize=True)
     show_annotation_types_pieplot(df)
+    show_localisation_pieplot(df)
+    show_truth_levels_pieplot(df)
