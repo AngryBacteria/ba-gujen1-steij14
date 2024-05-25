@@ -10,8 +10,8 @@ for training. The standardized format is either one for NER. This includes two a
 the tokens/words. The other standardized format is for instruction tuning which includes the prompt and response in
 a text field. Each script is named following the pattern `agg_<name_of_collection>`. The final aggregation is performed 
 by the `aggregate.py` script, which outputs the data into jsonl files. The subscripts include:
-- **agg_bronco.py**: Transforms the Bronco dataset into an NER and instruction tuning format. Includes the task 
-extraction and normalization.
+- **agg_bronco.py**: Transforms the Bronco dataset into an NER, Multi-Label Classification and instruction tuning 
+format. Includes the task extraction and normalization.
 - **agg_cardio.py**: Transforms the Cardio:DE dataset into an NER and instruction tuning format. Includes only the task 
 extraction.
 - **agg_catalog.py**: Transforms medical catalog data, such as icd10gm code descriptions, into an instruction tuning

@@ -385,7 +385,7 @@ def aggregate_bronco_multi_label_classification(
     """
     Create a bronco dataset for multi-label classification
     :param detailed: How many layers deep to go for icd10/ops codes. True means all, False means 3-4 layers.
-    :param task: The task to create the dataset for. Can be one of the following: Normalization, Entity_Type
+    :param task: The task to create the dataset for. Can be one of the following: Normalization, Entity_Type, Attribute
     :param normalization_type: The type of entity to create the dataset for.
     :param top_x_labels: The number of top x labels to create the dataset for.
     :param include_other: Whether to include a category "other" which means it is not in the top_x labels.
@@ -418,6 +418,19 @@ def aggregate_bronco_multi_label_classification(
                                 norm = norm.split(".")[0]
                             unique_normalizations.add(norm)
             all_labels.append(list(unique_normalizations))
+    elif task == "Attribute":
+        for i, row in grouped_df.iterrows():
+            unique_attributes = set()
+            level_of_truth_found = False
+            for pack in row["attributes"]:
+                for unpacked in pack:
+                    for attribute in unpacked:
+                        unique_attributes.add(attribute["attribute"])
+                        if attribute["attribute"] == "level_of_truth":
+                            level_of_truth_found = True
+            if include_other and not level_of_truth_found:
+                unique_attributes.add("positive")
+            all_labels.append(list(unique_attributes))
 
     else:
         raise ValueError("Not implemented")
@@ -459,5 +472,5 @@ def aggregate_bronco_multi_label_classification(
 # if main method
 if __name__ == "__main__":
     aggregate_bronco_multi_label_classification(
-        "Normalization", "ICD10GM", False, 10, True
+        "Attribute", "ICD10GM", False, 10, True
     )

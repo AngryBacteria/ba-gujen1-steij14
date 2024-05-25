@@ -30,7 +30,7 @@ from transformers import (
 import evaluate
 
 # Config
-EPOCHS = 1
+EPOCHS = 4
 BATCH_SIZE = 8
 LEARNING_RATE = 2e-5
 TEST_SIZE = 0.2
@@ -38,11 +38,11 @@ DEBUG = True
 WANDB = False
 RUN_NAME = ""
 SAVE_MODEL = False
-EVALS_PER_EPOCH = 8
+EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
 data, id2label, label2id, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Normalization", "ICD10", False, 10, True
+    "Attribute", "ICD10", False, 20, True
 )
 
 print_welcome_message()

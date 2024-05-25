@@ -1,5 +1,35 @@
 # Bachelor-Thesis: Transformer based Information extraction and summarization of medical documents
-TODO: project description here
+
+Welcome to the official repository for the bachelor's thesis titled "Fine-tuning of Large Language Models for the Analysis of Medical Texts," conducted at the [Bern University of Applied Sciences](https://www.bfh.ch/de/).
+
+## Disclaimer
+This project is part of a bachelor thesis and is not meant to be used in a production environment. The code is not optimized for performance and is not guaranteed to work in all environments. We won't provide any support for this and won't be responsible for any damage caused by the usage of this project.
+
+## Overview
+In modern medicine, medical documentation is essential yet challenging due to the largely unstructured nature of medical data—approximately 80% by current estimates. This unstructured data complicates the analysis and extraction of actionable insights, contributing significantly to the administrative burden and stress experienced by healthcare providers.
+
+To address these challenges, we explore the potential of Artificial Intelligence, particularly through the use of Large Language Models (LLMs), to support the management and analysis of medical texts. Our research focuses on the adaptability and effectiveness of open-source LLMs, specifically tuned to process and analyze medical documentation efficiently while ensuring data privacy and security within medical institutions.
+The main focus of this project is to develop models that can be used for german clinical texts, but the models we used are mainly developed for german context and documents.
+
+## Objectives
+- Data Extraction: Accurately extracting relevant information from German medical texts.
+- Entity Normalization: Standardizing extracted entities with medical terminologies.
+- Attribute Identification: Detecting attributes of the entities within the medical texts, such as the position of a diagnosis on the body or the level of truth.
+- Text Summarization: Generating summaries of clinical documents.
+
+## Data used
+- Annotated Medical Gold-Standard Datasets: Specifically [BRONCO150](https://www2.informatik.hu-berlin.de/~leser/bronco/index.html) and [Cardio:DE](https://heidata.uni-heidelberg.de/dataset.xhtml?persistentId=doi:10.11588/data/AFYQDY). 
+- Synthetic Data: Around 200 synthetic summaries to enhance model training. One part was created by our own using GPT-4, the other is from the [Dev4Med/Notfallberichte-German-100](https://huggingface.co/datasets/Dev4Med/Notfallberichte-German-100) dataset
+- Medical Coding Systems: Data from ICD10GM, ATC, and OPS coding systems.
+
+## Team
+- Nicolas Gujer ([nicolas.gujer@protonmail.com](mailto:nicolas.gujer@protonmail.com))
+- Jorma Steiner ([jorma.steiner@outlook.com](mailto:jorma.steiner@outlook.com))
+
+## Resources
+All necessary data acquisition scripts and additional resources are available on our GitHub Repository. Access to certain datasets is restricted and requires formal requests to the respective institutions.
+
+For detailed information on each model's performance and guidelines on usage, please refer to the individual model repositories linked within our GitHub.
 
 ## Developers
 - Nicolas Gujer ([nicolas.gujer@protonmail.com](mailto:nicolas.gujer@protonmail.com))
