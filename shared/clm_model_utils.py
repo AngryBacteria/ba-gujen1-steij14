@@ -368,7 +368,7 @@ def generate_output(
 
 
 def get_model_output_only(
-    full_output: str, template: ChatTemplate, lower=False
+    full_output: str, template=CURRENT_DEFAULT_TEMPLATE, lower=False
 ) -> str | None:
     """
     Parses the model output (everything after the instruction) from the whole generated text.
@@ -476,6 +476,25 @@ def get_extractions_with_attributes_grouped(string_input: str):
     return extraction_dict
 
 
+def get_attributes_only(string_input: str):
+    """
+    Get all attributes from a string input. Should be in the form of:
+    extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
+    """
+    pattern = re.compile(r'\[([^]]+)]')
+    matches = pattern.findall(string_input)
+    matches = [match.strip() for match in matches]
+
+    attributes = []
+    for match in matches:
+        if "|" in match:
+            attributes.extend(match.split("|"))
+        else:
+            attributes.append(match)
+    attributes = [attribute.strip() for attribute in attributes]
+    return attributes
+
+
 def test_generation(
     model_name=CURRENT_DEFAULT_MODEL,
     precision=ModelPrecision.FOUR_BIT,
@@ -561,7 +580,4 @@ def count_tokens(
 
 
 if __name__ == "__main__":
-    test_generation(
-        precision=ModelPrecision.SIXTEEN_BIT,
-        device=GenDevice.CUDA_0,
-    )
+    print(get_attributes_only("extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4]"))

@@ -1,6 +1,7 @@
 import os
 
 import setproctitle
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 from transformers.trainer_utils import HubStrategy
 
 from datacorpus.aggregation.agg_bronco import (
@@ -28,23 +29,22 @@ from transformers import (
     TrainingArguments,
     AutoModelForSequenceClassification,
 )
-import evaluate
 
 # Config
 EPOCHS = 7
-BATCH_SIZE = 64
+BATCH_SIZE = 4
 LEARNING_RATE = 2e-5
 TEST_SIZE = 0.2
 DEBUG = True
-WANDB = True
+WANDB = False
 RUN_NAME = "GerMedBert_CLS_V01_BRONCO"
-SAVE_MODEL = True
-UPLOAD_MODEL = True
+SAVE_MODEL = False
+UPLOAD_MODEL = False
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
-data, label2id, id2label,  NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Attribute", "ICD10", False, 20, True
+data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
+    "Attribute", "ICD10", False, 10000, True
 )
 
 print_welcome_message()
@@ -75,9 +75,6 @@ model = AutoModelForSequenceClassification.from_pretrained(
     problem_type="multi_label_classification",
 )
 
-# Load metric
-clf_metrics = evaluate.combine(["accuracy", "f1", "precision", "recall"])
-
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -86,10 +83,21 @@ def sigmoid(x):
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
     predictions = sigmoid(predictions)
-    predictions = (predictions > 0.5).astype(int).reshape(-1)
-    return clf_metrics.compute(
-        predictions=predictions, references=labels.astype(int).reshape(-1)
-    )
+    predictions = (predictions > 0.5).astype(int)
+
+    f1 = f1_score(labels, predictions, average="macro")
+    f1_micro = f1_score(labels, predictions, average="micro")
+    precision = precision_score(labels, predictions, average="macro")
+    recall = recall_score(labels, predictions, average="macro")
+    accuracy = accuracy_score(labels, predictions)
+
+    return {
+        "f1_score": f1,
+        "f1_micro": f1_micro,
+        "precision": precision,
+        "recall": recall,
+        "accuracy": accuracy,
+    }
 
 
 # Train

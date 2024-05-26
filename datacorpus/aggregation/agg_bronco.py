@@ -401,9 +401,7 @@ def aggregate_bronco_multi_label_classification(
     df = pandas.DataFrame(documents)
     grouped_df = df.groupby("origin").agg(lambda x: x.tolist()).reset_index()
     # filter out origins smaller than minimal length
-    grouped_df = grouped_df[
-        grouped_df["origin"].apply(lambda x: len(x)) >= min_length
-    ]
+    grouped_df = grouped_df[grouped_df["origin"].apply(lambda x: len(x)) >= min_length]
 
     # make types unique
     all_labels = []
@@ -480,5 +478,5 @@ def aggregate_bronco_multi_label_classification(
 # if main method
 if __name__ == "__main__":
     aggregate_bronco_multi_label_classification(
-        "Attribute", "ICD10GM", False, 10, True
+        "Normalization", "ICD10GM", False, 1000, True
     )

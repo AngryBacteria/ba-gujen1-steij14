@@ -2,6 +2,9 @@ import os
 from statistics import mean
 
 import setproctitle
+from pandas import DataFrame
+from sklearn.metrics import recall_score, f1_score, precision_score
+from sklearn.preprocessing import MultiLabelBinarizer
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -16,31 +19,26 @@ from shared.clm_model_utils import (
     load_model_and_tokenizer,
     ModelPrecision,
     get_model_output_only,
-    ChatTemplate,
     get_extractions_without_attributes,
-    get_extractions_with_attributes,
-    get_extractions_with_attributes_grouped,
+    get_extractions_with_attributes_grouped, get_attributes_only,
 )
 
 from datasets import load_dataset
 import pandas as pd
 
 
-def calculate_metrics_from_prompts(
+def get_eval_data_from_models(
     precision: ModelPrecision,
-    model_path: str,
     model_name: str,
     max_sequence_length: int,
     tasks_to_eval=None,
 ):
     """
-    Calculates the metrics precision, recall and f1 score for the extraction task. The model makes a precision which
-    is then compared to the ground truth (the full prompt with answer). The model is evaluated on the prompts.jsonl
-    data. The results are saved to a file. The extraction/normalization task is evaluated with and without attributes.
+    The model makes a precision which is then compared to the ground truth (the full prompt with answer).
+    The model is evaluated on the prompts.jsonl data. The results are saved to a file.
     :param model_name: The name of the model. Used to save the file
     :param tasks_to_eval: The tasks that should be evaluated
     :param precision: The precision to load the model in (16bit recommended if hardware supports it)
-    :param model_path: The path of the model to load. Can be either local dir or a huggingface repository
     :param max_sequence_length: The max sequence length the model should be evaluated on. The full prompt (with answer)
     is taken as the filter for the max sequence length.
     :return: None, the data is saved to a file
@@ -48,7 +46,7 @@ def calculate_metrics_from_prompts(
     if tasks_to_eval is None:
         tasks_to_eval = ["extraction", "normalization", "summary", "catalog"]
 
-    tokenizer, model = load_model_and_tokenizer(model_path, precision)
+    tokenizer, model = load_model_and_tokenizer(precision=precision)
     _dataset = load_dataset("json", data_files={"data": "prompts.jsonl"})[
         "data"
     ].train_test_split(test_size=0.1, shuffle=True, seed=42)
@@ -68,7 +66,6 @@ def calculate_metrics_from_prompts(
         _tokenized = tokenizer.apply_chat_template(
             example["messages"], tokenize=True, add_generation_prompt=True
         )
-        # TODO: discuss if this makes sense
         if len(_tokenized) >= max_sequence_length:
             logger.warning(
                 f"Skipping example {i} with length {len(_tokenized)}, because it is too long"
@@ -109,178 +106,39 @@ def calculate_metrics_from_prompts(
         gvram_allocated, gvram_capacity = get_cuda_memory_usage(0)
 
         # get model prediction
-        prediction_string = get_model_output_only(
-            output_string, ChatTemplate.ALPACA_MISTRAL, lower=False
-        )
+        prediction_string = get_model_output_only(output_string, lower=False)
         if not prediction_string or prediction_string == "":
-            logger.error("No extractions found")
+            logger.error("No output from model found")
             continue
 
-        # SUMMARIZATION
-        if example["task"] == "summary":
-            truth = truth_string.strip().lower()
-            metrics = calculate_rogue_metrics(prediction_string, truth)
-            logger.debug(f"Truth (summary)      : {truth_string}")
-            logger.debug(f"Prediction (summary) : {prediction_string}")
-            logger.debug(f"Metrics (summary)    : {metrics}")
+        logger.debug(f"Truth: {truth_string}")
+        logger.debug(f"Prediction: {prediction_string}")
 
-            output.append(
-                {
-                    "model": model_name,
-                    "model_precision": precision.value,
-                    "execution_time": execution_time,
-                    "date": test_date,
-                    "prompt": prompt,
-                    "instruction": instruction,
-                    "truth_string": truth_string,
-                    "truth": truth,
-                    "output_string": output_string,
-                    "output_string_raw": output_string_raw,
-                    "prediction_string": prediction_string,
-                    "prediction": prediction_string,
-                    "rouge1": metrics["rouge1"],
-                    "rouge2": metrics["rouge2"],
-                    "rougeL": metrics["rougeL"],
-                    "rougeLsum": metrics["rougeLsum"],
-                    "task": example["task"],
-                    "type": example["type"],
-                    "source": example["source"],
-                    "na_prompt": example["na_prompt"],
-                    "gvram_allocated": gvram_allocated,
-                    "gvram_capacity": gvram_capacity,
-                }
-            )
-
-        # EXTRACTION AND NORMALIZATION
-        if example["task"] == "extraction" or example["task"] == "normalization":
-            truth = get_extractions_without_attributes(truth_string)
-            prediction = get_extractions_without_attributes(prediction_string)
-            metrics = calculate_string_f1_validation_metrics(truth, prediction)
-            logger.debug(f"Truth (extraction/normalization)       : {truth}")
-            logger.debug(f"Prediction (extraction/normalization)  : {prediction}")
-            logger.debug(f"Metrics (extraction/normalization)     : {metrics}")
-            output.append(
-                {
-                    "model": model_name,
-                    "model_precision": precision.value,
-                    "execution_time": execution_time,
-                    "date": test_date,
-                    "prompt": prompt,  # the full prompt that was used (with answers)
-                    "instruction": instruction,  # the instruction that was used (prompt without answers)
-                    "truth_string": truth_string,  # The full truth (prompt output) as a string
-                    "truth": truth,  # The extraction seperated from the truth string
-                    "output_string": output_string,  # The full model output as a string
-                    "output_string_raw": output_string_raw,
-                    # The full model output (with prompt) as with special tokens
-                    "prediction_string": prediction_string,  # The model output as a string
-                    "prediction": prediction,  # The extraction seperated from the model output
-                    "precision": metrics[0],
-                    "recall": metrics[1],
-                    "f1_score": metrics[2],
-                    "task": example[
-                        "task"
-                    ],  # The task of the example (extraction, normalization, catalog, summary)
-                    "type": example[
-                        "type"
-                    ],  # Type of annotation (DIAGNOSIS, MEDICATION, TREATMENT)
-                    "source": example["source"],  # data source
-                    "na_prompt": example["na_prompt"],  # if the example is empty or not
-                    "gvram_allocated": gvram_allocated,  # allocated vram by cuda
-                    "gvram_capacity": gvram_capacity,  # max vram capacity
-                }
-            )
-
-        # ATTRIBUTES
-        if example["task"] == "extraction":
-            # normal text output for saving
-            truth = get_extractions_with_attributes(truth_string)
-            prediction = get_extractions_with_attributes(prediction_string)
-
-            # structured output for calculating metrics
-            truths = get_extractions_with_attributes_grouped(truth_string)
-            predictions = get_extractions_with_attributes_grouped(prediction_string)
-            metrics_temp_precision = []
-            metrics_temp_recall = []
-            metrics_temp_f1 = []
-            for key, value in predictions.items():
-                if key in truths:
-                    metrics_temp = calculate_string_f1_validation_metrics(
-                        value, truths[key]
-                    )
-                    metrics_temp_precision.append(metrics_temp[0])
-                    metrics_temp_recall.append(metrics_temp[1])
-                    metrics_temp_f1.append(metrics_temp[2])
-
-            mean_precision = (
-                mean(metrics_temp_precision) if metrics_temp_precision else 0
-            )
-            mean_recall = mean(metrics_temp_recall) if metrics_temp_recall else 0
-            mean_f1 = mean(metrics_temp_f1) if metrics_temp_f1 else 0
-
-            logger.debug(
-                f"Metrics (attribute)      : ({mean_precision}, {mean_recall}, {mean_f1})"
-            )
-            logger.debug(f"Truth (attributes)       : {truth}")
-            logger.debug(f"Prediction (attributes)  : {prediction}")
-            output.append(
-                {
-                    "model": model_name,
-                    "model_precision": precision.value,
-                    "execution_time": execution_time,
-                    "date": test_date,
-                    "prompt": prompt,
-                    "instruction": instruction,
-                    "truth_string": truth_string,
-                    "truth": truth,
-                    "output_string": output_string,
-                    "output_string_raw": output_string_raw,
-                    "prediction_string": prediction_string,
-                    "prediction": prediction,
-                    "precision": mean_precision,
-                    "recall": mean_recall,
-                    "f1_score": mean_f1,
-                    "task": "attributes",
-                    "type": example["type"],
-                    "source": example["source"],
-                    "na_prompt": example["na_prompt"],
-                    "gvram_allocated": gvram_allocated,
-                    "gvram_capacity": gvram_capacity,
-                }
-            )
-
-        # CATALOG
-        if example["task"] == "catalog":
-            metrics = calculate_string_f1_validation_metrics(
-                [truth_string], [prediction_string]
-            )
-            logger.debug(f"Truth (catalog)          : {truth_string}")
-            logger.debug(f"Prediction (catalog)     : {prediction_string}")
-            logger.debug(f"Metrics (catalog)         : {metrics}")
-            output.append(
-                {
-                    "model": model_name,
-                    "model_precision": precision.value,
-                    "execution_time": execution_time,
-                    "date": test_date,
-                    "prompt": prompt,
-                    "instruction": instruction,
-                    "truth_string": truth_string,
-                    "truth": truth_string,
-                    "output_string": output_string,
-                    "output_string_raw": output_string_raw,
-                    "prediction_string": prediction_string,
-                    "prediction": prediction_string,
-                    "precision": metrics[0],
-                    "recall": metrics[1],
-                    "f1_score": metrics[2],
-                    "task": "catalog",
-                    "type": example["type"],
-                    "source": example["source"],
-                    "na_prompt": example["na_prompt"],
-                    "gvram_allocated": gvram_allocated,
-                    "gvram_capacity": gvram_capacity,
-                }
-            )
+        output.append(
+            {
+                "model": model_name,
+                "model_precision": precision.value,
+                "execution_time": execution_time,
+                "date": test_date,
+                "prompt": prompt,  # the full prompt that was used (with answers)
+                "instruction": instruction,  # the instruction that was used (prompt without answers)
+                "truth_string": truth_string,  # The full truth (prompt output) as a string
+                "output_string": output_string,  # The full model output as a string
+                "output_string_raw": output_string_raw,
+                # The full model output (with prompt) as with special tokens
+                "prediction_string": prediction_string,  # The model output as a string
+                "task": example[
+                    "task"
+                ],  # The task of the example (extraction, normalization, catalog, summary)
+                "type": example[
+                    "type"
+                ],  # Type of annotation (DIAGNOSIS, MEDICATION, TREATMENT)
+                "source": example["source"],  # data source
+                "na_prompt": example["na_prompt"],  # if the example is empty or not
+                "gvram_allocated": gvram_allocated,  # allocated vram by cuda
+                "gvram_capacity": gvram_capacity,  # max vram capacity
+            }
+        )
 
         logger.debug(f"{150 * '-'}")
     # convert to pandas df and save to json
@@ -302,43 +160,27 @@ def calculate_string_f1_validation_metrics(
     :param truth_labels: The truth labels as a list
     :param prediction_labels: The predicted labels as a list
     """
-    if len(truth_labels) == 0 and len(prediction_labels) == 0:
-        return 1.0, 1.0, 1.0
-
     # lower case and strip
     truth_set = {x.lower().strip() for x in truth_labels}
     prediction_set = {x.lower().strip() for x in prediction_labels}
-
-    # remove strings from prediction set that are not in the original text
-    # TODO: maybe to make results better: filter out strings that are not in original text --> no false positives
     if origin and origin != "":
         prediction_set = {x for x in prediction_set if x in origin}
 
-    # get unique
-    truth_set = set(truth_set)
-    prediction_set = set(prediction_set)
+    mlb = MultiLabelBinarizer()
+    all_labels = sorted(truth_set.union(prediction_set))
+    mlb.fit([all_labels])
 
-    # calculate metrics
-    true_positives = len(truth_set & prediction_set)
-    false_positives = len(prediction_set - truth_set)
-    false_negatives = len(truth_set - prediction_set)
+    y_true = mlb.transform([truth_set])[0]
+    y_pred = mlb.transform([prediction_set])[0]
 
-    if true_positives == 0:
-        precision = 0.0
-        recall = 0.0
-    else:
-        precision = true_positives / (true_positives + false_positives)
-        recall = true_positives / (true_positives + false_negatives)
+    precision = precision_score(y_true, y_pred, average="micro", zero_division=1)
+    recall = recall_score(y_true, y_pred, average="micro", zero_division=1)
+    f1 = f1_score(y_true, y_pred, average="micro", zero_division=1)
 
-    if precision + recall == 0:
-        f1_score = 0.0
-    else:
-        f1_score = 2 * (precision * recall) / (precision + recall)
-
-    return precision, recall, f1_score
+    return precision, recall, f1
 
 
-def calculate_rogue_metrics(prediction: str, desired: str):
+def calculate_rogue_metrics(desired: str, prediction: str):
     """
     Calculate the ROUGE metrics for the given prediction and desired string. More info can be found on the
     transformers documentation https://huggingface.co/spaces/evaluate-metric/rouge
@@ -353,63 +195,140 @@ def calculate_rogue_metrics(prediction: str, desired: str):
     return results
 
 
-def aggregate_metrics(file_name: str):
-    df = pd.read_json(file_name)
-    grouped = df.groupby(["task", "source", "type"])
+def get_rogue_mean_from_df(df: DataFrame):
+    """
+    Get the mean ROUGE score mean from a grouped DataFrame
+    """
+    rogue1 = []
+    rogue2 = []
+    rogueL = []
+    rogueLsum = []
 
-    results = []
-    for name, group in grouped:
-        logger.debug(name)
+    for _, row in df.iterrows():
+        rouge_metrics = calculate_rogue_metrics(
+            row["truth_string"], row["prediction_string"]
+        )
+        rogue1.append(rouge_metrics["rouge1"])
+        rogue2.append(rouge_metrics["rouge2"])
+        rogueL.append(rouge_metrics["rougeL"])
+        rogueLsum.append(rouge_metrics["rougeLsum"])
 
-        if name[0] == "summary":
-            logger.debug(f"Rouge1   : {group['rouge1'].mean()}")
-            logger.debug(f"Rouge2   : {group['rouge2'].mean()}")
-            logger.debug(f"RougeL   : {group['rougeL'].mean()}")
-            logger.debug(f"RougeLSum: {group['rougeLsum'].mean()}")
-            logger.debug(f"VRAM     : {group['gvram_allocated'].mean()}")
-            results.append(
-                {
-                    "task": name[0],
-                    "source": name[1],
-                    "type": name[2],
-                    "rouge1": group["rouge1"].mean(),
-                    "rouge2": group["rouge2"].mean(),
-                    "rougeL": group["rougeL"].mean(),
-                    "rougeLsum": group["rougeLsum"].mean(),
-                    "gvram_allocated": group["gvram_allocated"].mean(),
-                }
-            )
+    return mean(rogue1), mean(rogue2), mean(rogueL), mean(rogueLsum)
+
+
+def get_extraction_normalization_mean_f1(df: DataFrame, ignore_na=False):
+    """
+    Get the mean F1 (and co) score for the tasks extraction and normalization from a grouped DataFrame.
+    Examples without extractions can be ignored.
+    """
+    precision = []
+    recall = []
+    f1 = []
+
+    for _, row in df.iterrows():
+        if ignore_na and row["na_prompt"]:
+            continue
+
+        truth = get_extractions_without_attributes(row["truth_string"])
+        prediction = get_extractions_without_attributes(row["prediction_string"])
+        _precision, _recall, _f1 = calculate_string_f1_validation_metrics(
+            truth, prediction
+        )
+
+        precision.append(_precision)
+        recall.append(_recall)
+        f1.append(_f1)
+
+    return mean(precision), mean(recall), mean(f1)
+
+
+def get_attribute_mean_f1(df: DataFrame, ignore_na=False, ignore_positive=False, only_check_existence=False):
+    """
+    Get the meanF1 (and co) score from a grouped DataFrame for the task of assigning attributes. Examples without
+    attributes can be ignored and the positive label can be ignored as well.
+    :param df:
+    :param ignore_na: Ignores examples without attributes
+    :param ignore_positive: Ignores the "positiv" label because that is the most frequent label
+    :param only_check_existence: Only check if the attribute exists in the truth string and no complicated F1 score
+    calculation by grouping entity and attribute
+    """
+    precision = []
+    recall = []
+    f1 = []
+
+    for index, row in df.iterrows():
+        if only_check_existence:
+            truths = get_attributes_only(row["truth_string"])
+            predictions = get_attributes_only(row["prediction_string"])
+            if ignore_positive:
+                predictions = [x for x in predictions if x != "POSITIV"]
+                truths = [x for x in truths if x != "POSITIV"]
+            if ignore_na and len(truths) == 0:
+                continue
+
+            metrics_temp = calculate_string_f1_validation_metrics(truths, predictions)
+            precision.append(metrics_temp[0])
+            recall.append(metrics_temp[1])
+            f1.append(metrics_temp[2])
 
         else:
-            logger.debug(f"Precision: {group['precision'].mean()}")
-            logger.debug(f"Recall   : {group['recall'].mean()}")
-            logger.debug(f"F1 Score : {group['f1_score'].mean()}")
-            logger.debug(f"VRAM     : {group['gvram_allocated'].mean()}")
-            results.append(
-                {
-                    "task": name[0],
-                    "source": name[1],
-                    "type": name[2],
-                    "precision": group["precision"].mean(),
-                    "recall": group["recall"].mean(),
-                    "f1_score": group["f1_score"].mean(),
-                    "gvram_allocated": group["gvram_allocated"].mean(),
-                }
-            )
+            truths = get_extractions_with_attributes_grouped(row["truth_string"])
+            predictions = get_extractions_with_attributes_grouped(row["prediction_string"])
+            metrics_temp_precision = []
+            metrics_temp_recall = []
+            metrics_temp_f1 = []
+            for key, value in predictions.items():
+                if key in truths:
+                    if ignore_positive:
+                        value = [x for x in value if x != "POSITIV"]
+                        truths[key] = [x for x in truths[key] if x != "POSITIV"]
+                    if ignore_na and len(truths[key]) == 0:
+                        continue
 
-        logger.debug(f"{60 * '-'}")
-        results_df = pd.DataFrame(results)
-        results_df.to_csv("aggregated_metrics.csv", index=False)
+                    metrics_temp = calculate_string_f1_validation_metrics(
+                        value, truths[key]
+                    )
+                    metrics_temp_precision.append(metrics_temp[0])
+                    metrics_temp_recall.append(metrics_temp[1])
+                    metrics_temp_f1.append(metrics_temp[2])
+
+            precision.append(mean(metrics_temp_precision) if metrics_temp_precision else 0)
+            recall.append(mean(metrics_temp_recall) if metrics_temp_recall else 0)
+            f1.append(mean(metrics_temp_f1) if metrics_temp_f1 else 0)
+
+    return mean(f1), mean(precision), mean(recall)
+
+
+# ATTRIBUTE: Ignore positive prompts, maybe use sklearn
+def aggregate_metrics(file_name: str):
+    df = pd.read_json(file_name)
+    # grouped = df.groupby(["task", "source", "type"])
+    grouped = df.groupby(["task"])
+
+    for name, group in grouped:
+        # Summary
+        if name[0] == "summary":
+            rouge_scores = get_rogue_mean_from_df(group)
+            logger.debug(f"{name} -- {rouge_scores}")
+
+        # Extraction and Normalization
+        if name[0] == "extraction" or name[0] == "normalization":
+            f1_scores = get_extraction_normalization_mean_f1(group, False)
+            logger.debug(f"{name} -- {f1_scores}")
+
+        # Attributes
+        if name[0] == "extraction":
+            f1_scores = get_attribute_mean_f1(group, True, True, True)
+            logger.debug(f"ATTRIBUTE:{name} -- {f1_scores}")
 
 
 if __name__ == "__main__":
-    # calculate_metrics_from_prompts(
+    # get_eval_data_from_models(
     #     ModelPrecision.SIXTEEN_BIT,
-    #     "BachelorThesis/LeoMistral_V06_BRONCO_CARDIO_SUMMARY_CATALOG",
     #     "LeoMistral_V06",
     #     4096,
     # )
 
     aggregate_metrics(
-        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_16bit_LeoMistral_V06.json"
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_16bit_LLama3_V03.json"
     )
