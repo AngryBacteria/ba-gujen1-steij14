@@ -32,7 +32,7 @@ import evaluate
 
 # Config
 EPOCHS = 7
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 LEARNING_RATE = 2e-5
 TEST_SIZE = 0.2
 DEBUG = True
@@ -43,7 +43,7 @@ UPLOAD_MODEL = True
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
-data, id2label, label2id, NUM_LABELS = aggregate_bronco_multi_label_classification(
+data, label2id, id2label,  NUM_LABELS = aggregate_bronco_multi_label_classification(
     "Attribute", "ICD10", False, 20, True
 )
 

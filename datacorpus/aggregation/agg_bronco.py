@@ -381,6 +381,7 @@ def aggregate_bronco_multi_label_classification(
     detailed: bool,
     top_x_labels=10,
     include_other=True,
+    min_length=15,
 ):
     """
     Create a bronco dataset for multi-label classification
@@ -390,13 +391,19 @@ def aggregate_bronco_multi_label_classification(
     :param top_x_labels: The number of top x labels to create the dataset for.
     :param include_other: Whether to include a category "other" which means it is not in the top_x labels.
     Can be one of the following: ICD10GM, OSP, ATC
+    :param min_length: The minimal length of origin texts to include
     :return:
     """
+    # load and group
     bronco_collection = get_collection("corpus", "bronco")
     documents = bronco_collection.find()
     documents = list(documents)
     df = pandas.DataFrame(documents)
     grouped_df = df.groupby("origin").agg(lambda x: x.tolist()).reset_index()
+    # filter out origins smaller than minimal length
+    grouped_df = grouped_df[
+        grouped_df["origin"].apply(lambda x: len(x)) >= min_length
+    ]
 
     # make types unique
     all_labels = []
@@ -465,6 +472,7 @@ def aggregate_bronco_multi_label_classification(
     logger.debug(
         f"Created {len(grouped_df)} classification datapoints with {num_labels} labels."
     )
+    logger.debug(grouped_df.head(10))
 
     return grouped_df, label2id, id2label, num_labels
 
