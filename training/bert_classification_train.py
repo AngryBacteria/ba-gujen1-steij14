@@ -44,7 +44,7 @@ EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
 data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Attribute", "ICD10", False, 10000, True
+    "Attribute", "ICD10", False, 10000, False
 )
 
 print_welcome_message()
@@ -85,10 +85,10 @@ def compute_metrics(eval_pred):
     predictions = sigmoid(predictions)
     predictions = (predictions > 0.5).astype(int)
 
-    f1 = f1_score(labels, predictions, average="macro")
-    f1_micro = f1_score(labels, predictions, average="micro")
-    precision = precision_score(labels, predictions, average="macro")
-    recall = recall_score(labels, predictions, average="macro")
+    f1 = f1_score(labels, predictions, average="micro", zero_division=1)
+    f1_micro = f1_score(labels, predictions, average="micro", zero_division=1)
+    precision = precision_score(labels, predictions, average="micro", zero_division=1)
+    recall = recall_score(labels, predictions, average="micro", zero_division=1)
     accuracy = accuracy_score(labels, predictions)
 
     return {

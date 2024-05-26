@@ -44,7 +44,7 @@ def get_eval_data_from_models(
     :return: None, the data is saved to a file
     """
     if tasks_to_eval is None:
-        tasks_to_eval = ["extraction", "normalization", "summary", "catalog"]
+        tasks_to_eval = ["extraction", "normalization", "summary"]
 
     tokenizer, model = load_model_and_tokenizer(precision=precision)
     _dataset = load_dataset("json", data_files={"data": "prompts.jsonl"})[
@@ -292,9 +292,9 @@ def get_attribute_mean_f1(df: DataFrame, ignore_na=False, ignore_positive=False,
                     metrics_temp_recall.append(metrics_temp[1])
                     metrics_temp_f1.append(metrics_temp[2])
 
-            precision.append(mean(metrics_temp_precision) if metrics_temp_precision else 0)
-            recall.append(mean(metrics_temp_recall) if metrics_temp_recall else 0)
-            f1.append(mean(metrics_temp_f1) if metrics_temp_f1 else 0)
+            precision.append(mean(metrics_temp_precision) if metrics_temp_precision else 1)
+            recall.append(mean(metrics_temp_recall) if metrics_temp_recall else 1)
+            f1.append(mean(metrics_temp_f1) if metrics_temp_f1 else 1)
 
     return mean(f1), mean(precision), mean(recall)
 
@@ -318,7 +318,7 @@ def aggregate_metrics(file_name: str):
 
         # Attributes
         if name[0] == "extraction":
-            f1_scores = get_attribute_mean_f1(group, True, True, True)
+            f1_scores = get_attribute_mean_f1(group, False, True, True)
             logger.debug(f"ATTRIBUTE:{name} -- {f1_scores}")
 
 

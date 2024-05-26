@@ -404,7 +404,7 @@ def get_extractions_without_attributes(string_input: str):
     extractions = [extraction.strip() for extraction in extractions]
     extractions = list(set(extractions))
 
-    if len(extractions) == 0:
+    if len(extractions) == 0 and string_input != "Keine vorhanden":
         logger.warning(f"No extractions found in the string: {string_input}")
 
     return extractions
@@ -433,7 +433,7 @@ def get_extractions_with_attributes(string_input: str):
     extractions = [extraction.strip() for extraction in extractions]
     extractions = list(set(extractions))
 
-    if len(extractions) == 0:
+    if len(extractions) == 0 and string_input != "Keine vorhanden":
         logger.warning(f"No extractions found in the string: {string_input}")
 
     return extractions
@@ -473,6 +473,9 @@ def get_extractions_with_attributes_grouped(string_input: str):
         else:
             extraction_dict[extraction] = attribute_list
 
+    if len(extraction_dict) == 0 and string_input != "Keine vorhanden":
+        logger.warning(f"No extractions found in the string: {string_input}")
+
     return extraction_dict
 
 
@@ -492,6 +495,10 @@ def get_attributes_only(string_input: str):
         else:
             attributes.append(match)
     attributes = [attribute.strip() for attribute in attributes]
+
+    if len(attributes) == 0 and string_input != "Keine vorhanden":
+        logger.warning(f"No attributes found in the string: {string_input}")
+
     return attributes
 
 
