@@ -1,6 +1,7 @@
 import os
 
 import setproctitle
+from transformers.trainer_utils import HubStrategy
 
 from datacorpus.aggregation.agg_bronco import (
     aggregate_bronco_multi_label_classification,
@@ -30,14 +31,15 @@ from transformers import (
 import evaluate
 
 # Config
-EPOCHS = 4
-BATCH_SIZE = 8
+EPOCHS = 7
+BATCH_SIZE = 32
 LEARNING_RATE = 2e-5
 TEST_SIZE = 0.2
 DEBUG = True
-WANDB = False
-RUN_NAME = ""
-SAVE_MODEL = False
+WANDB = True
+RUN_NAME = "GerMedBert_CLS_V01_BRONCO"
+SAVE_MODEL = True
+UPLOAD_MODEL = True
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
@@ -98,7 +100,7 @@ training_args = TrainingArguments(
     per_device_eval_batch_size=BATCH_SIZE,
     num_train_epochs=EPOCHS,
     # optimization setup
-    optim="adamw_hf",
+    optim="adamw_torch_fused",
     learning_rate=LEARNING_RATE,
     # logging
     report_to=["none"],
@@ -106,7 +108,10 @@ training_args = TrainingArguments(
     # saving
     output_dir="bert_classification_model",
     save_strategy="epoch",
-    save_total_limit=2,
+    save_total_limit=1,
+    hub_private_repo=True,
+    hub_strategy=HubStrategy.END,
+    hub_model_id=f"BachelorThesis/{RUN_NAME}",
     # evaluation
     evaluation_strategy="steps",
 )
@@ -148,3 +153,6 @@ print(f"Evaluation: {eval_results}")
 
 if SAVE_MODEL:
     trainer.save_model("bert_classification_model")
+
+if UPLOAD_MODEL:
+    trainer.push_to_hub()

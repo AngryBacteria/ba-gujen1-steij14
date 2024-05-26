@@ -405,11 +405,11 @@ def aggregate_metrics(file_name: str):
 if __name__ == "__main__":
     # calculate_metrics_from_prompts(
     #     ModelPrecision.SIXTEEN_BIT,
-    #     "BachelorThesis/LLama3_V03_BRONCO_CARDIO_SUMMARY_CATALOG",
-    #     "LLama3_V03",
+    #     "BachelorThesis/LeoMistral_V06_BRONCO_CARDIO_SUMMARY_CATALOG",
+    #     "LeoMistral_V06",
     #     4096,
     # )
 
     aggregate_metrics(
-        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_4bit_Gemma2b_V03.json"
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_16bit_LeoMistral_V06.json"
     )
