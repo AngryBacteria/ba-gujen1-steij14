@@ -1,6 +1,6 @@
 # Bachelor-Thesis: Transformer based Information extraction and summarization of medical documents
 
-Welcome to the official repository for the bachelor's thesis titled "Fine-tuning of Large Language Models for the Analysis of Medical Texts," conducted at the [Bern University of Applied Sciences](https://www.bfh.ch/de/).
+Welcome to the official repository for the bachelor's thesis titled "Fine-tuning of Large Language Models for the Analysis of Medical Texts" conducted at the [Bern University of Applied Sciences](https://www.bfh.ch/de/).
 
 ## Disclaimer
 This project is part of a bachelor thesis and is not meant to be used in a production environment. The code is not optimized for performance and is not guaranteed to work in all environments. We won't provide any support for this and won't be responsible for any damage caused by the usage of this project.

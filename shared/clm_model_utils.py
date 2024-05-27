@@ -484,7 +484,7 @@ def get_attributes_only(string_input: str):
     Get all attributes from a string input. Should be in the form of:
     extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4] | ...
     """
-    pattern = re.compile(r'\[([^]]+)]')
+    pattern = re.compile(r"\[([^]]+)]")
     matches = pattern.findall(string_input)
     matches = [match.strip() for match in matches]
 
@@ -587,4 +587,8 @@ def count_tokens(
 
 
 if __name__ == "__main__":
-    print(get_attributes_only("extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4]"))
+    print(
+        get_attributes_only(
+            "extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4]"
+        )
+    )

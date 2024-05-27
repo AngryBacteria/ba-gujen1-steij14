@@ -32,19 +32,19 @@ from transformers import (
 
 # Config
 EPOCHS = 10
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 LEARNING_RATE = 2e-5
 TEST_SIZE = 0.1
 DEBUG = True
-WANDB = False
+WANDB = True
 RUN_NAME = "GerMedBert_CLS_V01_BRONCO"
-SAVE_MODEL = False
-UPLOAD_MODEL = False
+SAVE_MODEL = True
+UPLOAD_MODEL = True
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
 data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Normalization", "ICD10", False, 1000, False
+    "Attribute", "ICD10", False, 1000, False
 )
 
 print_welcome_message()

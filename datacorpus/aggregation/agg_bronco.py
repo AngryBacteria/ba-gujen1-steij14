@@ -478,5 +478,5 @@ def aggregate_bronco_multi_label_classification(
 # if main method
 if __name__ == "__main__":
     aggregate_bronco_multi_label_classification(
-        "Normalization", "ICD10GM", False, 1000, True
+        "Attribute", "ICD10", False, 1000, False
     )

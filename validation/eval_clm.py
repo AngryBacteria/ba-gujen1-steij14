@@ -1,17 +1,15 @@
 import os
-from statistics import mean
-
 import setproctitle
-from pandas import DataFrame
-from sklearn.metrics import recall_score, f1_score, precision_score
-from sklearn.preprocessing import MultiLabelBinarizer
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 import evaluate
-
+from pandas import DataFrame
+from statistics import mean
+from sklearn.metrics import recall_score, f1_score, precision_score
+from sklearn.preprocessing import MultiLabelBinarizer
 import datetime
 from shared.gpu_utils import get_cuda_memory_usage
 from shared.logger import logger
@@ -20,7 +18,8 @@ from shared.clm_model_utils import (
     ModelPrecision,
     get_model_output_only,
     get_extractions_without_attributes,
-    get_extractions_with_attributes_grouped, get_attributes_only,
+    get_extractions_with_attributes_grouped,
+    get_attributes_only,
 )
 
 from datasets import load_dataset
@@ -34,8 +33,9 @@ def get_eval_data_from_models(
     tasks_to_eval=None,
 ):
     """
-    The model makes a precision which is then compared to the ground truth (the full prompt with answer).
-    The model is evaluated on the prompts.jsonl data. The results are saved to a file.
+    The model makes a prediction which is then stored with the ground truth (the full prompt with answer).
+    The prompts.jsonl data needs to be present in the directory. The results are saved to a file to later analyze
+    it with aggregate_metrics()
     :param model_name: The name of the model. Used to save the file
     :param tasks_to_eval: The tasks that should be evaluated
     :param precision: The precision to load the model in (16bit recommended if hardware supports it)
@@ -151,28 +151,39 @@ def get_eval_data_from_models(
 
 
 def calculate_string_validation_metrics(
-    truth_labels: list[str], prediction_labels: list[str]
+    truth_labels_list: list[list[str]], prediction_labels_list: list[list[str]]
 ):
     """
-    Calculate precision, recall and f1 score. Takes in two lists, the truth labels and the
-    predicted labels and returns the metrics.
-    :param truth_labels: The truth labels as a list of strings
-    :param prediction_labels: The predicted labels as a list of strings
+    Calculate precision, recall and f1 score for all datasets combined. Takes in two lists of lists,
+    the truth labels and the predicted labels for each dataset and returns the combined metrics.
+    :param truth_labels_list: A list of lists, where each sublist is the truth labels for a datapoint.
+    :param prediction_labels_list: A list of lists, where each sublist is the predicted labels for a datapoint.
+    :return: A tuple containing the combined precision, recall, and f1 score.
     """
     # lower case and strip
-    truth_set = {x.lower().strip() for x in truth_labels}
-    prediction_set = {x.lower().strip() for x in prediction_labels}
+    truth_labels_list = [
+        [x.lower().strip() for x in labels] for labels in truth_labels_list
+    ]
+    prediction_labels_list = [
+        [x.lower().strip() for x in labels] for labels in prediction_labels_list
+    ]
 
     mlb = MultiLabelBinarizer()
-    all_labels = sorted(truth_set.union(prediction_set))
+    all_labels = sorted(
+        set(
+            label
+            for labels in truth_labels_list + prediction_labels_list
+            for label in labels
+        )
+    )
     mlb.fit([all_labels])
 
-    y_true = mlb.transform([truth_set])[0]
-    y_pred = mlb.transform([prediction_set])[0]
+    y_true = mlb.transform(truth_labels_list)
+    y_pred = mlb.transform(prediction_labels_list)
 
-    precision = precision_score(y_true, y_pred, zero_division=1)
-    recall = recall_score(y_true, y_pred, zero_division=1)
-    f1 = f1_score(y_true, y_pred, zero_division=1)
+    precision = precision_score(y_true, y_pred, average="micro", zero_division=1)
+    recall = recall_score(y_true, y_pred, average="micro", zero_division=1)
+    f1 = f1_score(y_true, y_pred, average="micro", zero_division=1)
 
     return precision, recall, f1
 
@@ -218,28 +229,24 @@ def get_extraction_normalization_mean_f1(df: DataFrame, ignore_na=False):
     Get the mean F1 (and co) score for the tasks extraction and normalization from a grouped DataFrame.
     Examples without extractions can be ignored.
     """
-    precision = []
-    recall = []
-    f1 = []
 
+    truths = []
+    predictions = []
     for _, row in df.iterrows():
         if ignore_na and row["na_prompt"]:
             continue
 
         truth = get_extractions_without_attributes(row["truth_string"])
         prediction = get_extractions_without_attributes(row["prediction_string"])
-        _precision, _recall, _f1 = calculate_string_validation_metrics(
-            truth, prediction
-        )
+        truths.append(truth)
+        predictions.append(prediction)
 
-        precision.append(_precision)
-        recall.append(_recall)
-        f1.append(_f1)
-
-    return mean(precision), mean(recall), mean(f1)
+    return calculate_string_validation_metrics(truths, predictions)
 
 
-def get_attribute_mean_f1(df: DataFrame, ignore_na=False, ignore_positive=False, only_check_existence=False, cardio=True):
+def get_attribute_mean_f1(
+    df: DataFrame, ignore_na=False, ignore_positive=False, only_check_existence=False
+):
     """
     Get the meanF1 (and co) score from a grouped DataFrame for the task of assigning attributes. Examples without
     attributes can be ignored and the positive label can be ignored as well.
@@ -249,32 +256,36 @@ def get_attribute_mean_f1(df: DataFrame, ignore_na=False, ignore_positive=False,
     :param only_check_existence: Only check if the attribute exists in the truth string and no complicated F1 score
     calculation by grouping entity and attribute
     """
-    precision = []
-    recall = []
-    f1 = []
+    truths = []
+    predictions = []
+    if only_check_existence:
+        for index, row in df.iterrows():
 
-    for index, row in df.iterrows():
-        if not cardio:
-            if row["source"] == "cardio":
-                continue
-
-        if only_check_existence:
-            truths = get_attributes_only(row["truth_string"])
-            predictions = get_attributes_only(row["prediction_string"])
+            truth = get_attributes_only(row["truth_string"])
+            prediction = get_attributes_only(row["prediction_string"])
             if ignore_positive:
-                predictions = [x for x in predictions if x != "POSITIV"]
-                truths = [x for x in truths if x != "POSITIV"]
-            if ignore_na and len(truths) == 0:
+                prediction = [x for x in prediction if x != "POSITIV"]
+                truth = [x for x in truth if x != "POSITIV"]
+            if ignore_na and len(truth) == 0:
                 continue
 
-            metrics_temp = calculate_string_validation_metrics(truths, predictions)
-            precision.append(metrics_temp[0])
-            recall.append(metrics_temp[1])
-            f1.append(metrics_temp[2])
+            truths.append(truth)
+            predictions.append(prediction)
 
-        else:
+        return calculate_string_validation_metrics(truths, predictions)
+
+    # ATTENTION THIS IS EXPERIMENTAL (and probably wrong)
+    else:
+        raise NotImplementedError("This is not implemented correctly yet")
+        precision = []
+        recall = []
+        f1 = []
+
+        for index, row in df.iterrows():
             truths = get_extractions_with_attributes_grouped(row["truth_string"])
-            predictions = get_extractions_with_attributes_grouped(row["prediction_string"])
+            predictions = get_extractions_with_attributes_grouped(
+                row["prediction_string"]
+            )
             metrics_temp_precision = []
             metrics_temp_recall = []
             metrics_temp_f1 = []
@@ -293,34 +304,84 @@ def get_attribute_mean_f1(df: DataFrame, ignore_na=False, ignore_positive=False,
                     metrics_temp_recall.append(metrics_temp[1])
                     metrics_temp_f1.append(metrics_temp[2])
 
-            precision.append(mean(metrics_temp_precision) if metrics_temp_precision else 1)
+            precision.append(
+                mean(metrics_temp_precision) if metrics_temp_precision else 1
+            )
             recall.append(mean(metrics_temp_recall) if metrics_temp_recall else 1)
             f1.append(mean(metrics_temp_f1) if metrics_temp_f1 else 1)
 
-    return mean(f1), mean(precision), mean(recall)
+        return mean(f1), mean(precision), mean(recall)
 
 
 # ATTRIBUTE: Ignore positive prompts, maybe use sklearn
-def aggregate_metrics(file_name: str):
+def aggregate_metrics(
+    file_name: str,
+    write_to_csv=True,
+    write_to_new_excel=True,
+    excel_sheet_name="Results",
+):
     df = pd.read_json(file_name)
-    # grouped = df.groupby(["task", "source", "type"])
-    grouped = df.groupby(["task"])
+    grouped = df.groupby(["task", "source", "type"])
+    # grouped = df.groupby(["task"])
 
+    metrics_output = []
     for name, group in grouped:
         # Summary
         if name[0] == "summary":
             rouge_scores = get_rouge_mean_from_df(group)
             logger.debug(f"{name} -- {rouge_scores}")
+            metrics_output.append(
+                {
+                    "source": name[1] if len(name) > 1 else None,
+                    "type": name[2] if len(name) > 2 else None,
+                    "task": name[0],
+                    "rouge1": rouge_scores[0],
+                    "rouge2": rouge_scores[1],
+                    "rougeL": rouge_scores[2],
+                    "rougeLsum": rouge_scores[3],
+                    "n": len(group),
+                }
+            )
 
         # Extraction and Normalization
         if name[0] == "extraction" or name[0] == "normalization":
-            f1_scores = get_extraction_normalization_mean_f1(group, False)
+            f1_scores = get_extraction_normalization_mean_f1(group, True)
             logger.debug(f"{name} -- {f1_scores}")
+            metrics_output.append(
+                {
+                    "source": name[1] if len(name) > 1 else None,
+                    "type": name[2] if len(name) > 2 else None,
+                    "task": name[0],
+                    "precision": f1_scores[0],
+                    "recall": f1_scores[1],
+                    "f1_score": f1_scores[2],
+                    "n": len(group),
+                }
+            )
 
         # Attributes
         if name[0] == "extraction":
-            f1_scores = get_attribute_mean_f1(group, True, True, False, True)
+            f1_scores = get_attribute_mean_f1(group, False, True, True)
             logger.debug(f"ATTRIBUTE:{name} -- {f1_scores}")
+            metrics_output.append(
+                {
+                    "source": name[1] if len(name) > 1 else None,
+                    "type": name[2] if len(name) > 2 else None,
+                    "task": "attribute",
+                    "precision": f1_scores[0],
+                    "recall": f1_scores[1],
+                    "f1_score": f1_scores[2],
+                    "n": len(group),
+                }
+            )
+
+    metrics_df = pd.DataFrame(metrics_output)
+    metrics_df = metrics_df.sort_values(by="task")
+
+    if write_to_csv:
+        metrics_df.to_csv("results.csv", index=False)
+    if write_to_new_excel:
+        metrics_df.to_excel("results.xlsx", index=False, sheet_name=excel_sheet_name)
 
 
 if __name__ == "__main__":
@@ -329,7 +390,8 @@ if __name__ == "__main__":
     #     "LeoMistral_V06",
     #     4096,
     # )
-
     aggregate_metrics(
-        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_16bit_LLama3_V03.json"
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_16bit_LeoMistral_V06.json",
+        write_to_csv=False,
+        write_to_new_excel=True,
     )
