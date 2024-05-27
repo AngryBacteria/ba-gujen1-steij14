@@ -31,10 +31,10 @@ from transformers import (
 )
 
 # Config
-EPOCHS = 7
+EPOCHS = 10
 BATCH_SIZE = 4
 LEARNING_RATE = 2e-5
-TEST_SIZE = 0.2
+TEST_SIZE = 0.1
 DEBUG = True
 WANDB = False
 RUN_NAME = "GerMedBert_CLS_V01_BRONCO"
@@ -44,7 +44,7 @@ EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
 data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Attribute", "ICD10", False, 10000, False
+    "Normalization", "ICD10", False, 1000, False
 )
 
 print_welcome_message()
@@ -86,14 +86,12 @@ def compute_metrics(eval_pred):
     predictions = (predictions > 0.5).astype(int)
 
     f1 = f1_score(labels, predictions, average="micro", zero_division=1)
-    f1_micro = f1_score(labels, predictions, average="micro", zero_division=1)
     precision = precision_score(labels, predictions, average="micro", zero_division=1)
     recall = recall_score(labels, predictions, average="micro", zero_division=1)
     accuracy = accuracy_score(labels, predictions)
 
     return {
         "f1_score": f1,
-        "f1_micro": f1_micro,
         "precision": precision,
         "recall": recall,
         "accuracy": accuracy,

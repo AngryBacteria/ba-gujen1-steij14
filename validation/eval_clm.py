@@ -72,7 +72,7 @@ def get_eval_data_from_models(
             )
             continue
 
-        # create the model_instruction for the model
+        # create the instruction (prompt) for the model
         instruction: str = tokenizer.apply_chat_template(
             example["messages"][:-1], tokenize=False, add_generation_prompt=True
         )
@@ -80,7 +80,7 @@ def get_eval_data_from_models(
             logger.error("No instruction found")
             continue
 
-        # get the whole input to save later
+        # get the whole input text (prompt + output) to save later
         prompt: str = tokenizer.apply_chat_template(
             example["messages"], tokenize=False, add_generation_prompt=True
         )
@@ -95,7 +95,7 @@ def get_eval_data_from_models(
             logger.error("No truth string found")
             continue
 
-        # get the model output
+        # get the model output and vram usage
         _start_time = datetime.datetime.now()
         _inputs = tokenizer(instruction, return_tensors="pt").to("cuda:0")
         _outputs = model.generate(**_inputs, max_new_tokens=2500)
@@ -111,6 +111,7 @@ def get_eval_data_from_models(
             logger.error("No output from model found")
             continue
 
+        # log the results
         logger.debug(f"Truth: {truth_string}")
         logger.debug(f"Prediction: {prediction_string}")
 
@@ -149,22 +150,18 @@ def get_eval_data_from_models(
     return output
 
 
-def calculate_string_f1_validation_metrics(
-    truth_labels: list[str], prediction_labels: list[str], origin=""
+def calculate_string_validation_metrics(
+    truth_labels: list[str], prediction_labels: list[str]
 ):
     """
-    Calculate precision, recall and f1 score for the extraction task. Takes in two lists, the truth labels and the
+    Calculate precision, recall and f1 score. Takes in two lists, the truth labels and the
     predicted labels and returns the metrics.
-    :param origin: The original text that the predictions are based on. Is used to check if the predictions even exist
-    in the original text
-    :param truth_labels: The truth labels as a list
-    :param prediction_labels: The predicted labels as a list
+    :param truth_labels: The truth labels as a list of strings
+    :param prediction_labels: The predicted labels as a list of strings
     """
     # lower case and strip
     truth_set = {x.lower().strip() for x in truth_labels}
     prediction_set = {x.lower().strip() for x in prediction_labels}
-    if origin and origin != "":
-        prediction_set = {x for x in prediction_set if x in origin}
 
     mlb = MultiLabelBinarizer()
     all_labels = sorted(truth_set.union(prediction_set))
@@ -173,29 +170,29 @@ def calculate_string_f1_validation_metrics(
     y_true = mlb.transform([truth_set])[0]
     y_pred = mlb.transform([prediction_set])[0]
 
-    precision = precision_score(y_true, y_pred, average="micro", zero_division=1)
-    recall = recall_score(y_true, y_pred, average="micro", zero_division=1)
-    f1 = f1_score(y_true, y_pred, average="micro", zero_division=1)
+    precision = precision_score(y_true, y_pred, zero_division=1)
+    recall = recall_score(y_true, y_pred, zero_division=1)
+    f1 = f1_score(y_true, y_pred, zero_division=1)
 
     return precision, recall, f1
 
 
-def calculate_rogue_metrics(desired: str, prediction: str):
+def calculate_rouge_metrics(truth: str, prediction: str):
     """
     Calculate the ROUGE metrics for the given prediction and desired string. More info can be found on the
     transformers documentation https://huggingface.co/spaces/evaluate-metric/rouge
     :param prediction: The text that was predicted from the model
-    :param desired: The text that should have been predicted by the model
+    :param truth: The text that should have been predicted by the model
     :return: rogue1, rogue2, rogueL and rogueLsum in a dictionary
     """
     rouge = evaluate.load("rouge")
     results = rouge.compute(
-        predictions=[prediction.lower().strip()], references=[desired.lower().strip()]
+        predictions=[prediction.lower().strip()], references=[truth.lower().strip()]
     )
     return results
 
 
-def get_rogue_mean_from_df(df: DataFrame):
+def get_rouge_mean_from_df(df: DataFrame):
     """
     Get the mean ROUGE score mean from a grouped DataFrame
     """
@@ -205,7 +202,7 @@ def get_rogue_mean_from_df(df: DataFrame):
     rogueLsum = []
 
     for _, row in df.iterrows():
-        rouge_metrics = calculate_rogue_metrics(
+        rouge_metrics = calculate_rouge_metrics(
             row["truth_string"], row["prediction_string"]
         )
         rogue1.append(rouge_metrics["rouge1"])
@@ -231,7 +228,7 @@ def get_extraction_normalization_mean_f1(df: DataFrame, ignore_na=False):
 
         truth = get_extractions_without_attributes(row["truth_string"])
         prediction = get_extractions_without_attributes(row["prediction_string"])
-        _precision, _recall, _f1 = calculate_string_f1_validation_metrics(
+        _precision, _recall, _f1 = calculate_string_validation_metrics(
             truth, prediction
         )
 
@@ -242,7 +239,7 @@ def get_extraction_normalization_mean_f1(df: DataFrame, ignore_na=False):
     return mean(precision), mean(recall), mean(f1)
 
 
-def get_attribute_mean_f1(df: DataFrame, ignore_na=False, ignore_positive=False, only_check_existence=False):
+def get_attribute_mean_f1(df: DataFrame, ignore_na=False, ignore_positive=False, only_check_existence=False, cardio=True):
     """
     Get the meanF1 (and co) score from a grouped DataFrame for the task of assigning attributes. Examples without
     attributes can be ignored and the positive label can be ignored as well.
@@ -257,6 +254,10 @@ def get_attribute_mean_f1(df: DataFrame, ignore_na=False, ignore_positive=False,
     f1 = []
 
     for index, row in df.iterrows():
+        if not cardio:
+            if row["source"] == "cardio":
+                continue
+
         if only_check_existence:
             truths = get_attributes_only(row["truth_string"])
             predictions = get_attributes_only(row["prediction_string"])
@@ -266,7 +267,7 @@ def get_attribute_mean_f1(df: DataFrame, ignore_na=False, ignore_positive=False,
             if ignore_na and len(truths) == 0:
                 continue
 
-            metrics_temp = calculate_string_f1_validation_metrics(truths, predictions)
+            metrics_temp = calculate_string_validation_metrics(truths, predictions)
             precision.append(metrics_temp[0])
             recall.append(metrics_temp[1])
             f1.append(metrics_temp[2])
@@ -285,7 +286,7 @@ def get_attribute_mean_f1(df: DataFrame, ignore_na=False, ignore_positive=False,
                     if ignore_na and len(truths[key]) == 0:
                         continue
 
-                    metrics_temp = calculate_string_f1_validation_metrics(
+                    metrics_temp = calculate_string_validation_metrics(
                         value, truths[key]
                     )
                     metrics_temp_precision.append(metrics_temp[0])
@@ -308,7 +309,7 @@ def aggregate_metrics(file_name: str):
     for name, group in grouped:
         # Summary
         if name[0] == "summary":
-            rouge_scores = get_rogue_mean_from_df(group)
+            rouge_scores = get_rouge_mean_from_df(group)
             logger.debug(f"{name} -- {rouge_scores}")
 
         # Extraction and Normalization
@@ -318,7 +319,7 @@ def aggregate_metrics(file_name: str):
 
         # Attributes
         if name[0] == "extraction":
-            f1_scores = get_attribute_mean_f1(group, False, True, True)
+            f1_scores = get_attribute_mean_f1(group, True, True, False, True)
             logger.debug(f"ATTRIBUTE:{name} -- {f1_scores}")
 
 
