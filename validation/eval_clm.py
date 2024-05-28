@@ -1,4 +1,5 @@
 import os
+
 import setproctitle
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -11,7 +12,6 @@ from statistics import mean
 from sklearn.metrics import recall_score, f1_score, precision_score
 from sklearn.preprocessing import MultiLabelBinarizer
 import datetime
-from shared.gpu_utils import get_cuda_memory_usage
 from shared.logger import logger
 from shared.clm_model_utils import (
     load_model_and_tokenizer,
@@ -103,7 +103,6 @@ def get_eval_data_from_models(
         output_string_raw = tokenizer.decode(_outputs[0], skip_special_tokens=False)
         _end_time = datetime.datetime.now()
         execution_time = (_end_time - _start_time).microseconds
-        gvram_allocated, gvram_capacity = get_cuda_memory_usage(0)
 
         # get model prediction
         prediction_string = get_model_output_only(output_string, lower=False)
@@ -136,8 +135,6 @@ def get_eval_data_from_models(
                 ],  # Type of annotation (DIAGNOSIS, MEDICATION, TREATMENT)
                 "source": example["source"],  # data source
                 "na_prompt": example["na_prompt"],  # if the example is empty or not
-                "gvram_allocated": gvram_allocated,  # allocated vram by cuda
-                "gvram_capacity": gvram_capacity,  # max vram capacity
             }
         )
 
@@ -391,7 +388,7 @@ if __name__ == "__main__":
     #     4096,
     # )
     aggregate_metrics(
-        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_16bit_LeoMistral_V06.json",
+        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_16bit_Gemma2b_V03.json",
         write_to_csv=False,
         write_to_new_excel=True,
     )

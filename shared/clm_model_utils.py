@@ -76,8 +76,10 @@ class ModelPrecision(Enum):
     THIRTY_TWO_BIT = 32
 
 
-CURRENT_DEFAULT_MODEL = "BachelorThesis/LLama3_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
-CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_LLAMA3
+CURRENT_DEFAULT_MODEL = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Modelle\Gemma2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
+CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
+# TODO find out why 4bit uses more than 16 ???????
+CURRENT_DEFAULT_PRECISION = ModelPrecision.FOUR_BIT
 
 
 def load_template_from_jinja(file_name="template"):
@@ -91,36 +93,6 @@ def load_template_from_jinja(file_name="template"):
     print(chat_template)
     print(f'"template": "{chat_template}",')
     return chat_template
-
-
-def test_chat_template(template: ChatTemplate, add_second_conversation=False):
-    """
-    Test function to apply a chat template to a list of messages and print the output.
-    Only useful to see if the template works as expected.
-    :param template: The chat template to use
-    :param add_second_conversation: If True, the function will add a second user input to the messages
-    """
-    test = load_tokenizer_with_template(template=template)
-
-    messages = [
-        {"role": "system", "content": "This is a system prompt."},
-        {"role": "user", "content": "This is the first user input."},
-        {"role": "assistant", "content": "This is the first assistant response."},
-    ]
-    if add_second_conversation:
-        messages.append(
-            {"role": "user", "content": "This is the second user input."},
-        )
-        output = test.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
-    else:
-        output = test.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=False
-        )
-
-    print(output)
-    return output
 
 
 # MODEL AND TOKENIZER
@@ -200,16 +172,18 @@ def get_best_device() -> GenDevice:
 
 def load_model_and_tokenizer(
     model_name=CURRENT_DEFAULT_MODEL,
-    precision=ModelPrecision.SIXTEEN_BIT,
+    precision=CURRENT_DEFAULT_PRECISION,
     patch_model=False,
     patch_tokenizer=False,
     use_flash_attn=False,
     device=get_best_device(),
     template=CURRENT_DEFAULT_TEMPLATE,
+    empty_cache=False,
 ):
     """
     Helper function to load a model and tokenizer with a specific precision and chat template.
     Optionally patches the model and tokenizer with the template (recommended if not pre-configured)
+    :param empty_cache: If the cuda cache should be cleared before loading the model
     :param model_name: The path of the model to load. Can be a huggingface repository name or a local directory.
     For example: "BachelorThesis/LLama3_V02_BRONCO_CARDIO_SUMMARY_CATALOG"
     :param precision: The precision to load the model in. Can be 4, 8, 16 or 32 bit. Recommended is 16 bit
@@ -225,6 +199,9 @@ def load_model_and_tokenizer(
     :param template: The chat/instruction template to use.
     :return: Model and Tokenizer
     """
+    if empty_cache and torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
     tokenizer = AutoTokenizer.from_pretrained(
         model_name,
         use_fast=True,
@@ -233,7 +210,7 @@ def load_model_and_tokenizer(
     )
 
     # get correct bnb compute dtype
-    if device.value in "cuda":
+    if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
         bnb_compute_dtype = torch.bfloat16
     else:
         bnb_compute_dtype = torch.float16
@@ -253,7 +230,7 @@ def load_model_and_tokenizer(
         )
         model_config = {"quantization_config": bnb_config}
     elif precision == ModelPrecision.SIXTEEN_BIT:
-        if device.value in "cuda":
+        if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
             model_config = {"torch_dtype": torch.bfloat16}
         else:
             model_config = {"torch_dtype": torch.float16}
@@ -285,6 +262,7 @@ def load_model_and_tokenizer(
     logger.debug(
         f"Loaded model/tokenizer {model_name} with precision {precision.name} and tokenization template {template.name}"
     )
+
     return tokenizer, model
 
 
@@ -346,7 +324,7 @@ def upload_tokenizer(
 
 # GENERATION
 def generate_output(
-    prompt: str,
+    messages: str | list[dict],
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
     device=GenDevice.CUDA_0,
@@ -354,15 +332,31 @@ def generate_output(
 ) -> tuple[str, str]:
     start_time = time.perf_counter()
 
-    inputs = tokenizer(prompt, return_tensors="pt").to(device.value)
+    if isinstance(messages, str):
+        inputs = tokenizer(messages, return_tensors="pt").to(device.value)
+    else:
+        inputs = tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, tokenize=False
+        )
+        inputs = tokenizer(inputs, return_tensors="pt").to(device.value)
+
     outputs = model.generate(**inputs, max_new_tokens=max_new_tokens)
     model_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
     model_output_raw = tokenizer.decode(outputs[0], skip_special_tokens=False)
     end_time = time.perf_counter()
-
     execution_time = int((end_time - start_time) * 1000)
+
+    # if cuda available get gpu usage
+    mem_info = ""
+    if torch.cuda.is_available():
+        allocated, capacity = torch.cuda.mem_get_info(device.value)
+        # bytes to gb
+        allocated = allocated / 1024 / 1024 / 1024
+        capacity = capacity / 1024 / 1024 / 1024
+        mem_info = f"while using {allocated:.1f}GB of {capacity:.2f}GB GPU memory"
+
     logger.debug(
-        f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}ms on {device.value}"
+        f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}ms on {device.value} {mem_info}"
     )
     return model_output, model_output_raw
 
@@ -504,8 +498,8 @@ def get_attributes_only(string_input: str):
 
 def test_generation(
     model_name=CURRENT_DEFAULT_MODEL,
-    precision=ModelPrecision.FOUR_BIT,
-    device=GenDevice.CUDA_0,
+    precision=CURRENT_DEFAULT_PRECISION,
+    device=get_best_device(),
     template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """Function to test if the inference of the model works on gpu or not"""
@@ -516,7 +510,7 @@ def test_generation(
         },
         {
             "role": "user",
-            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":\n\nIn einem Roentgen Thorax zeigten sich prominente zentrale Lungengefaesszeichnung mit basoapikaler Umverteilung sowie angedeutete Kerley-B-Linien, vereinbar mit einer chronischen pulmonalvenoesen Stauungskomponente bei Hypervolaemie.',
+            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Für jede Diagnose oder Symptom, füge in eckigen Klammern an, ob die Diagnose oder das Symptom in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] und links [LINKS], rechts [RECHTS] oder beidseitig [BEIDSEITIG] ist. Falls keine Diagnosen oder Symptome im Text vorkommen, schreibe "Keine vorhanden":\n\nIn einem Roentgen Thorax zeigten sich prominente zentrale Lungengefaesszeichnung mit basoapikaler Umverteilung sowie angedeutete Kerley-B-Linien, vereinbar mit einer chronischen pulmonalvenoesen Stauungskomponente bei Hypervolaemie.',
         },
     ]
     messages2 = [
@@ -526,7 +520,7 @@ def test_generation(
         },
         {
             "role": "user",
-            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":\n\nDer Patient hat Kopfschmerzen.',
+            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Für jede Diagnose oder Symptom, füge in eckigen Klammern an, ob die Diagnose oder das Symptom in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] und links [LINKS], rechts [RECHTS] oder beidseitig [BEIDSEITIG] ist. Falls keine Diagnosen oder Symptome im Text vorkommen, schreibe "Keine vorhanden":\n\nDer Patient hat Kopfschmerzen.',
         },
     ]
     messages3 = [
@@ -536,7 +530,7 @@ def test_generation(
         },
         {
             "role": "user",
-            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":\n\nDie Patientin Pamela Berger hatte sich heute in der Notfallaufnahme gemeldet weil sie keine starken Bauchschmerzen hatte.',
+            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Für jede Diagnose oder Symptom, füge in eckigen Klammern an, ob die Diagnose oder das Symptom in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] und links [LINKS], rechts [RECHTS] oder beidseitig [BEIDSEITIG] ist. Falls keine Diagnosen oder Symptome im Text vorkommen, schreibe "Keine vorhanden":\n\nDie Patientin Pamela Berger hatte sich heute in der Notfallaufnahme gemeldet weil sie keine starken Bauchschmerzen hatte.',
         },
     ]
     messages_concat = [messages1, messages2, messages3]
@@ -545,10 +539,7 @@ def test_generation(
         model_name, precision, device=device, template=template
     )
     for messages in messages_concat:
-        prompt = tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
-        output, _ = generate_output(prompt, model, tokenizer, device=device)
+        output, _ = generate_output(messages, model, tokenizer, device=device)
         print(output)
         print(30 * "-")
 
@@ -587,8 +578,4 @@ def count_tokens(
 
 
 if __name__ == "__main__":
-    print(
-        get_attributes_only(
-            "extraction1 [attribute1|attribute2] | extraction2 [attribute3|attribute4]"
-        )
-    )
+    test_generation()

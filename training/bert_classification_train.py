@@ -31,20 +31,21 @@ from transformers import (
 )
 
 # Config
-EPOCHS = 10
-BATCH_SIZE = 8
+MODEL_NAME = "deepset/gelectra-large"
+EPOCHS = 3
+BATCH_SIZE = 4
 LEARNING_RATE = 2e-5
 TEST_SIZE = 0.1
 DEBUG = True
-WANDB = True
+WANDB = False
 RUN_NAME = "GerMedBert_CLS_V01_BRONCO"
-SAVE_MODEL = True
-UPLOAD_MODEL = True
+SAVE_MODEL = False
+UPLOAD_MODEL = False
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
 data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Attribute", "ICD10", False, 1000, False
+    "Normalization", "ATC", False, 1000, False
 )
 
 print_welcome_message()
@@ -57,7 +58,7 @@ def preprocess_function(examples):
 
 # Load tokenizer
 print_with_heading("Load fast tokenizer")
-tokenizer = AutoTokenizer.from_pretrained("GerMedBERT/medbert-512")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
 # Load dataset
 print_with_heading("Load dataset")
@@ -68,7 +69,7 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 # Load model
 print_with_heading("Load model")
 model = AutoModelForSequenceClassification.from_pretrained(
-    "GerMedBERT/medbert-512",
+    MODEL_NAME,
     num_labels=NUM_LABELS,
     id2label=id2label,
     label2id=label2id,
