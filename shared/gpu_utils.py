@@ -35,9 +35,8 @@ def get_cuda_memory_usage(gpu_id: int) -> tuple[float, float]:
         info = pynvml.nvmlDeviceGetMemoryInfo(handle)
         allocated = info.used / 1024.0**3
         capacity = info.total / 1024.0**3
+        pynvml.nvmlShutdown()
 
         return allocated, capacity
     except NVMLError:
         return 0.0, 0.0
-    finally:
-        pynvml.nvmlShutdown()

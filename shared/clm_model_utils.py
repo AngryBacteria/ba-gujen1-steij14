@@ -1,6 +1,7 @@
 import os
 import time
 
+from shared.gpu_utils import get_cuda_memory_usage
 from shared.logger import logger
 
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
@@ -58,7 +59,6 @@ class GenDevice(Enum):
 
     CPU = "cpu"
     MPS = "mps"
-    CUDA = "cuda"
     CUDA_0 = "cuda:0"
     CUDA_1 = "cuda:1"
     CUDA_2 = "cuda:2"
@@ -76,10 +76,10 @@ class ModelPrecision(Enum):
     THIRTY_TWO_BIT = 32
 
 
+# TODO https://huggingface.co/docs/transformers/perf_infer_cpu
 CURRENT_DEFAULT_MODEL = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Modelle\Gemma2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
 CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
-# TODO find out why 4bit uses more than 16 ???????
-CURRENT_DEFAULT_PRECISION = ModelPrecision.FOUR_BIT
+CURRENT_DEFAULT_PRECISION = ModelPrecision.SIXTEEN_BIT
 
 
 def load_template_from_jinja(file_name="template"):
@@ -270,56 +270,31 @@ def upload_model(
     account_name: str,
     repo_name: str,
     local_model_folder: str,
-    patch: bool,
-    template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """
     Uploads a model to Huggingface.
-    :param template: The template used for patching the model
     :param account_name: The name of the account to upload to. Can also be an organization.
     :param repo_name: The name of the repository to upload to or create.
     :param local_model_folder: The name of the local model folder to upload
-    :param patch: If True, the model will be patched with the template before uploading
-    :return:
     """
-    if patch:
-        tokenizer = load_tokenizer_with_template(
-            tokenizer_name=local_model_folder, template=template
-        )
-        model = AutoModelForCausalLM.from_pretrained(
-            local_model_folder, torch_dtype=torch.bfloat16
-        )
-        model = patch_model_with_tokenizer(model, tokenizer)
-        model.push_to_hub(f"{account_name}/{repo_name}", private=True)
-    else:
-        model = AutoModelForCausalLM.from_pretrained(local_model_folder)
-        model.push_to_hub(f"{account_name}/{repo_name}", private=True)
+    model = AutoModelForCausalLM.from_pretrained(local_model_folder)
+    model.push_to_hub(f"{account_name}/{repo_name}", private=True)
 
 
 def upload_tokenizer(
     account_name: str,
     repo_name: str,
     local_model_folder: str,
-    patch: bool,
-    template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """
     Uploads a tokenizer to Huggingface.
-    :param template: The template used for patching the tokenizer
     :param account_name: The name of the account to upload to. Can also be an organization.
     :param repo_name: The name of the repository to upload to or create.
     :param local_model_folder: The name of the local tokenizer folder to upload
-    :param patch: If True, the tokenizer will be patched with the template before uploading
     :return:
     """
-    if patch:
-        tokenizer = load_tokenizer_with_template(
-            tokenizer_name=local_model_folder, template=template
-        )
-        tokenizer.push_to_hub(f"{account_name}/{repo_name}", private=True)
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(local_model_folder)
-        tokenizer.push_to_hub(f"{account_name}/{repo_name}", private=True)
+    tokenizer = AutoTokenizer.from_pretrained(local_model_folder)
+    tokenizer.push_to_hub(f"{account_name}/{repo_name}", private=True)
 
 
 # GENERATION
@@ -348,11 +323,9 @@ def generate_output(
 
     # if cuda available get gpu usage
     mem_info = ""
-    if torch.cuda.is_available():
-        allocated, capacity = torch.cuda.mem_get_info(device.value)
-        # bytes to gb
-        allocated = allocated / 1024 / 1024 / 1024
-        capacity = capacity / 1024 / 1024 / 1024
+    if torch.cuda.is_available() and "cuda" in device.value:
+        gpu = int(device.value[-1])
+        allocated, capacity = get_cuda_memory_usage(gpu)
         mem_info = f"while using {allocated:.1f}GB of {capacity:.2f}GB GPU memory"
 
     logger.debug(

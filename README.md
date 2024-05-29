@@ -59,7 +59,7 @@ project. This is to avoid code duplication and to make the code more readable.
 is done with the Huggingface Transformers library. The training is done on a GPU, so make sure to have a compatible
 GPU available. There are scripts available to train e causal language modeling (clm) LLM and multiple BERT variants 
 for token classification (NER) and classification.
-- **validation:** This folder contains the scripts to validate the trained model. This includes the evaluation of the
+- **evaluation:** This folder contains the scripts to validate the trained model. This includes the evaluation of the
 model on a test set with metrics such as Precision, Recall and the F1-Score. 
 
 # Installation

@@ -1,4 +1,4 @@
-# Validation
+# Evaluation
 This directory contains the scripts required to validate the different models that can be created with the training
 scripts. The validation scripts are used to evaluate the performance of the models on the validation dataset. Right
 now the following models can be validated:

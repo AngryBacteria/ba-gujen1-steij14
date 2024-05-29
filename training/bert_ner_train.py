@@ -21,7 +21,6 @@ from transformers import (
     Trainer,
     EvalPrediction,
 )
-from training.utils.custom_callbacks import GPUMemoryUsageCallback
 from training.utils.printing import (
     print_welcome_message,
     print_with_heading,
@@ -190,9 +189,6 @@ training_args.logging_steps = LOGGING_STEPS
 if DEBUG:  # setup logging and debugging
     training_args.include_tokens_per_second = True
     training_args.include_num_input_tokens_seen = True
-    custom_callbacks = [GPUMemoryUsageCallback(GPU, LOGGING_STEPS)]
-else:
-    custom_callbacks = []
 if WANDB:
     training_args.report_to = ["wandb"]
     os.environ["WANDB_PROJECT"] = "bachelor-thesis-testing"
@@ -206,7 +202,6 @@ trainer = Trainer(
     tokenizer=tokenizer,
     data_collator=data_collator,
     compute_metrics=compute_metrics,
-    callbacks=custom_callbacks,
 )
 
 trainer.train()
