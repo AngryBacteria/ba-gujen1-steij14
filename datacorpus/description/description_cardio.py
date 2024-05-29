@@ -3,7 +3,7 @@ import ast
 import pandas as pd
 from pandas import DataFrame
 
-from shared.clm_model_utils import load_tokenizer_with_template
+from shared.clm_model_utils import load_tokenizer_with_template, count_tokens
 from shared.mongodb import get_collection
 
 
@@ -165,7 +165,7 @@ def paragraph_lengths(df, tokenize=False) -> tuple:
 
         tokenizer = load_tokenizer_with_template()
         for index, row in df.iterrows():
-            paragraph_length = len(tokenizer.tokenize(row["origin"]))
+            paragraph_length = count_tokens([row["origin"]], tokenizer)
             lengths.append(paragraph_length)
     else:
         for index, row in df.iterrows():
@@ -204,7 +204,7 @@ def show_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     if tokenize:
         tokenizer = load_tokenizer_with_template()
         for index, row in df.iterrows():
-            paragraph_length = len(tokenizer.tokenize(row["origin"]))
+            paragraph_length = count_tokens([row["origin"]], tokenizer)
             lengths.append(paragraph_length)
     else:
         for index, row in df.iterrows():

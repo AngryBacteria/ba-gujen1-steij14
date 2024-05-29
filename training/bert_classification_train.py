@@ -30,7 +30,7 @@ from transformers import (
 )
 
 # Config
-MODEL_NAME = "deepset/gelectra-large"
+MODEL_NAME = "GerMedBERT/medbert-512"
 EPOCHS = 3
 BATCH_SIZE = 4
 LEARNING_RATE = 2e-5
@@ -44,7 +44,7 @@ EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
 data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Normalization", "ATC", False, 1000, False
+    "Normalization", "OPS", False, 1000, False
 )
 
 print_welcome_message()

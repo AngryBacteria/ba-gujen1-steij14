@@ -6,7 +6,7 @@ from shared.logger import logger
 
 # DATA SOURCE: https://www2.informatik.hu-berlin.de/~leser/bronco/index.html
 
-path_text = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\textFiles"
+path_text = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Daten\corpus\bronco\textFiles"
 path_annotation_brat = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\bratFiles"
 path_annotation_conll = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\conllIOBTags"
 
@@ -277,4 +277,4 @@ def create_bronco_db() -> None:
 
 if __name__ == "__main__":
     print(count_bronco_tokens())
-    create_bronco_db()
+    # create_bronco_db()

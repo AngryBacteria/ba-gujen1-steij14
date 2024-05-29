@@ -2,7 +2,7 @@ import pandas as pd
 from pandas import DataFrame
 
 from shared.mongodb import get_collection
-from shared.clm_model_utils import load_tokenizer_with_template
+from shared.clm_model_utils import load_tokenizer_with_template, count_tokens
 
 
 # Collection of functions to analyze the ggponc2 dataset.
@@ -106,7 +106,7 @@ def get_paragraph_lengths(df, tokenize=False) -> tuple:
 
         tokenizer = load_tokenizer_with_template()
         for index, row in df.iterrows():
-            paragraph_length = len(tokenizer.tokenize(row["origin"]))
+            paragraph_length = count_tokens(row["origin"], tokenizer)
             lengths.append(paragraph_length)
     else:
         for index, row in df.iterrows():

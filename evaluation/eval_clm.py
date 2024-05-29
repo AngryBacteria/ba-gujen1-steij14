@@ -253,9 +253,9 @@ def get_attribute_mean_f1(
     :param only_check_existence: Only check if the attribute exists in the truth string and no complicated F1 score
     calculation by grouping entity and attribute
     """
-    truths = []
-    predictions = []
     if only_check_existence:
+        truths = []
+        predictions = []
         for index, row in df.iterrows():
 
             truth = get_attributes_only(row["truth_string"])
@@ -273,44 +273,35 @@ def get_attribute_mean_f1(
 
     # ATTENTION THIS IS EXPERIMENTAL (and probably wrong)
     else:
-        raise NotImplementedError("This is not implemented correctly yet")
-        precision = []
-        recall = []
-        f1 = []
+        truths = []
+        predictions = []
 
         for index, row in df.iterrows():
-            truths = get_extractions_with_attributes_grouped(row["truth_string"])
-            predictions = get_extractions_with_attributes_grouped(
+            # get grouped attributes, meaning the attributes are grouped by the entity
+            truth = get_extractions_with_attributes_grouped(row["truth_string"])
+            prediction = get_extractions_with_attributes_grouped(
                 row["prediction_string"]
             )
-            metrics_temp_precision = []
-            metrics_temp_recall = []
-            metrics_temp_f1 = []
-            for key, value in predictions.items():
-                if key in truths:
+            # iterate over all entities of the prediction
+            for key, value in prediction.items():
+                # if the entity (key) ist also in the truth, calculate the metrics
+                # this means if not it won't calculate, because this would be the extraction metric
+                if key in truth:
                     if ignore_positive:
                         value = [x for x in value if x != "POSITIV"]
-                        truths[key] = [x for x in truths[key] if x != "POSITIV"]
-                    if ignore_na and len(truths[key]) == 0:
+                        truth[key] = [x for x in truth[key] if x != "POSITIV"]
+                    if ignore_na and len(truth[key]) == 0:
                         continue
 
-                    metrics_temp = calculate_string_validation_metrics(
-                        value, truths[key]
-                    )
-                    metrics_temp_precision.append(metrics_temp[0])
-                    metrics_temp_recall.append(metrics_temp[1])
-                    metrics_temp_f1.append(metrics_temp[2])
+                    predictions.append(value)
+                    truths.append(truth[key])
 
-            precision.append(
-                mean(metrics_temp_precision) if metrics_temp_precision else 1
-            )
-            recall.append(mean(metrics_temp_recall) if metrics_temp_recall else 1)
-            f1.append(mean(metrics_temp_f1) if metrics_temp_f1 else 1)
-
-        return mean(f1), mean(precision), mean(recall)
+        for i, tru in enumerate(truths):
+            logger.debug(f"Truth {i}: {tru}")
+            logger.debug(f"Prediction {i}: {predictions[i]}")
+        return calculate_string_validation_metrics(truths, predictions)
 
 
-# ATTRIBUTE: Ignore positive prompts, maybe use sklearn
 def aggregate_metrics(
     file_name: str,
     write_to_csv=True,
@@ -377,18 +368,15 @@ def aggregate_metrics(
 
     if write_to_csv:
         metrics_df.to_csv("results.csv", index=False)
+    # TODO: do not overwrite but append
     if write_to_new_excel:
         metrics_df.to_excel("results.xlsx", index=False, sheet_name=excel_sheet_name)
 
 
 if __name__ == "__main__":
-    # get_eval_data_from_models(
-    #     ModelPrecision.SIXTEEN_BIT,
-    #     "LeoMistral_V06",
-    #     4096,
-    # )
     aggregate_metrics(
-        "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\Training\\Resultate\\validation_results_16bit_Gemma2b_V03.json",
+        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LLama3_V03.json",
         write_to_csv=False,
         write_to_new_excel=True,
+        excel_sheet_name="LLama3_V03",
     )

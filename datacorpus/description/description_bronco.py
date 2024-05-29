@@ -1,7 +1,7 @@
 import pandas as pd
 from pandas import DataFrame
 
-from shared.clm_model_utils import load_tokenizer_with_template
+from shared.clm_model_utils import load_tokenizer_with_template, count_tokens
 from shared.mongodb import get_collection
 
 
@@ -131,12 +131,12 @@ def show_localisation_pieplot(df: DataFrame, annotation_types=None) -> None:
 
     type_counts = filtered_df["localisation"].value_counts()
     type_counts_df = pd.DataFrame(
-        {"level_of_truth": type_counts.index, "count": type_counts.values}
+        {"localisation": type_counts.index, "count": type_counts.values}
     )
     fig = px.pie(
         type_counts_df,
         values="count",
-        names="Localisation",
+        names="localisation",
         title="Distribution of the localisation attribute",
     )
     fig.show()
@@ -156,7 +156,7 @@ def show_text_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     if tokenize:
         tokenizer = load_tokenizer_with_template()
         for index, row in df.iterrows():
-            paragraph_length = len(tokenizer.tokenize(row["origin"]))
+            paragraph_length = count_tokens([row["origin"]], tokenizer)
             lengths.append(paragraph_length)
     else:
         for index, row in df.iterrows():
@@ -186,7 +186,7 @@ def get_text_lengths(df, tokenize=False) -> tuple:
 
         tokenizer = load_tokenizer_with_template()
         for index, row in df.iterrows():
-            paragraph_length = len(tokenizer.tokenize(row["origin"]))
+            paragraph_length = count_tokens([row["origin"]], tokenizer)
             lengths.append(paragraph_length)
     else:
         for index, row in df.iterrows():
