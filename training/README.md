@@ -38,5 +38,5 @@ in that. To enable a simple multi GPU setup to speed up the training process you
 the first and second GPU of your system.
 2) Then start the training script with the following command 
 ```bash
-torchrun --nproc_per_node 2 clm_train.py
+torchrun --nproc_per_node 2 decoder_train.py
 ```

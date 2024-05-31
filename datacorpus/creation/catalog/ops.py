@@ -4,7 +4,7 @@ import re
 import pandas as pd
 
 from shared.logger import logger
-from shared.clm_model_utils import count_tokens
+from shared.decoder_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # Paths to the various OPS classification files. Includes metadata and alphabet
@@ -139,5 +139,5 @@ def count_ops_tokens():
 
 
 if __name__ == "__main__":
-    print(count_ops_tokens())
-    # upload_ops_metadata(True, False, False, True)
+    upload_ops_metadata(True, False, False, True)
+    # print(count_ops_tokens())

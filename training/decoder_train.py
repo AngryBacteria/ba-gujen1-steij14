@@ -3,9 +3,9 @@ import os
 import setproctitle
 
 from shared.gpu_utils import print_cuda_support
-from training.utils.config import parse_clm_config
+from training.utils.config import parse_decoder_config
 
-config = parse_clm_config()
+config = parse_decoder_config()
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = config.general.gpu
 setproctitle.setproctitle("gujen1 - bachelorthesis")
@@ -21,7 +21,7 @@ from training.utils.printing import (
     print_with_heading,
 )
 from transformers.trainer_utils import HubStrategy
-from shared.clm_model_utils import (
+from shared.decoder_utils import (
     load_tokenizer_with_template,
     patch_model_with_tokenizer,
 )

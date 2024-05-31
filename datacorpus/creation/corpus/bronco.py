@@ -1,6 +1,6 @@
 import os.path
 
-from shared.clm_model_utils import count_tokens
+from shared.decoder_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb
 from shared.logger import logger
 
@@ -276,5 +276,5 @@ def create_bronco_db() -> None:
 
 
 if __name__ == "__main__":
-    print(count_bronco_tokens())
-    # create_bronco_db()
+    create_bronco_db()
+    # print(count_bronco_tokens())

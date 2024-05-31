@@ -1,7 +1,7 @@
 import pandas as pd
 from pandas import DataFrame
 
-from shared.clm_model_utils import load_tokenizer_with_template, count_tokens
+from shared.decoder_utils import load_tokenizer_with_template, count_tokens
 from shared.mongodb import get_collection
 
 

@@ -8,12 +8,11 @@ setproctitle.setproctitle("gujen1 - bachelorthesis")
 
 import evaluate
 from pandas import DataFrame
-from statistics import mean
 from sklearn.metrics import recall_score, f1_score, precision_score
 from sklearn.preprocessing import MultiLabelBinarizer
 import datetime
 from shared.logger import logger
-from shared.clm_model_utils import (
+from shared.decoder_utils import (
     load_model_and_tokenizer,
     ModelPrecision,
     get_model_output_only,
@@ -185,18 +184,20 @@ def calculate_string_validation_metrics(
     return precision, recall, f1
 
 
-def calculate_rouge_metrics(truth: str, prediction: str):
+def calculate_rouge_metrics(truths: list[str], predictions: list[str]):
     """
     Calculate the ROUGE metrics for the given prediction and desired string. More info can be found on the
     transformers documentation https://huggingface.co/spaces/evaluate-metric/rouge
-    :param prediction: The text that was predicted from the model
-    :param truth: The text that should have been predicted by the model
+    :param predictions: The texts that were predicted from the model
+    :param truths: The texts that should have been predicted by the model
     :return: rogue1, rogue2, rogueL and rogueLsum in a dictionary
     """
     rouge = evaluate.load("rouge")
-    results = rouge.compute(
-        predictions=[prediction.lower().strip()], references=[truth.lower().strip()]
-    )
+
+    predictions = [prediction.lower().strip() for prediction in predictions]
+    truths = [truth.lower().strip() for truth in truths]
+
+    results = rouge.compute(predictions=predictions, references=truths)
     return results
 
 
@@ -209,16 +210,13 @@ def get_rouge_mean_from_df(df: DataFrame):
     rogueL = []
     rogueLsum = []
 
+    truths = []
+    predictions = []
     for _, row in df.iterrows():
-        rouge_metrics = calculate_rouge_metrics(
-            row["truth_string"], row["prediction_string"]
-        )
-        rogue1.append(rouge_metrics["rouge1"])
-        rogue2.append(rouge_metrics["rouge2"])
-        rogueL.append(rouge_metrics["rougeL"])
-        rogueLsum.append(rouge_metrics["rougeLsum"])
+        truths.append(row["truth_string"])
+        predictions.append(row["prediction_string"])
 
-    return mean(rogue1), mean(rogue2), mean(rogueL), mean(rogueLsum)
+    return calculate_rouge_metrics(truths, predictions)
 
 
 def get_extraction_normalization_mean_f1(df: DataFrame, ignore_na=False):
@@ -323,10 +321,10 @@ def aggregate_metrics(
                     "source": name[1] if len(name) > 1 else None,
                     "type": name[2] if len(name) > 2 else None,
                     "task": name[0],
-                    "rouge1": rouge_scores[0],
-                    "rouge2": rouge_scores[1],
-                    "rougeL": rouge_scores[2],
-                    "rougeLsum": rouge_scores[3],
+                    "rouge1": rouge_scores["rouge1"],
+                    "rouge2": rouge_scores["rouge2"],
+                    "rougeL": rouge_scores["rougeL"],
+                    "rougeLsum": rouge_scores["rougeLsum"],
                     "n": len(group),
                 }
             )
@@ -368,15 +366,21 @@ def aggregate_metrics(
 
     if write_to_csv:
         metrics_df.to_csv("results.csv", index=False)
-    # TODO: do not overwrite but append
     if write_to_new_excel:
-        metrics_df.to_excel("results.xlsx", index=False, sheet_name=excel_sheet_name)
+        excel_path = "results.xlsx"
+        if os.path.exists(excel_path):
+            with pd.ExcelWriter(
+                excel_path, engine="openpyxl", mode="a", if_sheet_exists="replace"
+            ) as writer:
+                metrics_df.to_excel(writer, index=False, sheet_name=excel_sheet_name)
+        else:
+            metrics_df.to_excel(excel_path, index=False, sheet_name=excel_sheet_name)
 
 
 if __name__ == "__main__":
     aggregate_metrics(
-        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LLama3_V03.json",
+        r"/Users/gujen1/OneDrive - Berner Fachhochschule/Dokumente/UNI/Bachelorarbeit/Training/Resultate/model_outputs/validation_results_16bit_Gemma2b_V03.json",
         write_to_csv=False,
         write_to_new_excel=True,
-        excel_sheet_name="LLama3_V03",
+        excel_sheet_name="Gemma_V03",
     )

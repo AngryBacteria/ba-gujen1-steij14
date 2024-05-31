@@ -6,7 +6,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class ModelConfigCLM(BaseModel):
+class ModelConfigDecoder(BaseModel):
     id_model: str
     lower_precision: bool
     attention_implementation: str
@@ -15,13 +15,13 @@ class ModelConfigCLM(BaseModel):
     galore: bool
 
 
-class DataProcessingConfigCLM(BaseModel):
+class DataProcessingConfigDecoder(BaseModel):
     sequence_length: int
     processing_threads: int
     test_size: float
 
 
-class TrainerConfigCLM(BaseModel):
+class TrainerConfigDecoder(BaseModel):
     epochs: int
     batch_size: int
     evals_per_epoch: int
@@ -33,7 +33,7 @@ class TrainerConfigCLM(BaseModel):
     mixed_precision: bool
 
 
-class GeneralConfigCLM(BaseModel):
+class GeneralConfigDecoder(BaseModel):
     debug: bool
     wandb_logging: bool
     disable_annoying_warnings: bool
@@ -46,14 +46,14 @@ class GeneralConfigCLM(BaseModel):
     logs_per_epoch: int
 
 
-class TrainConfigCLM(BaseModel):
-    general: GeneralConfigCLM
-    model: ModelConfigCLM
-    data_processing: DataProcessingConfigCLM
-    trainer: TrainerConfigCLM
+class TrainConfigDecoder(BaseModel):
+    general: GeneralConfigDecoder
+    model: ModelConfigDecoder
+    data_processing: DataProcessingConfigDecoder
+    trainer: TrainerConfigDecoder
 
 
-def parse_clm_config():
+def parse_decoder_config():
     # Parse arguments (config file location)
     parser = argparse.ArgumentParser(
         description="Run the training script with a specified config file."
@@ -61,7 +61,7 @@ def parse_clm_config():
     parser.add_argument(
         "--config",
         type=str,
-        default="research/training/configs/clm_base.json",
+        default="training/configs/decoder_lower_precision.json",
         required=False,
         help="Path to the configuration file.",
     )
@@ -70,13 +70,13 @@ def parse_clm_config():
     # Load config file
     with open(args.config, "r") as file:
         config_json = json.loads(file.read())
-        config = TrainConfigCLM(**config_json)
+        config = TrainConfigDecoder(**config_json)
 
     config = normalize_clm_config(config)
     return config
 
 
-def normalize_clm_config(config: TrainConfigCLM):
+def normalize_clm_config(config: TrainConfigDecoder):
     if config.model.qlora and not config.model.lora:
         raise ValueError("QLORA can only be used in combination with LORA.")
     if config.model.galore and (config.model.lora or config.model.qlora):

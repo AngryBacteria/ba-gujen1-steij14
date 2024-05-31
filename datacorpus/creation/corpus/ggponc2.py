@@ -2,7 +2,7 @@ import json
 import os.path
 
 from datacorpus.utils.ner import parse_ner_dataset
-from shared.clm_model_utils import count_tokens
+from shared.decoder_utils import count_tokens
 from shared.mongodb import (
     upload_data_to_mongodb,
     rename_dict_keys,
@@ -202,5 +202,5 @@ def build_ggponc_db():
 
 
 if __name__ == "__main__":
-    print(count_ggponc_tokens())
     build_ggponc_db()
+    # print(count_ggponc_tokens())

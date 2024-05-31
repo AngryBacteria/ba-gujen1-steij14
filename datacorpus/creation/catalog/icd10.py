@@ -4,7 +4,7 @@ import xml.etree.ElementTree as et
 import pandas as pd
 from pandas import DataFrame
 
-from shared.clm_model_utils import count_tokens
+from shared.decoder_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb, get_collection
 from shared.logger import logger
 
@@ -321,6 +321,6 @@ def count_icd10_tokens(icd10gm: bool):
 
 
 if __name__ == "__main__":
-    print(count_icd10_tokens(True))
-    # create_icd10_db_from_xml(icd10gm=True, add_alphabet=True)
-    # create_icd10_db_from_xml(icd10gm=False, add_alphabet=True)
+    create_icd10_db_from_xml(icd10gm=True, add_alphabet=True)
+    create_icd10_db_from_xml(icd10gm=False, add_alphabet=True)
+    # print(count_icd10_tokens(True))

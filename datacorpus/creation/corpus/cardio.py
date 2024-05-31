@@ -3,7 +3,7 @@ import re
 
 import pandas as pd
 
-from shared.clm_model_utils import count_tokens
+from shared.decoder_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb
 from shared.logger import logger
 
@@ -414,5 +414,5 @@ def build_cardio_db():
 
 
 if __name__ == "__main__":
-    print(count_cardio_tokens())
-    # build_cardio_db()
+    build_cardio_db()
+    # print(count_cardio_tokens())

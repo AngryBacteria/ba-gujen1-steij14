@@ -1,7 +1,7 @@
 import pandas as pd
 
 from shared.logger import logger
-from shared.clm_model_utils import count_tokens
+from shared.decoder_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # DATA SOURCE: Unknown origin. (Medication_Pharmacode_ATC.xlsx)
@@ -75,5 +75,5 @@ def count_atc_tokens():
 
 
 if __name__ == "__main__":
+    create_atc_db()
     print(count_atc_tokens())
-    # create_atc_db()

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from shared.logger import logger
-from shared.clm_model_utils import count_tokens
+from shared.decoder_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # Creation of data with synthetic methods such as the OpenAI API.
@@ -176,5 +176,5 @@ def upload_summary_data_to_mongodb(lc2: bool, clef: bool, dev4med: bool):
 
 
 if __name__ == "__main__":
-    print(count_synthetic_tokens())
-    # upload_summary_data_to_mongodb(True, True, True)
+    upload_summary_data_to_mongodb(True, True, True)
+    # print(count_synthetic_tokens())

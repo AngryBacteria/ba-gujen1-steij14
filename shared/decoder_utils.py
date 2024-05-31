@@ -1,12 +1,11 @@
 import os
-import time
-
-from shared.gpu_utils import get_cuda_memory_usage
-from shared.logger import logger
 
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
+import time
+from shared.gpu_utils import get_cuda_memory_usage
+from shared.logger import logger
 import re
 from enum import Enum
 
@@ -77,7 +76,7 @@ class ModelPrecision(Enum):
 
 
 # TODO https://huggingface.co/docs/transformers/perf_infer_cpu
-CURRENT_DEFAULT_MODEL = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Modelle\Gemma2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
+CURRENT_DEFAULT_MODEL = r"BachelorThesis/Gemma2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
 CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
 CURRENT_DEFAULT_PRECISION = ModelPrecision.SIXTEEN_BIT
 

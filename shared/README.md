@@ -4,7 +4,7 @@ This includes:
 - **logger.py:** A simple logger implementation that logs to the console and to a file. The format inside the console
 is multicolored indicating the levels of logs (INFO, WARNING, ERROR, DEBUG). Both the console and file logs have
 a timestamp and the name of the file that the log was called from.
-- **clm_model_utils.py:** Functions to interact with the Deocder LLMs are stored in here. This mainly includes the 
+- **decoder_utils.py:** Functions to interact with the decoder LLMs are stored in here. This mainly includes the 
 following functionalities:
   - Loading Model and Tokenizer for the usage in the project.
   - Patching Model and Tokenizer with special prompt/chat formats. This includes saving it into the Model/Tokenizer
