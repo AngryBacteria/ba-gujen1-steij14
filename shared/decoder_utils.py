@@ -76,8 +76,8 @@ class ModelPrecision(Enum):
 
 
 # TODO https://huggingface.co/docs/transformers/perf_infer_cpu
-CURRENT_DEFAULT_MODEL = r"BachelorThesis/Gemma2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
-CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
+CURRENT_DEFAULT_MODEL = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Modelle\LLama3_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
+CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_LLAMA3
 CURRENT_DEFAULT_PRECISION = ModelPrecision.SIXTEEN_BIT
 
 
@@ -304,8 +304,7 @@ def generate_output(
     device=GenDevice.CUDA_0,
     max_new_tokens=2000,
 ) -> tuple[str, str]:
-    start_time = time.perf_counter()
-
+    start_time = time.perf_counter_ns()
     if isinstance(messages, str):
         inputs = tokenizer(messages, return_tensors="pt").to(device.value)
     else:
@@ -317,8 +316,9 @@ def generate_output(
     outputs = model.generate(**inputs, max_new_tokens=max_new_tokens)
     model_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
     model_output_raw = tokenizer.decode(outputs[0], skip_special_tokens=False)
-    end_time = time.perf_counter()
-    execution_time = int((end_time - start_time) * 1000)
+    end_time = time.perf_counter_ns()
+    # execution time in milliseconds
+    execution_time = (end_time - start_time) / 10**6
 
     # if cuda available get gpu usage
     mem_info = ""
@@ -328,7 +328,7 @@ def generate_output(
         mem_info = f"while using {allocated:.1f}GB of {capacity:.2f}GB GPU memory"
 
     logger.debug(
-        f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}ms on {device.value} {mem_info}"
+        f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}seconds on {device.value} {mem_info}"
     )
     return model_output, model_output_raw
 

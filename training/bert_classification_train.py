@@ -31,20 +31,20 @@ from transformers import (
 
 # Config
 MODEL_NAME = "GerMedBERT/medbert-512"
-EPOCHS = 3
-BATCH_SIZE = 4
+EPOCHS = 10
+BATCH_SIZE = 32
 LEARNING_RATE = 2e-5
 TEST_SIZE = 0.1
 DEBUG = True
 WANDB = False
-RUN_NAME = "GerMedBert_CLS_V01_BRONCO"
-SAVE_MODEL = False
-UPLOAD_MODEL = False
+RUN_NAME = "GerMedBert_NORM_V01_BRONCO"
+SAVE_MODEL = True
+UPLOAD_MODEL = True
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
 data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Normalization", "OPS", False, 1000, False
+    "Normalization", "ALL", True, 50, False
 )
 
 print_welcome_message()

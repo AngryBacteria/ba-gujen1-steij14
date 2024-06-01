@@ -387,7 +387,8 @@ def aggregate_bronco_multi_label_classification(
     Create a bronco dataset for multi-label classification
     :param detailed: How many layers deep to go for icd10/ops codes. True means all, False means 3-4 layers.
     :param task: The task to create the dataset for. Can be one of the following: Normalization, Entity_Type, Attribute
-    :param normalization_type: The type of entity to create the dataset for.
+    :param normalization_type: The type of entity to create the dataset for. Such as "ICD10", "OPS", "ATC".
+    You can also pass "ALL" to include all types.
     :param top_x_labels: The number of top x labels to create the dataset for.
     :param include_other: Whether to include a category "other" which means it is not in the top_x labels.
     Can be one of the following: ICD10GM, OSP, ATC
@@ -415,13 +416,16 @@ def aggregate_bronco_multi_label_classification(
             for pack in row["normalizations"]:
                 for unpacked in pack:
                     for normalization in unpacked:
-                        if normalization["normalization"].startswith(
-                            normalization_type
+                        if (
+                            normalization["normalization"].startswith(
+                                normalization_type
+                            )
+                            or normalization_type == "ALL"
                         ):
                             norm = normalization["normalization"].split(":")[1]
                             if not detailed:
                                 norm = norm.split(".")[0]
-                            unique_normalizations.add(norm)
+                            unique_normalizations.add(norm.strip())
             all_labels.append(list(unique_normalizations))
     elif task == "Attribute":
         for i, row in grouped_df.iterrows():
@@ -430,7 +434,7 @@ def aggregate_bronco_multi_label_classification(
             for pack in row["attributes"]:
                 for unpacked in pack:
                     for attribute in unpacked:
-                        unique_attributes.add(attribute["attribute"])
+                        unique_attributes.add(attribute["attribute"].strip())
                         if attribute["attribute"] == "level_of_truth":
                             level_of_truth_found = True
             if include_other and not level_of_truth_found:
@@ -443,6 +447,7 @@ def aggregate_bronco_multi_label_classification(
     # Count label frequencies
     label_counter = Counter(label for labels in all_labels for label in labels)
     top_labels = {label for label, _ in label_counter.most_common(top_x_labels)}
+    logger.debug(f"Label counts: {label_counter}")
     # Filter labels and add "OTHER" category for labels not in top X if include_other is True
     filtered_labels = []
     for labels in all_labels:
@@ -478,5 +483,5 @@ def aggregate_bronco_multi_label_classification(
 # if main method
 if __name__ == "__main__":
     aggregate_bronco_multi_label_classification(
-        "Attribute", "ICD10", False, 1000, False
+        "Normalization", "ICD10GM", True, 50, False
     )

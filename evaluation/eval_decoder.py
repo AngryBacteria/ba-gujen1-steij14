@@ -6,6 +6,9 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+from shared.gpu_utils import get_cuda_memory_usage
+import time
+import torch
 import evaluate
 from pandas import DataFrame
 from sklearn.metrics import recall_score, f1_score, precision_score
@@ -30,6 +33,7 @@ def get_eval_data_from_models(
     model_name: str,
     max_sequence_length: int,
     tasks_to_eval=None,
+    only_eval_resources=False,
 ):
     """
     The model makes a prediction which is then stored with the ground truth (the full prompt with answer).
@@ -40,6 +44,8 @@ def get_eval_data_from_models(
     :param precision: The precision to load the model in (16bit recommended if hardware supports it)
     :param max_sequence_length: The max sequence length the model should be evaluated on. The full prompt (with answer)
     is taken as the filter for the max sequence length.
+    :param only_eval_resources: If True, only the VRAM consumption and time in milliseconds is evaluated. Cache is
+    cleared after each example to be accurate. Only around 10 examples per task is evaluated to save time.
     :return: None, the data is saved to a file
     """
     if tasks_to_eval is None:
@@ -94,14 +100,33 @@ def get_eval_data_from_models(
             logger.error("No truth string found")
             continue
 
-        # get the model output and vram usage
-        _start_time = datetime.datetime.now()
+        # get the model output
+        if only_eval_resources:
+            _start_time = time.perf_counter_ns()
         _inputs = tokenizer(instruction, return_tensors="pt").to("cuda:0")
         _outputs = model.generate(**_inputs, max_new_tokens=2500)
+        if only_eval_resources:
+            _end_time = time.perf_counter_ns()
+            allocated, capacity = get_cuda_memory_usage(0)
+            execution_time = (_end_time - _start_time) / 10**6
+            output.append(
+                {
+                    "model": model_name,
+                    "model_precision": precision.value,
+                    "execution_time": execution_time,
+                    "allocated": allocated,
+                    "capacity": capacity,
+                    "tokens": len(_inputs["input_ids"]),
+                }
+            )
+            logger.debug(
+                f"Execution time: {execution_time} ms used VRAM: {allocated}/{capacity} MB"
+            )
+            torch.cuda.empty_cache()
+            continue
+
         output_string = tokenizer.decode(_outputs[0], skip_special_tokens=True)
         output_string_raw = tokenizer.decode(_outputs[0], skip_special_tokens=False)
-        _end_time = datetime.datetime.now()
-        execution_time = (_end_time - _start_time).microseconds
 
         # get model prediction
         prediction_string = get_model_output_only(output_string, lower=False)
@@ -140,9 +165,16 @@ def get_eval_data_from_models(
         logger.debug(f"{150 * '-'}")
     # convert to pandas df and save to json
     df = pd.DataFrame(output)
-    df.to_json(
-        f"validation_results_{precision.value}bit_{model_name}.json", orient="records"
-    )
+    if only_eval_resources:
+        df.to_json(
+            f"validation_results_resources_{precision.value}bit_{model_name}.json",
+            orient="records",
+        )
+    else:
+        df.to_json(
+            f"validation_results_{precision.value}bit_{model_name}.json",
+            orient="records",
+        )
     return output
 
 
@@ -205,11 +237,6 @@ def get_rouge_mean_from_df(df: DataFrame):
     """
     Get the mean ROUGE score mean from a grouped DataFrame
     """
-    rogue1 = []
-    rogue2 = []
-    rogueL = []
-    rogueLsum = []
-
     truths = []
     predictions = []
     for _, row in df.iterrows():
@@ -219,20 +246,38 @@ def get_rouge_mean_from_df(df: DataFrame):
     return calculate_rouge_metrics(truths, predictions)
 
 
-def get_extraction_normalization_mean_f1(df: DataFrame, ignore_na=False):
+def get_extraction_normalization_mean_f1(
+    df: DataFrame, ignore_na=False, detailed_normalization=True
+):
     """
     Get the mean F1 (and co) score for the tasks extraction and normalization from a grouped DataFrame.
     Examples without extractions can be ignored.
+    :param df: The DataFrame with the grouped data
+    :param ignore_na: Ignores examples without extractions
+    :param detailed_normalization: If True, the normalization will be evaluated in more detail, meaning the icd10 and
+    ops codes will be evaluated until their last digit. False means only 3 digits for icd10 and 4 for ops codes.
     """
 
     truths = []
     predictions = []
     for _, row in df.iterrows():
-        if ignore_na and row["na_prompt"]:
-            continue
-
         truth = get_extractions_without_attributes(row["truth_string"])
         prediction = get_extractions_without_attributes(row["prediction_string"])
+
+        if (
+            ignore_na
+            and "keine vorhanden" in truth
+            and row["na_prompt"]
+            and "keine vorhanden" in prediction
+        ):
+            continue
+
+        if row["task"] == "normalization" and not detailed_normalization:
+            truth = [current_truth.split(".")[0] for current_truth in truth]
+            prediction = [
+                current_prediction.split(".")[0] for current_prediction in prediction
+            ]
+
         truths.append(truth)
         predictions.append(prediction)
 
@@ -307,8 +352,8 @@ def aggregate_metrics(
     excel_sheet_name="Results",
 ):
     df = pd.read_json(file_name)
-    grouped = df.groupby(["task", "source", "type"])
-    # grouped = df.groupby(["task"])
+    # grouped = df.groupby(["task", "source", "type"])
+    grouped = df.groupby(["task"])
 
     metrics_output = []
     for name, group in grouped:
@@ -326,12 +371,13 @@ def aggregate_metrics(
                     "rougeL": rouge_scores["rougeL"],
                     "rougeLsum": rouge_scores["rougeLsum"],
                     "n": len(group),
+                    "execution_time": group["execution_time"].mean(),
                 }
             )
 
         # Extraction and Normalization
         if name[0] == "extraction" or name[0] == "normalization":
-            f1_scores = get_extraction_normalization_mean_f1(group, True)
+            f1_scores = get_extraction_normalization_mean_f1(group, True, True)
             logger.debug(f"{name} -- {f1_scores}")
             metrics_output.append(
                 {
@@ -342,6 +388,7 @@ def aggregate_metrics(
                     "recall": f1_scores[1],
                     "f1_score": f1_scores[2],
                     "n": len(group),
+                    "execution_time": group["execution_time"].mean(),
                 }
             )
 
@@ -358,6 +405,7 @@ def aggregate_metrics(
                     "recall": f1_scores[1],
                     "f1_score": f1_scores[2],
                     "n": len(group),
+                    "execution_time": group["execution_time"].mean(),
                 }
             )
 
@@ -378,9 +426,26 @@ def aggregate_metrics(
 
 
 if __name__ == "__main__":
+
+    get_eval_data_from_models(
+        ModelPrecision.SIXTEEN_BIT, "Test", 4096, only_eval_resources=True
+    )
+
     aggregate_metrics(
-        r"/Users/gujen1/OneDrive - Berner Fachhochschule/Dokumente/UNI/Bachelorarbeit/Training/Resultate/model_outputs/validation_results_16bit_Gemma2b_V03.json",
+        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_Gemma2b_V03.json",
         write_to_csv=False,
         write_to_new_excel=True,
         excel_sheet_name="Gemma_V03",
+    )
+    aggregate_metrics(
+        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LLama3_V03.json",
+        write_to_csv=False,
+        write_to_new_excel=True,
+        excel_sheet_name="LLama_V03",
+    )
+    aggregate_metrics(
+        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LeoMistral_V06.json",
+        write_to_csv=False,
+        write_to_new_excel=True,
+        excel_sheet_name="LeoMistral_V06",
     )
