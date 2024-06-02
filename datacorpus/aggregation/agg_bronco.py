@@ -482,6 +482,9 @@ def aggregate_bronco_multi_label_classification(
 
 # if main method
 if __name__ == "__main__":
-    aggregate_bronco_multi_label_classification(
-        "Normalization", "ICD10GM", True, 50, False
+    data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
+        "Attribute", "ALL", True, 1000000, False
     )
+
+    # save to json
+    data.to_json("classification_data.json", orient="records")

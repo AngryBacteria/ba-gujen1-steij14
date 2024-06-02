@@ -116,11 +116,14 @@ def get_eval_data_from_models(
                     "execution_time": execution_time,
                     "allocated": allocated,
                     "capacity": capacity,
-                    "tokens": len(_inputs["input_ids"]),
+                    "tokens": len(_outputs[0]),
                 }
             )
+
             logger.debug(
-                f"Execution time: {execution_time} ms used VRAM: {allocated}/{capacity} MB"
+                f"Execution time: {execution_time} ms "
+                f"used VRAM: {allocated}/{capacity} MB "
+                f"for {len(_outputs[0])} tokens"
             )
             torch.cuda.empty_cache()
             continue
@@ -263,7 +266,6 @@ def get_extraction_normalization_mean_f1(
     for _, row in df.iterrows():
         truth = get_extractions_without_attributes(row["truth_string"])
         prediction = get_extractions_without_attributes(row["prediction_string"])
-
         if (
             ignore_na
             and "keine vorhanden" in truth
@@ -281,7 +283,7 @@ def get_extraction_normalization_mean_f1(
         truths.append(truth)
         predictions.append(prediction)
 
-    return calculate_string_validation_metrics(truths, predictions)
+    return calculate_string_validation_metrics(truths, predictions), len(truths)
 
 
 def get_attribute_mean_f1(
@@ -312,7 +314,7 @@ def get_attribute_mean_f1(
             truths.append(truth)
             predictions.append(prediction)
 
-        return calculate_string_validation_metrics(truths, predictions)
+        return calculate_string_validation_metrics(truths, predictions), len(truths)
 
     # ATTENTION THIS IS EXPERIMENTAL (and probably wrong)
     else:
@@ -342,7 +344,7 @@ def get_attribute_mean_f1(
         for i, tru in enumerate(truths):
             logger.debug(f"Truth {i}: {tru}")
             logger.debug(f"Prediction {i}: {predictions[i]}")
-        return calculate_string_validation_metrics(truths, predictions)
+        return calculate_string_validation_metrics(truths, predictions), len(truths)
 
 
 def aggregate_metrics(
@@ -352,8 +354,8 @@ def aggregate_metrics(
     excel_sheet_name="Results",
 ):
     df = pd.read_json(file_name)
-    # grouped = df.groupby(["task", "source", "type"])
-    grouped = df.groupby(["task"])
+    grouped = df.groupby(["task", "source", "type"])
+    # grouped = df.groupby(["task"])
 
     metrics_output = []
     for name, group in grouped:
@@ -377,7 +379,9 @@ def aggregate_metrics(
 
         # Extraction and Normalization
         if name[0] == "extraction" or name[0] == "normalization":
-            f1_scores = get_extraction_normalization_mean_f1(group, True, True)
+            f1_scores, extraction_normalization_amount = (
+                get_extraction_normalization_mean_f1(group, True, True)
+            )
             logger.debug(f"{name} -- {f1_scores}")
             metrics_output.append(
                 {
@@ -387,14 +391,14 @@ def aggregate_metrics(
                     "precision": f1_scores[0],
                     "recall": f1_scores[1],
                     "f1_score": f1_scores[2],
-                    "n": len(group),
+                    "n": extraction_normalization_amount,
                     "execution_time": group["execution_time"].mean(),
                 }
             )
 
         # Attributes
         if name[0] == "extraction":
-            f1_scores = get_attribute_mean_f1(group, False, True, True)
+            f1_scores, attribute_amount = get_attribute_mean_f1(group, True, True, True)
             logger.debug(f"ATTRIBUTE:{name} -- {f1_scores}")
             metrics_output.append(
                 {
@@ -404,7 +408,7 @@ def aggregate_metrics(
                     "precision": f1_scores[0],
                     "recall": f1_scores[1],
                     "f1_score": f1_scores[2],
-                    "n": len(group),
+                    "n": attribute_amount,
                     "execution_time": group["execution_time"].mean(),
                 }
             )
@@ -431,21 +435,21 @@ if __name__ == "__main__":
         ModelPrecision.SIXTEEN_BIT, "Test", 4096, only_eval_resources=True
     )
 
-    aggregate_metrics(
-        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_Gemma2b_V03.json",
-        write_to_csv=False,
-        write_to_new_excel=True,
-        excel_sheet_name="Gemma_V03",
-    )
-    aggregate_metrics(
-        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LLama3_V03.json",
-        write_to_csv=False,
-        write_to_new_excel=True,
-        excel_sheet_name="LLama_V03",
-    )
-    aggregate_metrics(
-        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LeoMistral_V06.json",
-        write_to_csv=False,
-        write_to_new_excel=True,
-        excel_sheet_name="LeoMistral_V06",
-    )
+    # aggregate_metrics(
+    #     r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_Gemma2b_V03.json",
+    #     write_to_csv=False,
+    #     write_to_new_excel=True,
+    #     excel_sheet_name="Gemma_V03",
+    # )
+    # aggregate_metrics(
+    #     r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LLama3_V03.json",
+    #     write_to_csv=False,
+    #     write_to_new_excel=True,
+    #     excel_sheet_name="LLama_V03",
+    # )
+    # aggregate_metrics(
+    #     r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LeoMistral_V06.json",
+    #     write_to_csv=False,
+    #     write_to_new_excel=True,
+    #     excel_sheet_name="LeoMistral_V06",
+    # )
