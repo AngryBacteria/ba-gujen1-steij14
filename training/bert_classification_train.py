@@ -32,7 +32,7 @@ from transformers import (
 # Config
 MODEL_NAME = "GerMedBERT/medbert-512"
 EPOCHS = 10
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 LEARNING_RATE = 2e-5
 TEST_SIZE = 0.1
 DEBUG = True

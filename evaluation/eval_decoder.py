@@ -122,7 +122,7 @@ def get_eval_data_from_models(
 
             logger.debug(
                 f"Execution time: {execution_time} ms "
-                f"used VRAM: {allocated}/{capacity} MB "
+                f"used VRAM: {allocated}/{capacity} GB "
                 f"for {len(_outputs[0])} tokens"
             )
             torch.cuda.empty_cache()
@@ -169,9 +169,8 @@ def get_eval_data_from_models(
     # convert to pandas df and save to json
     df = pd.DataFrame(output)
     if only_eval_resources:
-        df.to_json(
-            f"validation_results_resources_{precision.value}bit_{model_name}.json",
-            orient="records",
+        df.to_csv(
+            f"validation_results_resources_{precision.value}bit_{model_name}.csv",
         )
     else:
         df.to_json(
@@ -347,12 +346,20 @@ def get_attribute_mean_f1(
         return calculate_string_validation_metrics(truths, predictions), len(truths)
 
 
-def aggregate_metrics(
+def aggregate_task_metrics(
     file_name: str,
     write_to_csv=True,
-    write_to_new_excel=True,
+    write_to_excel=True,
     excel_sheet_name="Results",
 ):
+    """
+    Aggregates the metrics from the evaluation for the tasks extraction, normalization, and summary. Takes in a file
+    as input and writes the results to a csv and/or an excel file.
+    :param file_name: The name/path of the file to read the data from
+    :param write_to_csv: If an csv file should be written
+    :param write_to_excel: If a excel file should be created or not
+    :param excel_sheet_name: The name of the sheet in the excel file
+    """
     df = pd.read_json(file_name)
     grouped = df.groupby(["task", "source", "type"])
     # grouped = df.groupby(["task"])
@@ -418,7 +425,7 @@ def aggregate_metrics(
 
     if write_to_csv:
         metrics_df.to_csv("results.csv", index=False)
-    if write_to_new_excel:
+    if write_to_excel:
         excel_path = "results.xlsx"
         if os.path.exists(excel_path):
             with pd.ExcelWriter(
