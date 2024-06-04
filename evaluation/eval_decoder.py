@@ -405,7 +405,7 @@ def aggregate_task_metrics(
 
         # Attributes
         if name[0] == "extraction":
-            f1_scores, attribute_amount = get_attribute_mean_f1(group, True, True, True)
+            f1_scores, attribute_amount = get_attribute_mean_f1(group, False, True, True)
             logger.debug(f"ATTRIBUTE:{name} -- {f1_scores}")
             metrics_output.append(
                 {
@@ -437,26 +437,21 @@ def aggregate_task_metrics(
 
 
 if __name__ == "__main__":
-
-    get_eval_data_from_models(
-        ModelPrecision.SIXTEEN_BIT, "Test", 4096, only_eval_resources=True
+    aggregate_task_metrics(
+        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_Gemma-2b_V03.JSON",
+        write_to_csv=False,
+        write_to_excel=True,
+        excel_sheet_name="Gemma_V03",
     )
-
-    # aggregate_metrics(
-    #     r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_Gemma2b_V03.json",
-    #     write_to_csv=False,
-    #     write_to_new_excel=True,
-    #     excel_sheet_name="Gemma_V03",
-    # )
-    # aggregate_metrics(
-    #     r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LLama3_V03.json",
-    #     write_to_csv=False,
-    #     write_to_new_excel=True,
-    #     excel_sheet_name="LLama_V03",
-    # )
-    # aggregate_metrics(
-    #     r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LeoMistral_V06.json",
-    #     write_to_csv=False,
-    #     write_to_new_excel=True,
-    #     excel_sheet_name="LeoMistral_V06",
-    # )
+    aggregate_task_metrics(
+        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LLama-3-8b_V03.json",
+        write_to_csv=False,
+        write_to_excel=True,
+        excel_sheet_name="LLama_V03",
+    )
+    aggregate_task_metrics(
+        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LeoMistral-7b_V06.json",
+        write_to_csv=False,
+        write_to_excel=True,
+        excel_sheet_name="LeoMistral_V06",
+    )
