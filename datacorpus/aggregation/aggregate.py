@@ -4,6 +4,7 @@ from datasets import load_dataset
 from datacorpus.aggregation.agg_bronco import (
     aggregate_bronco_prompts,
     aggregate_bronco_ner,
+    aggregate_bronco_multi_label_classification,
 )
 from datacorpus.aggregation.agg_cardio import (
     aggregate_cardio_prompts,
@@ -84,7 +85,7 @@ def save_all_prompts(
         )
         prompts.extend(bronco_prompts)
     if cardio:
-        cardio_prompts = aggregate_cardio_prompts(attributes=True)
+        cardio_prompts = aggregate_cardio_prompts()
         prompts.extend(cardio_prompts)
     if summarization:
         synthetic_prompts = aggregate_synthetic_prompts()
@@ -147,6 +148,16 @@ def save_all_ner_annotations(bronco: bool, ggponc: bool, cardio: bool):
         print(example["ner_tags"])
         if i > amount:
             break
+
+
+def get_all_classification_annotations():
+    """
+    Save all classification annotations in a unified format and return it.
+    """
+    data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
+        "Attribute", "ALL", True, 10, False
+    )
+    return data, label2id, id2label, NUM_LABELS
 
 
 if __name__ == "__main__":

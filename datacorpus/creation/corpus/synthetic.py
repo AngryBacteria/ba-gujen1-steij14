@@ -177,4 +177,4 @@ def upload_summary_data_to_mongodb(lc2: bool, clef: bool, dev4med: bool):
 
 if __name__ == "__main__":
     upload_summary_data_to_mongodb(True, True, True)
-    # print(count_synthetic_tokens())
+    print(count_synthetic_tokens())

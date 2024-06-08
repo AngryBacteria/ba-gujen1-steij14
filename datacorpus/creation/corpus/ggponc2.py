@@ -203,4 +203,4 @@ def build_ggponc_db():
 
 if __name__ == "__main__":
     build_ggponc_db()
-    # print(count_ggponc_tokens())
+    print(count_ggponc_tokens())

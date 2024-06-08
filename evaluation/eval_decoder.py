@@ -405,7 +405,9 @@ def aggregate_task_metrics(
 
         # Attributes
         if name[0] == "extraction":
-            f1_scores, attribute_amount = get_attribute_mean_f1(group, False, True, True)
+            f1_scores, attribute_amount = get_attribute_mean_f1(
+                group, False, True, True
+            )
             logger.debug(f"ATTRIBUTE:{name} -- {f1_scores}")
             metrics_output.append(
                 {

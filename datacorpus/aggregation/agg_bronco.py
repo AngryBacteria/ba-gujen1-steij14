@@ -4,22 +4,15 @@ from collections import Counter
 import pandas
 from sklearn.preprocessing import MultiLabelBinarizer
 
-from datacorpus.aggregation.prompts import (
-    SYSTEM_PROMPT,
-    MEDICATION_INSTRUCTION_GENERIC,
-    MEDICATION_NORMALIZATION_INSTRUCTION,
-    DIAGNOSIS_NORMALIZATION_INSTRUCTION,
-    TREATMENT_NORMALIZATION_INSTRUCTION,
-    TREATMENT_INSTRUCTION_BRONCO,
-    DIAGNOSIS_INSTRUCTION_BRONCO,
-    DIAGNOSIS_INSTRUCTION_GENERIC,
-    TREATMENT_INSTRUCTION_GENERIC,
-    MEDICATION_INSTRUCTION_BRONCO,
-    SYSTEM_PROMPT_NORMALIZATION,
-)
 from datacorpus.utils.ner import group_ner_data
-from shared.mongodb import get_collection
 from shared.logger import logger
+from shared.mongodb import get_collection
+from shared.prompt_utils import (
+    get_extraction_messages,
+    AttributeFormat,
+    EntityType,
+    get_normalization_messages,
+)
 
 
 # Aggregation for the bronco database collection. Prompts can be created for all three annotation types (DIAGNOSIS,
@@ -27,52 +20,15 @@ from shared.logger import logger
 # texts without any annotations. The aggregation also includes the aggregation of NER documents.
 
 
-def get_bronco_instruction(annotation_type: str, add_attributes: bool):
-    """Helper function for getting the instruction strings for a given annotation type.
-    :param annotation_type: The type of annotation to get the instruction string for. Can be
-    one of the following: DIAGNOSIS, TREATMENT, MEDICATION
-    :param add_attributes: Boolean to if the attributes should be added to the instruction string or not
-    """
-    if add_attributes:
-        if annotation_type == "DIAGNOSIS":
-            extraction_instruction = DIAGNOSIS_INSTRUCTION_BRONCO
-            normalization_instruction = DIAGNOSIS_NORMALIZATION_INSTRUCTION
-        elif annotation_type == "TREATMENT":
-            extraction_instruction = TREATMENT_INSTRUCTION_BRONCO
-            normalization_instruction = TREATMENT_NORMALIZATION_INSTRUCTION
-        elif annotation_type == "MEDICATION":
-            extraction_instruction = MEDICATION_INSTRUCTION_BRONCO
-            normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
-        else:
-            raise ValueError("Invalid annotation type")
-
-    else:
-        if annotation_type == "DIAGNOSIS":
-            extraction_instruction = DIAGNOSIS_INSTRUCTION_GENERIC
-            normalization_instruction = DIAGNOSIS_NORMALIZATION_INSTRUCTION
-        elif annotation_type == "TREATMENT":
-            extraction_instruction = TREATMENT_INSTRUCTION_GENERIC
-            normalization_instruction = TREATMENT_NORMALIZATION_INSTRUCTION
-        elif annotation_type == "MEDICATION":
-            extraction_instruction = MEDICATION_INSTRUCTION_GENERIC
-            normalization_instruction = MEDICATION_NORMALIZATION_INSTRUCTION
-        else:
-            raise ValueError("Invalid annotation type")
-
-    return extraction_instruction, normalization_instruction
-
-
 def get_bronco_na_prompts(
-    annotation_type: str,
-    add_attributes: bool,
+    entity_type: EntityType,
     minimal_length: int,
     na_percentage: float,
 ):
     """
     Get prompts for bronco corpus where there are no annotations for the given annotation type
-    :param annotation_type: The type of annotation to get prompts for. Can be
+    :param entity_type: The type of annotation to get prompts for. Can be
     one of the following: DIAGNOSIS, TREATMENT, MEDICATION
-    :param add_attributes: If the attributes should be added
     :param minimal_length: Minimal length of origin texts to include
     :param na_percentage: Percentage of documents that should have no annotation
     """
@@ -92,12 +48,12 @@ def get_bronco_na_prompts(
     ]
 
     # Calculate the target number of documents based on the percentage
-    number_of_docs = bronco_collection.count_documents({"type": annotation_type})
+    number_of_docs = bronco_collection.count_documents({"type": entity_type.value})
     target_docs = int(number_of_docs * na_percentage)
     # Filter out rows where the annotation type is not in the 'type' list
     filtered = []
     for index, row in grouped_df.iterrows():
-        if annotation_type not in row["type"]:
+        if entity_type.value not in row["type"]:
             filtered.append(row)
     # Randomly select the target number of documents from the filtered list and return
     output = random.sample(filtered, target_docs)
@@ -105,22 +61,16 @@ def get_bronco_na_prompts(
     # create prompts
     prompts = []
     for data in output:
-        extraction_instruction, normalization_instruction = get_bronco_instruction(
-            annotation_type, add_attributes
+        messages = get_extraction_messages(
+            data["origin"], AttributeFormat.BRONCO, entity_type
         )
-
         extraction_string = "Keine vorhanden"
-        extraction_instruction_str = extraction_instruction.replace(
-            "<<CONTEXT>>", data["origin"]
-        ).strip()
+        messages.append({"role": "assistant", "content": extraction_string})
+
         prompts.append(
             {
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": extraction_instruction_str},
-                    {"role": "assistant", "content": extraction_string},
-                ],
-                "type": annotation_type,
+                "messages": messages,
+                "type": entity_type.value,
                 "task": "extraction",
                 "source": "bronco",
                 "na_prompt": True,
@@ -134,61 +84,55 @@ def get_bronco_na_prompts(
 
 
 def get_bronco_prompts(
-    annotation_type: str,
-    add_attributes: bool,
+    entity_type: EntityType,
     minimal_length: int,
 ):
     """
     Generic function to create the prompts for bronco corpus
-    :param annotation_type: The type of annotation to get prompts for. Can be
+    :param entity_type: The type of annotation to get prompts for. Can be
     one of the following: DIAGNOSIS, TREATMENT, MEDICATION
-    :param add_attributes: If the attributes should be added to the text
     :param minimal_length: Minimal length of origin texts to include
     :return: List of prompts
     """
     extraction_prompts = []
     normalization_prompts = []
-    extraction_instruction, normalization_instruction = get_bronco_instruction(
-        annotation_type, add_attributes
-    )
+
     bronco_collection = get_collection("corpus", "bronco")
-    documents = bronco_collection.find({"type": annotation_type})
+    documents = bronco_collection.find({"type": entity_type.value})
     for document in documents:
         if minimal_length > 0 and len(document["origin"]) < minimal_length:
             continue
 
         texts = []
         # add attributes to the text
-        if add_attributes:
-            for index, extraction_text in enumerate(document["text"]):
-                attributes = []
-                is_positive = True
-                for attribute in document["attributes"][index]:
-                    if attribute["attribute"] == "negative":
-                        attributes.append("NEGATIV")
-                        is_positive = False
-                    if attribute["attribute"] == "speculative":
-                        attributes.append("SPEKULATIV")
-                        is_positive = False
-                    if attribute["attribute"] == "possibleFuture":
-                        attributes.append("ZUKÜNFTIG")
-                        is_positive = False
+        for index, extraction_text in enumerate(document["text"]):
+            attributes = []
+            is_positive = True
+            for attribute in document["attributes"][index]:
+                if attribute["attribute"] == "negative":
+                    attributes.append("NEGATIV")
+                    is_positive = False
+                if attribute["attribute"] == "speculative":
+                    attributes.append("SPEKULATIV")
+                    is_positive = False
+                if attribute["attribute"] == "possibleFuture":
+                    attributes.append("ZUKÜNFTIG")
+                    is_positive = False
 
-                    if attribute["attribute"] == "R":
-                        attributes.append("RECHTS")
-                    if attribute["attribute"] == "L":
-                        attributes.append("LINKS")
-                    if attribute["attribute"] == "B":
-                        attributes.append("BEIDSEITIG")
+                if attribute["attribute"] == "R":
+                    attributes.append("RECHTS")
+                if attribute["attribute"] == "L":
+                    attributes.append("LINKS")
+                if attribute["attribute"] == "B":
+                    attributes.append("BEIDSEITIG")
 
-                if is_positive:
-                    attributes.append("POSITIV")
-                if len(attributes) < 1:
-                    raise ValueError("No attributes found, this should not happen")
-                else:
-                    texts.append(f"{extraction_text} [{'|'.join(attributes)}]")
-        else:
-            texts = document["text"]
+            if is_positive:
+                attributes.append("POSITIV")
+            if len(attributes) < 1:
+                raise ValueError("No attributes found, this should not happen")
+            else:
+                texts.append(f"{extraction_text} [{'|'.join(attributes)}]")
+
         # remove duplicates from text
         texts = list(set(texts))
         texts = [text.strip() for text in texts]
@@ -197,17 +141,14 @@ def get_bronco_prompts(
         if extraction_string == "":
             raise ValueError("No extraction string found")
 
-        extraction_instruction_str = extraction_instruction.replace(
-            "<<CONTEXT>>", document["origin"]
-        ).strip()
+        messages_extraction = get_extraction_messages(
+            document["origin"], AttributeFormat.BRONCO, entity_type
+        )
+        messages_extraction.append({"role": "assistant", "content": extraction_string})
         extraction_prompts.append(
             {
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": extraction_instruction_str},
-                    {"role": "assistant", "content": extraction_string},
-                ],
-                "type": annotation_type,
+                "messages": messages_extraction,
+                "type": entity_type.value,
                 "task": "extraction",
                 "source": "bronco",
                 "na_prompt": False,
@@ -222,22 +163,19 @@ def get_bronco_prompts(
                 continue
             else:
                 normalization_entity = document["text"][index]
-                norm_instruction_str = normalization_instruction.replace(
-                    "<<ENTITY>>", normalization_entity
-                ).strip()
-                norm_instruction_str = norm_instruction_str.replace(
-                    "<<CONTEXT>>", document["origin"]
-                ).strip()
                 normalization = document["normalizations"][index][0]
                 normalization = normalization["normalization"].split(":")[1].strip()
+
+                messages_normalization = get_normalization_messages(
+                    normalization_entity, document["origin"], entity_type
+                )
+                messages_normalization.append(
+                    {"role": "assistant", "content": normalization}
+                )
                 normalization_prompts.append(
                     {
-                        "messages": [
-                            {"role": "system", "content": SYSTEM_PROMPT_NORMALIZATION},
-                            {"role": "user", "content": norm_instruction_str},
-                            {"role": "assistant", "content": normalization},
-                        ],
-                        "type": annotation_type,
+                        "messages": messages_normalization,
+                        "type": entity_type.value,
                         "task": "normalization",
                         "source": "bronco",
                         "na_prompt": False,
@@ -320,8 +258,7 @@ def aggregate_bronco_prompts(
     # prompts with annotations
     if diagnosis:
         diagnosis_prompts, diagnosis_norm_prompts = get_bronco_prompts(
-            "DIAGNOSIS",
-            True,
+            EntityType.DIAGNOSIS,
             minimal_length,
         )
         if extraction:
@@ -330,8 +267,7 @@ def aggregate_bronco_prompts(
             prompts.extend(diagnosis_norm_prompts)
     if treatment:
         treatment_prompts, treatment_norm_prompts = get_bronco_prompts(
-            "TREATMENT",
-            True,
+            EntityType.TREATMENT,
             minimal_length,
         )
         if extraction:
@@ -340,8 +276,7 @@ def aggregate_bronco_prompts(
             prompts.extend(treatment_norm_prompts)
     if medication:
         medication_prompts, medication_norm_prompts = get_bronco_prompts(
-            "MEDICATION",
-            True,
+            EntityType.MEDICATION,
             minimal_length,
         )
         if extraction:
@@ -353,17 +288,17 @@ def aggregate_bronco_prompts(
     if na_prompts and extraction:
         if diagnosis:
             empty_diagnosis_prompts = get_bronco_na_prompts(
-                "DIAGNOSIS", True, minimal_length, na_percentage
+                EntityType.DIAGNOSIS, minimal_length, na_percentage
             )
             prompts.extend(empty_diagnosis_prompts)
         if treatment:
             empty_treatment_prompts = get_bronco_na_prompts(
-                "TREATMENT", True, minimal_length, na_percentage
+                EntityType.TREATMENT, minimal_length, na_percentage
             )
             prompts.extend(empty_treatment_prompts)
         if medication:
             empty_medication_prompts = get_bronco_na_prompts(
-                "MEDICATION", True, minimal_length, na_percentage
+                EntityType.MEDICATION, minimal_length, na_percentage
             )
             prompts.extend(empty_medication_prompts)
 
@@ -485,6 +420,3 @@ if __name__ == "__main__":
     data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
         "Attribute", "ALL", True, 1000000, False
     )
-
-    # save to json
-    data.to_json("classification_data.json", orient="records")

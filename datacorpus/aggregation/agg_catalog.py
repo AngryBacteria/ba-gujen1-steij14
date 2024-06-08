@@ -1,13 +1,11 @@
 import re
 
-from datacorpus.aggregation.prompts import (
-    SYSTEM_PROMPT_CATALOG,
-    ATC_INSTRUCTION,
-    ICD10GM_INSTRUCTION,
-    OPS_INSTRUCTION,
-)
 from shared.logger import logger
 from shared.mongodb import get_collection
+from shared.prompt_utils import (
+    get_catalog_messages,
+    CatalogType,
+)
 
 
 def aggregate_catalog_prompts():
@@ -30,38 +28,28 @@ def aggregate_catalog_prompts():
 
     # add docs together
     docs = list(atc_docs) + list(icd10gm_docs) + list(ops_docs)
-
     prompts = []
-    for doc in docs:
 
+    for doc in docs:
         if doc["source"] == "atc":
-            code_instruction_str = ATC_INSTRUCTION.replace(
-                "<<ENTITY>>", doc["title"]
-            ).strip()
+            messages = get_catalog_messages(doc["title"], CatalogType.ATC)
             output = f"Der ATC Code für {doc['title']} ist {doc['code']}"
             prompt_type = "MEDICATION"
         elif doc["source"] == "icd10gm":
-            code_instruction_str = ICD10GM_INSTRUCTION.replace(
-                "<<ENTITY>>", doc["title"]
-            ).strip()
+            messages = get_catalog_messages(doc["title"], CatalogType.ICD)
             output = f"Der ICD10-GM Code für {doc['title']} ist {doc['code']}"
             prompt_type = "DIAGNOSIS"
         elif doc["source"] == "ops":
-            code_instruction_str = OPS_INSTRUCTION.replace(
-                "<<ENTITY>>", doc["title"]
-            ).strip()
+            messages = get_catalog_messages(doc["title"], CatalogType.OPS)
             output = f"Der OPS Code für {doc['title']} ist {doc['code']}"
             prompt_type = "TREATMENT"
         else:
             raise ValueError(f"Unknown source: {doc['source']}")
 
+        messages.append({"role": "assistant", "content": output})
         prompts.append(
             {
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT_CATALOG},
-                    {"role": "user", "content": code_instruction_str},
-                    {"role": "assistant", "content": output},
-                ],
+                "messages": messages,
                 "type": prompt_type,
                 "task": "catalog",
                 "source": doc["source"],

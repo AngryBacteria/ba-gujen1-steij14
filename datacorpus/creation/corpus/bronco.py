@@ -277,4 +277,4 @@ def create_bronco_db() -> None:
 
 if __name__ == "__main__":
     create_bronco_db()
-    # print(count_bronco_tokens())
+    print(count_bronco_tokens())

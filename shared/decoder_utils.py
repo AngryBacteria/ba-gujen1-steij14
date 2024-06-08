@@ -1,5 +1,7 @@
 import os
 
+from shared.prompt_utils import get_extraction_messages, AttributeFormat, EntityType
+
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
@@ -76,7 +78,7 @@ class ModelPrecision(Enum):
 
 
 # TODO https://huggingface.co/docs/transformers/perf_infer_cpu
-CURRENT_DEFAULT_MODEL = r"BachelorThesis/Gemma2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
+CURRENT_DEFAULT_MODEL = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Modelle\Gemma-2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
 CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
 CURRENT_DEFAULT_PRECISION = ModelPrecision.SIXTEEN_BIT
 
@@ -475,36 +477,19 @@ def test_generation(
     template=CURRENT_DEFAULT_TEMPLATE,
 ):
     """Function to test if the inference of the model works on gpu or not"""
-    messages1 = [
-        {
-            "role": "system",
-            "content": "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.",
-        },
-        {
-            "role": "user",
-            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Für jede Diagnose oder Symptom, füge in eckigen Klammern an, ob die Diagnose oder das Symptom in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] und links [LINKS], rechts [RECHTS] oder beidseitig [BEIDSEITIG] ist. Falls keine Diagnosen oder Symptome im Text vorkommen, schreibe "Keine vorhanden":\n\nIn einem Roentgen Thorax zeigten sich prominente zentrale Lungengefaesszeichnung mit basoapikaler Umverteilung sowie angedeutete Kerley-B-Linien, vereinbar mit einer chronischen pulmonalvenoesen Stauungskomponente bei Hypervolaemie.',
-        },
-    ]
-    messages2 = [
-        {
-            "role": "system",
-            "content": "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.",
-        },
-        {
-            "role": "user",
-            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Für jede Diagnose oder Symptom, füge in eckigen Klammern an, ob die Diagnose oder das Symptom in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] und links [LINKS], rechts [RECHTS] oder beidseitig [BEIDSEITIG] ist. Falls keine Diagnosen oder Symptome im Text vorkommen, schreibe "Keine vorhanden":\n\nDer Patient hat Kopfschmerzen.',
-        },
-    ]
-    messages3 = [
-        {
-            "role": "system",
-            "content": "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus medizinischen Texten strukturierte Informationen wie Medikamente, Symptome oder Diagnosen und klinische Prozeduren zu extrahieren.",
-        },
-        {
-            "role": "user",
-            "content": 'Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Für jede Diagnose oder Symptom, füge in eckigen Klammern an, ob die Diagnose oder das Symptom in Bezug auf den Patienten positiv [POSITIV], negativ [NEGATIV], spekulativ [SPEKULATIV] oder zukünftig [ZUKÜNFTIG] und links [LINKS], rechts [RECHTS] oder beidseitig [BEIDSEITIG] ist. Falls keine Diagnosen oder Symptome im Text vorkommen, schreibe "Keine vorhanden":\n\nDie Patientin Pamela Berger hatte sich heute in der Notfallaufnahme gemeldet weil sie keine starken Bauchschmerzen hatte.',
-        },
-    ]
+    messages1 = get_extraction_messages(
+        "In einem Roentgen Thorax zeigten sich prominente zentrale Lungengefaesszeichnung mit basoapikaler Umverteilung sowie angedeutete Kerley-B-Linien, vereinbar mit einer chronischen pulmonalvenoesen Stauungskomponente bei Hypervolaemie.",
+        AttributeFormat.BRONCO,
+        EntityType.DIAGNOSIS,
+    )
+    messages2 = get_extraction_messages(
+        "Der Patient hat Kopfschmerzen.", AttributeFormat.BRONCO, EntityType.DIAGNOSIS
+    )
+    messages3 = get_extraction_messages(
+        "Die Patientin Pamela Berger hatte sich heute in der Notfallaufnahme gemeldet weil sie keine starken Bauchschmerzen hatte.",
+        AttributeFormat.BRONCO,
+        EntityType.DIAGNOSIS,
+    )
     messages_concat = [messages1, messages2, messages3]
 
     tokenizer, model = load_model_and_tokenizer(

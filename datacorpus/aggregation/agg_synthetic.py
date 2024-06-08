@@ -1,9 +1,8 @@
-from datacorpus.aggregation.prompts import (
-    SYSTEM_PROMPT_SUMMARIZATION,
-    SUMMARY_INSTRUCTION,
-)
 from shared.logger import logger
 from shared.mongodb import get_collection
+from shared.prompt_utils import (
+    get_summarization_messages,
+)
 
 
 # Aggregation of the synthetic data in the mongodb database. So far only the task summarization is supported in the
@@ -19,14 +18,11 @@ def aggregate_synthetic_prompts():
 
     prompts = []
     for doc in documents:
-        summary_instruction = SUMMARY_INSTRUCTION.replace("<<CONTEXT>>", doc["origin"])
+        messages = get_summarization_messages(doc["origin"])
+        messages.append({"role": "assistant", "content": doc["summary"]})
         prompts.append(
             {
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT_SUMMARIZATION},
-                    {"role": "user", "content": summary_instruction.strip()},
-                    {"role": "assistant", "content": doc["summary"]},
-                ],
+                "messages": messages,
                 "type": "",
                 "task": "summary",
                 "source": doc["source"],

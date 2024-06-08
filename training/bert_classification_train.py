@@ -4,9 +4,7 @@ import setproctitle
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 from transformers.trainer_utils import HubStrategy
 
-from datacorpus.aggregation.agg_bronco import (
-    aggregate_bronco_multi_label_classification,
-)
+from datacorpus.aggregation.aggregate import get_all_classification_annotations
 from shared.gpu_utils import print_cuda_support
 
 GPU = 0
@@ -43,9 +41,7 @@ UPLOAD_MODEL = True
 EVALS_PER_EPOCH = 4
 LOGS_PER_EPOCH = 2
 
-data, label2id, id2label, NUM_LABELS = aggregate_bronco_multi_label_classification(
-    "Normalization", "ALL", True, 50, False
-)
+data, label2id, id2label, NUM_LABELS = get_all_classification_annotations()
 
 print_welcome_message()
 print_cuda_support()

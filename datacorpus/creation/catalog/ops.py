@@ -140,4 +140,4 @@ def count_ops_tokens():
 
 if __name__ == "__main__":
     upload_ops_metadata(True, False, False, True)
-    # print(count_ops_tokens())
+    print(count_ops_tokens())

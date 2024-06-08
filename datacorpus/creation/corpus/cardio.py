@@ -415,4 +415,4 @@ def build_cardio_db():
 
 if __name__ == "__main__":
     build_cardio_db()
-    # print(count_cardio_tokens())
+    print(count_cardio_tokens())

@@ -1,5 +1,5 @@
-from datacorpus.aggregation.prompts import (
-    SYSTEM_PROMPT,
+from shared.prompt_utils import (
+    SYSTEM_PROMPT_EXTRACTION,
     MEDICATION_INSTRUCTION_GENERIC,
     DIAGNOSIS_INSTRUCTION_GENERIC,
     TREATMENT_INSTRUCTION_GENERIC,
@@ -75,7 +75,7 @@ def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: i
                     "messages": [
                         {
                             "role": "system",
-                            "content": SYSTEM_PROMPT,
+                            "content": SYSTEM_PROMPT_EXTRACTION,
                         },
                         {
                             "role": "user",

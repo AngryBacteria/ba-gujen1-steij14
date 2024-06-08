@@ -1,11 +1,11 @@
-from datacorpus.aggregation.prompts import (
-    MEDICATION_INSTRUCTION_GENERIC,
-    MEDICATION_INSTRUCTION_CARDIO,
-    SYSTEM_PROMPT,
-)
 from datacorpus.utils.ner import group_ner_data
 from shared.logger import logger
 from shared.mongodb import get_collection
+from shared.prompt_utils import (
+    get_extraction_messages,
+    AttributeFormat,
+    EntityType,
+)
 
 
 # Aggregation code for the cardio corpus. This code is used to aggregate prompts and NER annotations from the cardio
@@ -13,95 +13,68 @@ from shared.mongodb import get_collection
 # the medication prompts, specifically STRENGTH and FREQUENCY.
 
 
-def get_cardio_instruction(add_attributes: bool):
-    """Helper function for getting the right instruction strings.
-    :param add_attributes: Boolean to indicate if the attributes should be added to the instruction string or not
-    """
-    if add_attributes:
-        extraction_instruction = MEDICATION_INSTRUCTION_CARDIO
-    else:
-        extraction_instruction = MEDICATION_INSTRUCTION_GENERIC
-
-    return extraction_instruction
-
-
-def get_cardio_medication_prompts(add_attributes: bool):
+def get_cardio_medication_prompts():
     """
     Retrieves medication prompts from the cardio corpus.
-    :param add_attributes: If the attributes of medications should be added to the text
     :return: List of medication extraction prompts
     """
     prompts = []
     cardio = get_collection("corpus", "cardio")
     documents = cardio.find({"annotations.type": "MEDICATION"})
-    extraction_instruction = get_cardio_instruction(add_attributes)
 
     for document in documents:
-        extraction_instruction_str = extraction_instruction.replace(
-            "<<CONTEXT>>", document["full_text"]
-        )
         texts = []
         for anno in document["annotations"]:
             # skip all with no Medication
             if anno["type"] != "MEDICATION":
                 continue
 
-            if add_attributes:
-                # are already in same order (first attributes belong to first text)
-                names = anno["text"]
-                attributes = anno["attributes"]
+            # are already in same order (first attributes belong to first text)
+            names = anno["text"]
+            attributes = anno["attributes"]
 
-                for name, attr_list in zip(names, attributes):
-                    # Preparing attributes string for each text, skipping 'DURATION' and 'FORM' attributes (because
-                    # of anonymization they are often nonsense)
-                    filtered_attributes = [
-                        attr
-                        for attr in attr_list
-                        if (
-                            attr["attribute_label"] == "STRENGTH"
-                            or attr["attribute_label"] == "FREQUENCY"
-                        )
-                    ]
-                    if filtered_attributes:
-                        attributes_str = "|".join(
-                            [
-                                f"{attr['attribute_label'].replace('STRENGTH', 'DOSIERUNG').replace('FREQUENCY', 'FREQUENZ')}: {attr['attribute']}"
-                                for attr in filtered_attributes
-                            ]
-                        )
-                    else:
-                        attributes_str = ""
+            for name, attr_list in zip(names, attributes):
+                # Preparing attributes string for each text, skipping 'DURATION' and 'FORM' attributes (because
+                # of anonymization they are often nonsense)
+                filtered_attributes = [
+                    attr
+                    for attr in attr_list
+                    if (
+                        attr["attribute_label"] == "STRENGTH"
+                        or attr["attribute_label"] == "FREQUENCY"
+                    )
+                ]
+                if filtered_attributes:
+                    attributes_str = "|".join(
+                        [
+                            f"{attr['attribute_label'].replace('STRENGTH', 'DOSIERUNG').replace('FREQUENCY', 'FREQUENZ')}: {attr['attribute']}"
+                            for attr in filtered_attributes
+                        ]
+                    )
+                else:
+                    attributes_str = ""
 
-                        # combining text and attributes into one string
-                    med_str = f"{name} [{attributes_str}]"
-                    texts.append(med_str)
-            else:
-                # Concatenate texts to form a single output string
-                texts.extend(anno["text"])
+                    # combining text and attributes into one string
+                med_str = f"{name} [{attributes_str}]"
+                texts.append(med_str)
 
         texts = list(set(texts))
         texts = [text.strip() for text in texts]
         extraction_string = "|".join(texts)
-        extraction_instruction_str = extraction_instruction_str.replace(
-            "<<OUTPUT>>", extraction_string
+
+        messages = get_extraction_messages(
+            document["full_text"], AttributeFormat.CARDIO, EntityType.MEDICATION
+        )
+        messages.append(
+            {
+                "role": "assistant",
+                "content": extraction_string.strip(),
+            }
         )
 
         prompts.append(
             {
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": SYSTEM_PROMPT,
-                    },
-                    {
-                        "role": "user",
-                        "content": extraction_instruction_str.strip(),
-                    },
-                    {
-                        "role": "assistant",
-                        "content": extraction_string.strip(),
-                    },
-                ],
+                "messages": messages,
                 "type": "MEDICATION",
                 "task": "extraction",
                 "source": "cardio",
@@ -149,13 +122,12 @@ def aggregate_cardio_ner(block_size: int):
     return ner_docs
 
 
-def aggregate_cardio_prompts(attributes: bool):
+def aggregate_cardio_prompts():
     """
     Aggregate all medication-related prompts from the cardio corpus with specified minimal text length.
-    :param attributes: If prompt with attributes should be included
     :return: List of medication prompts
     """
-    medication_prompts_cardio = get_cardio_medication_prompts(attributes)
+    medication_prompts_cardio = get_cardio_medication_prompts()
     logger.debug(
         f"Aggregated {len(medication_prompts_cardio)} medication prompts from the cardio corpus."
     )

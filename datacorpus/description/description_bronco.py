@@ -305,6 +305,7 @@ def show_distribution_na_notna():
 
 
 if __name__ == "__main__":
+    save_to_csv()
     df = read_from_csv()
     show_text_lengths_boxplot(df, tokenize=True)
     show_annotation_types_pieplot(df)

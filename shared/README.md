@@ -14,3 +14,5 @@ following functionalities:
   - Functions to generate text / output with the Models.
   - Counting the tokens of a list of strings.
 - **mongodb.py:** All required functions to interact with the MongoDB Database. 
+- **gpu_utils.py** Mainly used to print information about the currently used GPU and the available memory.
+- **prompt_utils.py** Used to manage the creation of prompts
