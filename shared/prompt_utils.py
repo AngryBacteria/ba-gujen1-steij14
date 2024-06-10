@@ -1,4 +1,3 @@
-# Collection of system- and instruction prompts for the tasks summarization, extraction and normalization.
 from enum import Enum
 
 # SYSTEM PROMPTS
@@ -79,8 +78,16 @@ class EntityType(Enum):
 
 
 def get_extraction_messages(
-    source: str, attribute_type: AttributeFormat, entity_type: EntityType
+    origin: str, attribute_type: AttributeFormat, entity_type: EntityType
 ):
+    """
+    Generates the system and instruction prompts for the extraction task based on the entity type and attribute type.
+    :param origin: The context in which the entity occurs. Can be empty but should be provided if possible.
+    :param attribute_type: The attribute format for the extraction task.
+    :param entity_type: The entity type to extract.
+    :return: List of system and instruction messages. These can then be passed to the tokenizer to create the correct
+    prompt string.
+    """
     messages = [{"role": "system", "content": SYSTEM_PROMPT_EXTRACTION}]
     if entity_type == EntityType.MEDICATION:
         if attribute_type == AttributeFormat.BRONCO:
@@ -88,7 +95,7 @@ def get_extraction_messages(
                 {
                     "role": "user",
                     "content": MEDICATION_INSTRUCTION_BRONCO.replace(
-                        "<<CONTEXT>>", source
+                        "<<CONTEXT>>", origin
                     ),
                 }
             )
@@ -97,7 +104,7 @@ def get_extraction_messages(
                 {
                     "role": "user",
                     "content": MEDICATION_INSTRUCTION_CARDIO.replace(
-                        "<<CONTEXT>>", source
+                        "<<CONTEXT>>", origin
                     ),
                 }
             )
@@ -106,7 +113,7 @@ def get_extraction_messages(
                 {
                     "role": "user",
                     "content": MEDICATION_INSTRUCTION_GENERIC.replace(
-                        "<<CONTEXT>>", source
+                        "<<CONTEXT>>", origin
                     ),
                 }
             )
@@ -116,7 +123,7 @@ def get_extraction_messages(
                 {
                     "role": "user",
                     "content": DIAGNOSIS_INSTRUCTION_BRONCO.replace(
-                        "<<CONTEXT>>", source
+                        "<<CONTEXT>>", origin
                     ),
                 }
             )
@@ -125,7 +132,7 @@ def get_extraction_messages(
                 {
                     "role": "user",
                     "content": DIAGNOSIS_INSTRUCTION_GENERIC.replace(
-                        "<<CONTEXT>>", source
+                        "<<CONTEXT>>", origin
                     ),
                 }
             )
@@ -135,7 +142,7 @@ def get_extraction_messages(
                 {
                     "role": "user",
                     "content": TREATMENT_INSTRUCTION_BRONCO.replace(
-                        "<<CONTEXT>>", source
+                        "<<CONTEXT>>", origin
                     ),
                 }
             )
@@ -144,7 +151,7 @@ def get_extraction_messages(
                 {
                     "role": "user",
                     "content": TREATMENT_INSTRUCTION_GENERIC.replace(
-                        "<<CONTEXT>>", source
+                        "<<CONTEXT>>", origin
                     ),
                 }
             )
@@ -156,14 +163,14 @@ def get_extraction_messages(
     return messages
 
 
-def get_normalization_messages(entity: str, source: str, entity_type: EntityType):
+def get_normalization_messages(entity: str, origin: str, entity_type: EntityType):
     """
     Generates the system and instruction prompts for the normalization task based on the entity and catalog type.
     :param entity: The entity to be normalized.
-    :param source: The context in which the entity occurs. Can be empty but should be provided if possible.
+    :param origin: The context in which the entity occurs. Can be empty but should be provided if possible.
     :param entity_type: The entity type to normalize.
     :return: List of system and instruction messages. These can then be passed to the tokenizer to create the correct
-    prompt.
+    prompt string.
     """
     messages = [{"role": "system", "content": SYSTEM_PROMPT_NORMALIZATION}]
     if entity_type == EntityType.DIAGNOSIS:
@@ -172,7 +179,7 @@ def get_normalization_messages(entity: str, source: str, entity_type: EntityType
                 "role": "user",
                 "content": DIAGNOSIS_NORMALIZATION_INSTRUCTION.replace(
                     "<<ENTITY>>", entity
-                ).replace("<<CONTEXT>>", source),
+                ).replace("<<CONTEXT>>", origin),
             }
         )
     elif entity_type == EntityType.MEDICATION:
@@ -181,7 +188,7 @@ def get_normalization_messages(entity: str, source: str, entity_type: EntityType
                 "role": "user",
                 "content": MEDICATION_NORMALIZATION_INSTRUCTION.replace(
                     "<<ENTITY>>", entity
-                ).replace("<<CONTEXT>>", source),
+                ).replace("<<CONTEXT>>", origin),
             }
         )
     elif entity_type == EntityType.TREATMENT:
@@ -190,7 +197,7 @@ def get_normalization_messages(entity: str, source: str, entity_type: EntityType
                 "role": "user",
                 "content": TREATMENT_NORMALIZATION_INSTRUCTION.replace(
                     "<<ENTITY>>", entity
-                ).replace("<<CONTEXT>>", source),
+                ).replace("<<CONTEXT>>", origin),
             }
         )
     else:
@@ -202,6 +209,12 @@ def get_normalization_messages(entity: str, source: str, entity_type: EntityType
 
 
 def get_summarization_messages(source: str):
+    """
+    Generates the system and instruction prompts for the summarization task based on the source text.
+    :param source: The source text to summarize.
+    :return: List of system and instruction messages. These can then be passed to the tokenizer to create the correct
+    prompt string.
+    """
     return [
         {"role": "system", "content": SYSTEM_PROMPT_SUMMARIZATION},
         {
@@ -223,6 +236,13 @@ class CatalogType(Enum):
 
 
 def get_catalog_messages(entity: str, catalog_type: CatalogType):
+    """
+    Generates the system and instruction prompts for the catalog task based on the entity and catalog type.
+    :param entity: The entity to be normalized.
+    :param catalog_type: The catalog type to use for the normalization task.
+    :return: List of system and instruction messages. These can then be passed to the tokenizer to create the correct
+    prompt string.
+    """
     messages = [{"role": "system", "content": SYSTEM_PROMPT_CATALOG}]
     if catalog_type == CatalogType.ATC:
         messages.append(
@@ -251,6 +271,50 @@ def get_catalog_messages(entity: str, catalog_type: CatalogType):
     for message in messages:
         message["content"] = message["content"].strip()
     return messages
+
+
+class TaskType(Enum):
+    """
+    Enum class for the different task types. The task type determines the type of task that should be performed by the
+    model.
+    """
+
+    EXTRACTION = "extraction"  # Extraction task for entities like medications, diagnoses or treatments
+    NORMALIZATION = "normalization"  # Normalization task for entities like medications, diagnoses or treatments
+    SUMMARIZATION = "summary"  # Summarization task for summarizing clinical texts
+    CATALOG = "catalog"  # Catalog task for assigning codes to entities
+
+
+def get_task_messages(
+    task: TaskType,
+    entity: str,
+    origin: str,
+    entity_type: EntityType,
+    attribute_type: AttributeFormat = None,
+    catalog_type: CatalogType = None,
+):
+    """
+    Generates the system and instruction prompts for the given task based on the task type, entity type, attribute type
+    and catalog type. Most high-level function to generate the messages for the different tasks.
+    :param task: The task type to generate the messages for.
+    :param entity: The entity to be extracted, normalized or summarized.
+    :param origin: The context in which the entity occurs. Can be empty but should be provided if possible.
+    :param entity_type: The entity type to extract, normalize or summarize.
+    :param attribute_type: The attribute format for the extraction task. Only required for the extraction task.
+    :param catalog_type: The catalog type for the normalization task. Only required for the normalization task.
+    :return: List of system and instruction messages. These can then be passed to the tokenizer to create the correct
+    prompt string.
+    """
+    if task == TaskType.EXTRACTION:
+        return get_extraction_messages(origin, attribute_type, entity_type)
+    elif task == TaskType.NORMALIZATION:
+        return get_normalization_messages(entity, origin, entity_type)
+    elif task == TaskType.SUMMARIZATION:
+        return get_summarization_messages(origin)
+    elif task == TaskType.CATALOG:
+        return get_catalog_messages(entity, catalog_type)
+    else:
+        raise ValueError("Invalid task type.")
 
 
 if __name__ == "__main__":

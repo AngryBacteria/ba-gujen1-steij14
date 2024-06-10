@@ -3,6 +3,7 @@ from shared.prompt_utils import (
     MEDICATION_INSTRUCTION_GENERIC,
     DIAGNOSIS_INSTRUCTION_GENERIC,
     TREATMENT_INSTRUCTION_GENERIC,
+    TaskType,
 )
 from datacorpus.utils.ner import group_ner_data
 from shared.mongodb import get_collection
@@ -87,7 +88,7 @@ def get_ggponc_prompts(annotation_type: str, na_prompts: bool, minimal_length: i
                         },
                     ],
                     "type": annotation_type_output,
-                    "task": "extraction",
+                    "task": TaskType.EXTRACTION.value,
                     "source": "ggponc",
                     "na_prompt": na_prompts,
                     "context": anno["origin"],

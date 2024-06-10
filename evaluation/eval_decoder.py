@@ -2,6 +2,8 @@ import os
 
 import setproctitle
 
+from shared.prompt_utils import TaskType
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
@@ -273,7 +275,7 @@ def get_extraction_normalization_mean_f1(
         ):
             continue
 
-        if row["task"] == "normalization" and not detailed_normalization:
+        if row["task"] == TaskType.NORMALIZATION.value and not detailed_normalization:
             truth = [current_truth.split(".")[0] for current_truth in truth]
             prediction = [
                 current_prediction.split(".")[0] for current_prediction in prediction
@@ -362,7 +364,6 @@ def aggregate_task_metrics(
     """
     df = pd.read_json(file_name)
     grouped = df.groupby(["task", "source", "type"])
-    # grouped = df.groupby(["task"])
 
     metrics_output = []
     for name, group in grouped:
@@ -426,9 +427,9 @@ def aggregate_task_metrics(
     metrics_df = metrics_df.sort_values(by="task")
 
     if write_to_csv:
-        metrics_df.to_csv("results.csv", index=False)
+        metrics_df.to_csv("aggregated_decoder_results.csv", index=False)
     if write_to_excel:
-        excel_path = "results.xlsx"
+        excel_path = "aggregated_decoder_results.xlsx"
         if os.path.exists(excel_path):
             with pd.ExcelWriter(
                 excel_path, engine="openpyxl", mode="a", if_sheet_exists="replace"

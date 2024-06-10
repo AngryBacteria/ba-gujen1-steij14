@@ -111,6 +111,8 @@ def get_dev4med_data():
 def get_summary_of_text(text: str, model: str):
     """
     Get a summary of a given text using the OpenAI API.
+    :param text: The text to summarize.
+    :param model: The OpenAI model to use.
     """
     text = text.strip()
     _start_time = datetime.datetime.now()
@@ -160,6 +162,9 @@ def count_synthetic_tokens():
 def upload_summary_data_to_mongodb(lc2: bool, clef: bool, dev4med: bool):
     """
     Upload the summary data to the mongodb.
+    :param lc2: If lc2 data should be used to create summaries.
+    :param clef: If clef data should be used to create summaries.
+    :param dev4med: If dev4med data should be used to create summaries.
     """
     data = []
     if lc2:

@@ -5,6 +5,7 @@ from shared.prompt_utils import (
     get_extraction_messages,
     AttributeFormat,
     EntityType,
+    TaskType,
 )
 
 
@@ -15,7 +16,7 @@ from shared.prompt_utils import (
 
 def get_cardio_medication_prompts():
     """
-    Retrieves medication prompts from the cardio corpus.
+    Creates the medication prompts from the cardio corpus.
     :return: List of medication extraction prompts
     """
     prompts = []
@@ -75,8 +76,8 @@ def get_cardio_medication_prompts():
         prompts.append(
             {
                 "messages": messages,
-                "type": "MEDICATION",
-                "task": "extraction",
+                "type": EntityType.MEDICATION.value,
+                "task": TaskType.EXTRACTION.value,
                 "source": "cardio",
                 "na_prompt": False,
                 "context": document["full_text"],
@@ -90,6 +91,7 @@ def get_cardio_medication_prompts():
 
 def aggregate_cardio_ner(block_size: int):
     """
+    Aggregate all NER annotations from the cardio corpus into a format usable for training.
     :param block_size: The size of the blocks to create. -1 means no block grouping. A block means a group of examples
     that are concatenated into one example to reduce the number of total examples.
     Aggregate all NER annotations from the cardio corpus into a format usable for training.

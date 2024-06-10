@@ -11,7 +11,7 @@ from shared.decoder_utils import load_tokenizer_with_template, count_tokens
 def save_to_csv() -> None:
     """
     Save the ggponc2 mongodb collection to a trimmed down csv file
-    :return: None
+    :return: None as the file is saved
     """
     ggonc_collection = get_collection("corpus", "ggponc_short")
     ggonc_cursor = ggonc_collection.find({})
@@ -132,6 +132,12 @@ def get_paragraph_lengths(df, tokenize=False) -> tuple:
 
 
 def show_paragraph_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
+    """
+    Show a boxplot of the paragraph lengths
+    :param df: The dataframe to plot from
+    :param tokenize: If the lengths should be calculated by tokens or not
+    :return: None (a plot is displayed)
+    """
     import plotly.express as px
 
     # calculate the lengths

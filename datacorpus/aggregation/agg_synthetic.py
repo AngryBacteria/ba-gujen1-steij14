@@ -2,6 +2,7 @@ from shared.logger import logger
 from shared.mongodb import get_collection
 from shared.prompt_utils import (
     get_summarization_messages,
+    TaskType,
 )
 
 
@@ -24,7 +25,7 @@ def aggregate_synthetic_prompts():
             {
                 "messages": messages,
                 "type": "",
-                "task": "summary",
+                "task": TaskType.SUMMARIZATION.value,
                 "source": doc["source"],
                 "na_prompt": False,
                 "context": doc["origin"],

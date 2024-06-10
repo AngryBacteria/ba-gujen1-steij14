@@ -5,10 +5,15 @@ from shared.mongodb import get_collection
 from shared.prompt_utils import (
     get_catalog_messages,
     CatalogType,
+    TaskType,
 )
 
 
 def aggregate_catalog_prompts():
+    """
+    Aggregate prompts for the catalog task from the atc, icd10gm and ops collections.
+    :return: List of prompts for the catalog task
+    """
     atc_collection = get_collection("catalog", "atc")
     icd10gm_collection = get_collection("catalog", "icd10gm")
     ops_collection = get_collection("catalog", "ops")
@@ -51,7 +56,7 @@ def aggregate_catalog_prompts():
             {
                 "messages": messages,
                 "type": prompt_type,
-                "task": "catalog",
+                "task": TaskType.CATALOG.value,
                 "source": doc["source"],
                 "na_prompt": False,
                 "context": doc["title"],

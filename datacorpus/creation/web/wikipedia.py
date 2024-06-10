@@ -39,8 +39,11 @@ relevant_categories = [
 
 # WIKI PHP API
 def fetch_all_category_members(category: str):
-    """Get all ids/titles of all members for a wikipedia category, including their page IDs.
-    Category should be the name of the category without the "Kategorie:" prefix."""
+    """
+    Get all ids/titles of all members for a wikipedia category, including their page IDs.
+    Category should be the name of the category without the "Kategorie:" prefix.
+    :param category: The name of the wikipedia category without the "Kategorie:" prefix.
+    """
 
     members = set()
     last_continue = {}

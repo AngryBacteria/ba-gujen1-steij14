@@ -11,7 +11,7 @@ from shared.mongodb import get_collection
 def save_to_csv() -> None:
     """
     Save the bronco mongodb collection to a trimmed down csv file
-    :return: None
+    :return: None as the file is saved
     """
     bronco_collection = get_collection("corpus", "bronco")
     bronco_cursor = bronco_collection.find({})

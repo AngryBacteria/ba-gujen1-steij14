@@ -12,7 +12,10 @@ load_dotenv()
 
 
 def get_bund_text(code: str):
-    """Get the text for an ICD10 code from gesund.bund.de"""
+    """
+    Get the text for an ICD10 code from gesund.bund.de
+    :param code: The ICD10GM code to search for
+    """
     encoded_code = quote(code.replace(".", "-"))
     link = f"https://gesund.bund.de/icd-code-suche/{encoded_code}"
     response = requests.get(link)

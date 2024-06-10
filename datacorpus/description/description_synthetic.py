@@ -11,6 +11,7 @@ from shared.mongodb import get_collection
 def save_to_csv():
     """
     Saves the synthetic collection to a trimmed down csv file. This way the database can be queried only once.
+    :return: None as the data is saved to a file.
     """
     synthetic_collection = get_collection("corpus", "synthetic")
     synthetic_cursor = synthetic_collection.find({})

@@ -2,7 +2,7 @@ import pandas as pd
 from datasets import load_dataset
 
 from shared.decoder_utils import count_tokens
-
+from shared.prompt_utils import TaskType
 
 # Collection of functions to analyze the prompts that were created with the aggregation script.
 
@@ -14,16 +14,18 @@ if __name__ == "__main__":
     normalization_prompts = []
     summary_prompts = []
     catalog_prompts = []
+    # organize prompts into different categories
     for row in data:
-        if row["task"] == "extraction":
+        if row["task"] == TaskType.EXTRACTION.value:
             extraction_prompts.append(row)
-        elif row["task"] == "normalization":
+        elif row["task"] == TaskType.NORMALIZATION.value:
             normalization_prompts.append(row)
-        elif row["task"] == "summary":
+        elif row["task"] == TaskType.SUMMARIZATION.value:
             summary_prompts.append(row)
-        elif row["task"] == "catalog":
+        elif row["task"] == TaskType.CATALOG.value:
             catalog_prompts.append(row)
 
+    # create dataframes for each category
     extraction_df = pd.DataFrame(extraction_prompts)
     normalization_df = pd.DataFrame(normalization_prompts)
     summary_df = pd.DataFrame(summary_prompts)
@@ -31,6 +33,7 @@ if __name__ == "__main__":
     total_tokens = 0
     total_prompts = 0
 
+    # display the number of prompts and tokens for each category
     print(f"{30*'-'}Extraction{30*'-'}")
     extraction_df = extraction_df.groupby(["source", "type"])
     for source, group in extraction_df:

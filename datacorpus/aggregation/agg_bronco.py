@@ -12,6 +12,7 @@ from shared.prompt_utils import (
     AttributeFormat,
     EntityType,
     get_normalization_messages,
+    TaskType,
 )
 
 
@@ -71,7 +72,7 @@ def get_bronco_na_prompts(
             {
                 "messages": messages,
                 "type": entity_type.value,
-                "task": "extraction",
+                "task": TaskType.EXTRACTION.value,
                 "source": "bronco",
                 "na_prompt": True,
                 "context": data["origin"],
@@ -176,7 +177,7 @@ def get_bronco_prompts(
                     {
                         "messages": messages_normalization,
                         "type": entity_type.value,
-                        "task": "normalization",
+                        "task": TaskType.NORMALIZATION.value,
                         "source": "bronco",
                         "na_prompt": False,
                         "context": document["origin"],

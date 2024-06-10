@@ -17,7 +17,11 @@ fine_annotations_ner_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\
 
 # TODO: unify anonymization (PATIENT, etc...)
 def load_json(filename) -> dict:
-    """Load json file."""
+    """
+    Load json file.
+    :param filename: The filename to load.
+    :return: Data as dictionary.
+    """
     with open(filename, "r", encoding="utf-8") as file:
         data = json.load(file)
     logger.debug(f"Parsed {len(data)} GGPONC json annotations from file {filename}")
@@ -104,7 +108,10 @@ def transform_ggponc_annotations(data):
 
 
 def get_ggponc_json(refactor=True):
-    """Load the GGPONC json data from the fine annotations folder and return the short and long documents."""
+    """
+    Load the GGPONC json data from the fine annotations folder and return the short and long documents.
+    :param refactor: If True, refactor the data into a unified format.
+    """
     # Load data from both files
     data_short = load_json(os.path.join(fine_annotations_folder, "short", "all.json"))
     data_short = rename_dict_keys(data_short, "document_id", "document")
@@ -120,6 +127,11 @@ def get_ggponc_json(refactor=True):
 
 
 def get_normalized_ner_tags(ner_tags: list[str]):
+    """
+    Normalize the NER tags to be compatible with the other datasets.
+    :param ner_tags: List of NER tags to normalize.
+    :return: Normalized NER tags.
+    """
     new_tags = []
     for tag in ner_tags:
         if tag == "B-Diagnosis_or_Pathology":
@@ -141,7 +153,10 @@ def get_normalized_ner_tags(ner_tags: list[str]):
 
 
 def get_ggponc_ner(refactor=True):
-    """Load the GGPOC NER data from the fine annotations folder and return the short and long documents."""
+    """
+    Load the GGPOC NER data from the fine annotations folder and return the short and long documents.
+    :param refactor: If True, refactor the data into a unified format.
+    """
     # get and combine short data
     data_short_dev = parse_ner_dataset(
         os.path.join(fine_annotations_ner_folder, "short", "dev_fine_short.conll")
@@ -189,6 +204,9 @@ def count_ggponc_tokens():
 
 
 def build_ggponc_db():
+    """
+    Build the GGPONC database.
+    """
     data_short_json, data_long_json = get_ggponc_json()
     data_short_ner, data_long_ner = get_ggponc_ner()
 

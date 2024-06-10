@@ -330,7 +330,7 @@ def generate_output(
         mem_info = f"while using {allocated:.1f}GB of {capacity:.2f}GB GPU memory"
 
     logger.debug(
-        f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}seconds on {device.value} {mem_info}"
+        f"Generated {len(outputs[0])} tokens with {model.name_or_path} in {execution_time}ms on {device.value} {mem_info}"
     )
     return model_output, model_output_raw
 

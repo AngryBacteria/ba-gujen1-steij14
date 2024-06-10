@@ -124,6 +124,13 @@ def save_all_prompts(
 
 
 def save_all_ner_annotations(bronco: bool, ggponc: bool, cardio: bool):
+    """
+    Save all ner annotations in a unified format to a json file and print some examples.
+    :param bronco: If True, include ner annotations for the bronco dataset
+    :param ggponc: If True, include ner annotations for the ggponc dataset
+    :param cardio: If True, include ner annotations for the cardio dataset
+    :return: List of ner annotations
+    """
     ner_annotations = []
     if bronco:
         bronco_ner_annotations = aggregate_bronco_ner(1)

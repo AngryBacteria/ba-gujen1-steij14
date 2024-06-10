@@ -80,7 +80,10 @@ def get_all_tag_links():
 
 
 def fetch_links_from_category_or_tag(url):
-    """Fetch all links from a doccheck.com category or tag page and return a list of links."""
+    """
+    Fetch all links from a doccheck.com category or tag page and return a list of links.
+    :param url: The url of the category or tag page.
+    """
 
     links = []
     current_url = url
@@ -120,7 +123,11 @@ def fetch_links_from_category_or_tag(url):
 
 
 def get_all_links_from_doccheck(save_to_file=True, read_from_file=False):
-    """Get all relevant links from doccheck.com"""
+    """
+    Get all relevant links from doccheck.com
+    :param save_to_file: If True, save the links to a file.
+    :param read_from_file: If True, read the links from a file.
+    """
     if read_from_file:
         with open("doccheck_artikel.txt", "r") as file:
             return [line.strip() for line in file.readlines()]
@@ -152,7 +159,11 @@ def get_all_links_from_doccheck(save_to_file=True, read_from_file=False):
 
 # article scraping
 def clean_doccheck_string(text: str) -> str:
-    """Clean up text from doccheck.com by removing unwanted characters and whitespace."""
+    """
+    Clean up text from doccheck.com by removing unwanted characters and whitespace.
+    :param text: The text to clean.
+    :return: The cleaned text.
+    """
     text = text.replace("...", "")
     pattern = r"\[.*?\]"
     text = re.sub(pattern, "", text)
@@ -284,7 +295,10 @@ def get_doccheck_article(url: str):
 
 
 def build_doccheck_corpus(from_file=False):
-    """Build a corpus of articles from doccheck.com"""
+    """
+    Build a corpus of articles from doccheck.com
+    :param from_file: If True, read links from file.
+    """
     load_dotenv()
     client = MongoClient(os.getenv("MONGO_URL"))
     db = client.get_database("web")

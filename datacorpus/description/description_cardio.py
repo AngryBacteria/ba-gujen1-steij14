@@ -13,7 +13,7 @@ from shared.mongodb import get_collection
 def save_to_csv() -> None:
     """
     Save the cardio mongodb collection to a trimmed down csv file
-    :return: None
+    :return: None a
     """
 
     cardio_collection = get_collection("corpus", "cardio")
@@ -53,7 +53,7 @@ def save_to_csv() -> None:
 def save_full_text_to_csv() -> None:
     """
     Save the cardio mongodb collection (only full_text) to a trimmed down csv file
-    :return: None
+    :return: None a csv file is created
     """
 
     cardio_collection = get_collection("corpus", "cardio")
@@ -82,7 +82,7 @@ def show_type_pieplot(df: DataFrame) -> None:
     """
     Plot the distribution of the annotation types based on the number of characters in 'origin'.
     :param df: The dataframe to plot from
-    :return: None
+    :return: None (a plot is displayed)
     """
     import plotly.express as px
 
@@ -195,7 +195,7 @@ def show_lengths_boxplot(df: DataFrame, tokenize=False) -> None:
     Plot the distribution of paragraph lengths
     :param df: The dataframe to plot from
     :param tokenize: Whether to calculate lengths based on tokenization
-    :return: None
+    :return: None (a plot is displayed)
     """
     import plotly.express as px
 
@@ -221,7 +221,7 @@ def show_types_per_document_plot(df: DataFrame) -> None:
     """
     Analyze and visualize the count of annotation types per unique document.
     :param df: The dataframe to plot from
-    :return: None
+    :return: None (a plot is displayed)
     """
 
     import plotly.express as px
@@ -250,7 +250,7 @@ def show_medication_counts_per_document_plot(df: DataFrame) -> None:
     """
     Analyze and visualize the count of 'Medication' type per unique document.
     :param df: The dataframe to analyze
-    :return: None
+    :return: None (a plot is displayed)
     """
     import numpy as np
     import plotly.express as px
