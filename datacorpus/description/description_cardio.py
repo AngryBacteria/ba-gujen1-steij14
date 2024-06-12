@@ -319,6 +319,7 @@ def show_top_labels_barplot(df: DataFrame, annotation_types=None) -> None:
 
 if __name__ == "__main__":
     save_to_csv()
+    save_full_text_to_csv()
     df = read_from_csv("cardio_description.csv")
     df2 = read_from_csv("cardio_full_text.csv")
     show_type_pieplot(df)

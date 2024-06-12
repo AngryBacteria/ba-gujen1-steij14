@@ -210,8 +210,16 @@ def load_model_and_tokenizer(
         add_bos_token=False,
     )
 
+    # if cuda should be used or not
+    should_use_bf16 = (
+        device is not GenDevice.CPU
+        and device is not GenDevice.MPS
+        and torch.cuda.is_available()
+        and torch.cuda.is_bf16_supported()
+    )
+
     # get correct bnb compute dtype
-    if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+    if should_use_bf16:
         bnb_compute_dtype = torch.bfloat16
     else:
         bnb_compute_dtype = torch.float16
@@ -231,10 +239,15 @@ def load_model_and_tokenizer(
         )
         model_config = {"quantization_config": bnb_config}
     elif precision == ModelPrecision.SIXTEEN_BIT:
-        if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+        if should_use_bf16:
             model_config = {"torch_dtype": torch.bfloat16}
-        else:
+        elif device != GenDevice.CPU:
             model_config = {"torch_dtype": torch.float16}
+        else:
+            logger.warning(
+                "Using 16 bit precision on CPU is not recommended. Switching to 32 bit."
+            )
+            model_config = {"torch_dtype": torch.float32}
     elif precision == ModelPrecision.THIRTY_TWO_BIT:
         model_config = {"torch_dtype": torch.float32}
     else:
@@ -478,19 +491,14 @@ def test_generation(
 ):
     """Function to test if the inference of the model works on gpu or not"""
     messages1 = get_extraction_messages(
-        "In einem Roentgen Thorax zeigten sich prominente zentrale Lungengefaesszeichnung mit basoapikaler Umverteilung sowie angedeutete Kerley-B-Linien, vereinbar mit einer chronischen pulmonalvenoesen Stauungskomponente bei Hypervolaemie.",
-        AttributeFormat.BRONCO,
-        EntityType.DIAGNOSIS,
-    )
-    messages2 = get_extraction_messages(
         "Der Patient hat Kopfschmerzen.", AttributeFormat.BRONCO, EntityType.DIAGNOSIS
     )
-    messages3 = get_extraction_messages(
-        "Die Patientin Pamela Berger hatte sich heute in der Notfallaufnahme gemeldet weil sie keine starken Bauchschmerzen hatte.",
+    messages2 = get_extraction_messages(
+        "Die Patientin Elizabeth Brönnimann hatte sich heute in der Notfallaufnahme gemeldet weil sie Brustschmerzen hatte.",
         AttributeFormat.BRONCO,
         EntityType.DIAGNOSIS,
     )
-    messages_concat = [messages1, messages2, messages3]
+    messages_concat = [messages1, messages2]
 
     tokenizer, model = load_model_and_tokenizer(
         model_name, precision, device=device, template=template

@@ -1,4 +1,10 @@
 import os
+import setproctitle
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+setproctitle.setproctitle("gujen1 - bachelorthesis")
+
 import time
 
 import pandas as pd
@@ -31,7 +37,7 @@ def eval_ner_encoder_inference(
         token_count = len(result)
 
         logger.debug(
-            f"Example {i} - {token_count} tokens - Execution time: {execution_time} ms - using {allocated} MB of {capacity} MB"
+            f"Example {i} - {token_count} tokens - Execution time: {execution_time} ms - using {allocated} GB of {capacity} GB"
         )
 
         output.append(
@@ -56,4 +62,5 @@ def eval_ner_encoder_inference(
         metrics_df.to_excel(excel_path, index=False, sheet_name="bert_ner_inference")
 
 
-eval_ner_encoder_inference()
+if __name__ == "__main__":
+    eval_ner_encoder_inference()

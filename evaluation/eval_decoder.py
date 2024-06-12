@@ -2,12 +2,11 @@ import os
 
 import setproctitle
 
-from shared.prompt_utils import TaskType
-
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+from shared.prompt_utils import TaskType
 from shared.gpu_utils import get_cuda_memory_usage
 import time
 import torch

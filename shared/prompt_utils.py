@@ -6,19 +6,19 @@ SYSTEM_PROMPT_NORMALIZATION = "Du bist ein fortgeschrittener Algorithmus, der da
 SYSTEM_PROMPT_SUMMARIZATION = "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, aus umfangreichen Texten die Hauptpunkte zu extrahieren und sie in einer prägnanten, zusammengefassten Form darzustellen. Deine Aufgabe ist es, den Kerninhalt effektiv zu erfassen und dabei wichtige Details, Schlussfolgerungen und Argumentationsstränge beizubehalten."
 SYSTEM_PROMPT_CATALOG = "Du bist ein fortgeschrittener Algorithmus, der darauf spezialisiert ist, verschiedenen medizinischen Entitäten systematisch spezifische Codierungen zuzuordnen."
 
-# SUMMARY PROMPTS
+# SUMMARY INSTRUCTIONS
 SUMMARY_INSTRUCTION = """Bitte fasse den folgenden klinischen Text präzise zusammen. Stelle sicher, dass alle wichtigen klinischen Informationen erhalten bleiben:
 
 <<CONTEXT>>"""
 
-# CATALOG PROMPTS
+# CATALOG INSTRUCTIONS
 ATC_INSTRUCTION = """Was ist der ATC Code für das Medikament „<<ENTITY>>“?"""
 ICD10GM_INSTRUCTION = (
     """Was ist der ICD10-GM Code für die Diagnose oder das Symptom „<<ENTITY>>“?"""
 )
 OPS_INSTRUCTION = """Was ist der OPS Code für die Prozedur „<<ENTITY>>“?"""
 
-# MEDICATION PROMPTS
+# MEDICATION INSTRUCTIONS
 MEDICATION_INSTRUCTION_GENERIC = """Extrahiere alle Medikamente aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":
 
 <<CONTEXT>>"""
@@ -32,7 +32,7 @@ MEDICATION_INSTRUCTION_CARDIO = """Extrahiere alle Medikamente aus dem folgenden
 
 <<CONTEXT>>"""
 
-# DIAGNOSIS PROMPTS
+# DIAGNOSIS INSTRUCTIONS
 DIAGNOSIS_INSTRUCTION_GENERIC = """Extrahiere alle Diagnosen und Symptome aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":
 
 <<CONTEXT>>"""
@@ -43,7 +43,7 @@ DIAGNOSIS_NORMALIZATION_INSTRUCTION = """Weise der im Text genannten Diagnose od
 
 <<CONTEXT>>"""
 
-# TREATMENT PROMPTS
+# TREATMENT INSTRUCTIONS
 TREATMENT_INSTRUCTION_GENERIC = """Extrahiere alle klinischen Prozeduren aus dem folgenden Text. Falls keine im Text vorkommen, schreibe "Keine vorhanden":
 
 <<CONTEXT>>"""
