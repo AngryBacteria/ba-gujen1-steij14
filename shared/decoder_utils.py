@@ -272,7 +272,6 @@ def load_model_and_tokenizer(
         )
     if patch_model:
         model = patch_model_with_tokenizer(model, tokenizer)
-
     logger.debug(
         f"Loaded model/tokenizer {model_name} with precision {precision.name} and tokenization template {template.name}"
     )

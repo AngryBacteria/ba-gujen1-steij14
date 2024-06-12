@@ -47,7 +47,7 @@ watch(
           icon="pi pi-microchip-ai"
           size="large"
           class="analyze-button"
-          :disabled="ongoingRequest"
+          :loading="ongoingRequest"
         />
       </div>
 

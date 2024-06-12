@@ -6,7 +6,6 @@ from starlette.middleware.cors import CORSMiddleware
 
 from demo.backend.singletons import Cache, ModelTokenizer
 from shared.decoder_utils import (
-    load_model_and_tokenizer,
     generate_output,
     get_extractions_with_attributes_grouped,
     get_model_output_only,
@@ -16,7 +15,8 @@ from shared.prompt_utils import (
     get_extraction_messages,
     AttributeFormat,
     EntityType,
-    get_normalization_messages, get_summarization_messages,
+    get_normalization_messages,
+    get_summarization_messages,
 )
 
 app = FastAPI()
@@ -40,15 +40,16 @@ def read_root():
 @app.get("/timeout")
 def read_timeout():
     import time
+
     time.sleep(2)
     return {"Hello": "LLM"}
 
 
 class PipelineConfig(BaseModel):
-    text: str
-    extraction: bool
-    normalization: bool
-    summary: bool
+    text: str  # the text to process
+    extraction: bool  # whether to perform extraction or not
+    normalization: bool  # whether to perform normalization or not
+    summary: bool  # whether to perform summarization or not
     entity_types: Optional[List[EntityType]] = [
         EntityType.DIAGNOSIS,
         EntityType.TREATMENT,
@@ -57,14 +58,29 @@ class PipelineConfig(BaseModel):
     attribute_format: AttributeFormat = AttributeFormat.BRONCO
 
 
-@app.post("/pipeline")
-def execute_pipeline(config: PipelineConfig):
+class PipelineEntity(BaseModel):
+    entity_type: EntityType
+    origin: str
+    entity: str
+    attributes: list[str]
+    raw_output: str
+    normalized_entity: Optional[str] = None
 
+
+class PipelineResponse(BaseModel):
+    entities: List[PipelineEntity]
+    summary: str
+
+
+@app.post("/pipeline")
+def execute_pipeline(config: PipelineConfig) -> PipelineResponse:
     if config.extraction is False and config.normalization is False:
-        raise HTTPException(status_code=400, detail="Mindestens eine Aufgabe muss aktiviert sein.")
+        raise HTTPException(
+            status_code=400, detail="Mindestens eine Aufgabe muss aktiviert sein."
+        )
 
     # check cache
-    cache_key = f"{config.text}_{config.normalization}_{config.summary}_{config.entity_types}_{config.attribute_format}"
+    cache_key = f"{config.text}_{config.extraction}_{config.normalization}_{config.summary}_{config.entity_types}_{config.attribute_format}"
     cached_result = app_cache.get(cache_key)
     if cached_result is not None:
         logger.debug(f"Returning cached result for key: {cache_key}")
@@ -85,13 +101,13 @@ def execute_pipeline(config: PipelineConfig):
             for key, value in output_parsed.items():
                 if key.lower() != "keine vorhanden":
                     entities.append(
-                        {
-                            "entity_type": entity_type,
-                            "origin": config.text,
-                            "entity": key,
-                            "attributes": value,
-                            "raw_output": output,
-                        }
+                        PipelineEntity(
+                            entity_type=entity_type,
+                            origin=config.text,
+                            entity=key,
+                            attributes=value,
+                            raw_output=output,
+                        )
                     )
         except Exception as e:
             print(e)
@@ -100,30 +116,27 @@ def execute_pipeline(config: PipelineConfig):
         for entity in entities:
             try:
                 messages = get_normalization_messages(
-                    entity["entity"], entity["origin"], entity["entity_type"]
+                    entity.entity, entity.origin, entity.entity_type
                 )
                 raw_output, _ = generate_output(
                     messages, app_models.model, app_models.tokenizer
                 )
                 output = get_model_output_only(raw_output)
-                entity["normalized_entity"] = output
+                entity.normalized_entity = output
             except Exception as e:
                 print(e)
 
     summary = ""
     if config.summary:
         messages = get_summarization_messages(config.text)
-        raw_output, _ = generate_output(messages, app_models.model, app_models.tokenizer)
+        raw_output, _ = generate_output(
+            messages, app_models.model, app_models.tokenizer
+        )
         output = get_model_output_only(raw_output)
         summary = output
 
-
     # update cache
-    app_cache.set(cache_key, entities)
+    app_cache.set(cache_key, PipelineResponse(entities=entities, summary=summary))
 
     logger.debug(f"Returning generated result for key: {cache_key}")
-    return {
-        "config": config.dict(),
-        "entities": entities,
-        "summary": summary,
-    }
+    return PipelineResponse(entities=entities, summary=summary)
