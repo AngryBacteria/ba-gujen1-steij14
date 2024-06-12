@@ -1,3 +1,4 @@
+import time
 from typing import Optional, List
 
 from fastapi import FastAPI, HTTPException
@@ -50,12 +51,12 @@ class PipelineConfig(BaseModel):
     extraction: bool  # whether to perform extraction or not
     normalization: bool  # whether to perform normalization or not
     summary: bool  # whether to perform summarization or not
+    attribute_format: AttributeFormat = AttributeFormat.BRONCO
     entity_types: Optional[List[EntityType]] = [
         EntityType.DIAGNOSIS,
         EntityType.TREATMENT,
         EntityType.MEDICATION,
     ]
-    attribute_format: AttributeFormat = AttributeFormat.BRONCO
 
 
 class PipelineEntity(BaseModel):
@@ -70,14 +71,27 @@ class PipelineEntity(BaseModel):
 class PipelineResponse(BaseModel):
     entities: List[PipelineEntity]
     summary: str
+    execution_time: int
 
 
 @app.post("/pipeline")
 def execute_pipeline(config: PipelineConfig) -> PipelineResponse:
-    if config.extraction is False and config.normalization is False:
+    if (
+        config.extraction is False
+        and config.normalization is False
+        and config.summary is False
+    ):
         raise HTTPException(
             status_code=400, detail="Mindestens eine Aufgabe muss aktiviert sein."
         )
+
+    if config.extraction is False and config.normalization is True:
+        raise HTTPException(
+            status_code=400,
+            detail="Extraktion muss aktiviert sein, um Normalisierung durchzuführen.",
+        )
+
+    _start_time = time.perf_counter_ns()
 
     # check cache
     cache_key = f"{config.text}_{config.extraction}_{config.normalization}_{config.summary}_{config.entity_types}_{config.attribute_format}"
@@ -87,30 +101,31 @@ def execute_pipeline(config: PipelineConfig) -> PipelineResponse:
         return cached_result
 
     entities = []
-    for entity_type in config.entity_types:
-        try:
-            messages = get_extraction_messages(
-                config.text, config.attribute_format, entity_type
-            )
-            raw_output, _ = generate_output(
-                messages, app_models.model, app_models.tokenizer
-            )
-            output = get_model_output_only(raw_output)
-            output_parsed = get_extractions_with_attributes_grouped(output)
+    if config.extraction:
+        for entity_type in config.entity_types:
+            try:
+                messages = get_extraction_messages(
+                    config.text, config.attribute_format, entity_type
+                )
+                raw_output, _ = generate_output(
+                    messages, app_models.model, app_models.tokenizer
+                )
+                output = get_model_output_only(raw_output)
+                output_parsed = get_extractions_with_attributes_grouped(output)
 
-            for key, value in output_parsed.items():
-                if key.lower() != "keine vorhanden":
-                    entities.append(
-                        PipelineEntity(
-                            entity_type=entity_type,
-                            origin=config.text,
-                            entity=key,
-                            attributes=value,
-                            raw_output=output,
+                for key, value in output_parsed.items():
+                    if key.lower() != "keine vorhanden":
+                        entities.append(
+                            PipelineEntity(
+                                entity_type=entity_type,
+                                origin=config.text,
+                                entity=key,
+                                attributes=value,
+                                raw_output=output,
+                            )
                         )
-                    )
-        except Exception as e:
-            print(e)
+            except Exception as e:
+                print(e)
 
     if config.normalization:
         for entity in entities:
@@ -135,8 +150,13 @@ def execute_pipeline(config: PipelineConfig) -> PipelineResponse:
         output = get_model_output_only(raw_output)
         summary = output
 
+    # calculate execution time
+    _end_time = time.perf_counter_ns()
+    execution_time = int((_end_time - _start_time) / 10**6)
     # update cache
-    app_cache.set(cache_key, PipelineResponse(entities=entities, summary=summary))
-
+    output = PipelineResponse(
+        entities=entities, summary=summary, execution_time=execution_time
+    )
+    app_cache.set(cache_key, output)
     logger.debug(f"Returning generated result for key: {cache_key}")
-    return PipelineResponse(entities=entities, summary=summary)
+    return output

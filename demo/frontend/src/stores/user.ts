@@ -1,32 +1,43 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import type { PipelineBody, PipelineResponse } from '@/model/model'
 
 export const useUserStore = defineStore('user', () => {
+  // task configs
   const tasks = ref(['extraction', 'normalization'])
-  const ongoingRequest = ref(false)
+  const inputText = ref('')
 
-  async function getAnalysis(origin: string) {
+  // Request data
+  const ongoingRequest = ref(false)
+  const pipelineData = ref<PipelineResponse | null>(null)
+
+  async function getAnalysis() {
     try {
       ongoingRequest.value = true
+      pipelineData.value = null
+
+      const reqBody: PipelineBody = {
+        text: inputText.value,
+        extraction: tasks.value.includes('extraction'),
+        normalization: tasks.value.includes('normalization'),
+        summary: tasks.value.includes('summary')
+      }
       const response = await fetch('http://127.0.0.1:8000/pipeline', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          text: origin,
-          extraction: tasks.value.includes('extraction'),
-          normalization: tasks.value.includes('normalization'),
-          summary: tasks.value.includes('summary'),
-          entity_types: ['DIAGNOSIS', 'TREATMENT', 'MEDICATION'],
-          attribute_format: 'bronco'
-        })
+        body: JSON.stringify(reqBody)
       })
 
       const data = await response.json()
-      console.log(data)
-
+      if (response.ok) {
+        console.log(data)
+        pipelineData.value = data
+      }
       return data
+    } catch (error) {
+      console.error(error)
     } finally {
       ongoingRequest.value = false
     }
@@ -35,6 +46,8 @@ export const useUserStore = defineStore('user', () => {
   return {
     tasks,
     ongoingRequest,
-    getAnalysis
+    getAnalysis,
+    pipelineData,
+    inputText
   }
 })

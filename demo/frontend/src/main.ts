@@ -12,6 +12,9 @@ import Menubar from 'primevue/menubar'
 import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
 import Tooltip from 'primevue/tooltip'
+import Divider from 'primevue/divider'
+import Panel from 'primevue/panel'
+import Tag from 'primevue/tag'
 
 const app = createApp(App)
 
@@ -32,6 +35,10 @@ app.component('Checkbox', Checkbox)
 app.component('Menubar', Menubar)
 app.component('Textarea', Textarea)
 app.component('Select', Select)
+app.component('Panel', Panel)
+app.component('Divider', Divider)
+app.component('Tag', Tag)
+
 app.directive('tooltip', Tooltip)
 
 app.mount('#app')

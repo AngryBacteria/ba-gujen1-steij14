@@ -4,17 +4,15 @@ import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 
 const userStore = useUserStore()
-const { tasks, ongoingRequest } = storeToRefs(userStore)
+const { tasks, inputText } = storeToRefs(userStore)
 
 const noTask = computed(() => tasks.value.length === 0)
-
-const inputText = ref('')
 
 const selectedExample = ref()
 const examples = ref([
   {
     name: 'Patientin mit Brustschmerz',
-    text: 'Die Patientin Elizabeth Brönnimann hatte sich heute in der Notfallaufnahme gemeldet weil sie Brustschmerzen hatte.'
+    text: 'Die Patientin Elizabeth Brönnimann hatte sich heute in der Notfallaufnahme gemeldet weil sie Brustschmerzen hatte. Es wurde ebenfalls ein Röntgenbild erstellt, dabei zeigte sich aber keine Lungenentzündung.'
   }
 ])
 
@@ -28,7 +26,7 @@ watch(
 
 <template>
   <section class="input-layout">
-    <Textarea v-model="inputText" rows="5" class="text-area" :disabled="ongoingRequest" />
+    <Textarea v-model="inputText" rows="5" class="text-area" :disabled="userStore.ongoingRequest" />
 
     <section class="text-actions">
       <div>
@@ -38,16 +36,24 @@ watch(
           icon="pi pi-ban"
           size="large"
           class="analyze-button"
-          :disabled="noTask || ongoingRequest"
+          :disabled="noTask || userStore.ongoingRequest"
+        />
+        <Button
+          v-else-if="inputText.length === 0"
+          label="Für die Analyse ist Text benötigt"
+          icon="pi pi-ban"
+          size="large"
+          class="analyze-button"
+          :disabled="true"
         />
         <Button
           v-else
-          @click="userStore.getAnalysis(inputText)"
+          @click="userStore.getAnalysis"
           label="Text Analysieren"
           icon="pi pi-microchip-ai"
           size="large"
           class="analyze-button"
-          :loading="ongoingRequest"
+          :loading="userStore.ongoingRequest"
         />
       </div>
 
@@ -56,8 +62,12 @@ watch(
         :options="examples"
         optionLabel="name"
         placeholder="Beispiel auswählen"
-        :disabled="ongoingRequest"
+        :disabled="userStore.ongoingRequest"
       />
+
+      <p v-if="userStore.pipelineData && userStore.pipelineData?.execution_time">
+        Die Analyse hat {{ userStore.pipelineData.execution_time }} Millisekunden gedauert
+      </p>
     </section>
   </section>
 </template>

@@ -4,8 +4,9 @@ import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 
 const userStore = useUserStore()
-const { tasks, ongoingRequest } = storeToRefs(userStore)
+const { tasks } = storeToRefs(userStore)
 
+// Computed and watcher Make sure that the right state for the normalization task is set
 const normalizationAvailable = computed(() => {
   return tasks.value.includes('extraction')
 })
@@ -24,7 +25,7 @@ watch(tasks, (newTasks, oldTasks) => {
         inputId="extraction"
         name="extraction"
         value="extraction"
-        :disabled="ongoingRequest"
+        :disabled="userStore.ongoingRequest"
       />
       <label for="extraction"> Extrahieren </label>
     </div>
@@ -34,7 +35,7 @@ watch(tasks, (newTasks, oldTasks) => {
         inputId="normalization"
         name="normalization"
         value="normalization"
-        :disabled="!normalizationAvailable || ongoingRequest"
+        :disabled="!normalizationAvailable || userStore.ongoingRequest"
       />
       <label for="normalization"> Normalisieren </label>
     </div>
@@ -44,7 +45,7 @@ watch(tasks, (newTasks, oldTasks) => {
         inputId="summary"
         name="summary"
         value="summary"
-        :disabled="ongoingRequest"
+        :disabled="userStore.ongoingRequest"
       />
       <label for="summary"> Zusammenfassen </label>
     </div>

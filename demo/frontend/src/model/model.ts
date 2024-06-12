@@ -1,22 +1,34 @@
-export interface AnalysisBody {
+export interface PipelineBody {
   text: string
   extraction: boolean
   normalization: boolean
   summary: boolean
-  entity_types: string[]
-  attribute_format: string
+  entity_types?: EntityType[]
+  attribute_format?: AttributeFormat
 }
 
-export interface PipelineEntityResponse {
+export interface PipelineResponse {
   entities: PipelineEntity[]
   summary: string
+  execution_time: number
 }
 
 export interface PipelineEntity {
-  entity_type: string
+  entity_type: EntityType
   origin: string
   entity: string
   attributes: string[]
   raw_output: string
   normalized_entity: string
+}
+
+export enum EntityType {
+  DIAGNOSIS = 'DIAGNOSIS',
+  TREATMENT = 'TREATMENT',
+  MEDICATION = 'MEDICATION'
+}
+
+export enum AttributeFormat {
+  BRONCOGRAM = 'bronco',
+  CARDIOGRAM = 'cardio'
 }
