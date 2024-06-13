@@ -7,7 +7,7 @@ from shared.mongodb import upload_data_to_mongodb, get_collection
 # DATA SOURCE: Unknown origin. (Medication_Pharmacode_ATC.xlsx)
 
 # Path to the Excel file
-EXCEL_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\atc\\Medication_Pharmacode_ATC.xlsx"
+EXCEL_PATH = "Medication_Pharmacode_ATC.xlsx"
 
 
 def create_atc_db() -> None:

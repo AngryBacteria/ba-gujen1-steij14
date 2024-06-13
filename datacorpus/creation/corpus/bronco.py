@@ -6,9 +6,9 @@ from shared.logger import logger
 
 # DATA SOURCE: https://www2.informatik.hu-berlin.de/~leser/bronco/index.html
 
-path_text = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Daten\corpus\bronco\textFiles"
-path_annotation_brat = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\bratFiles"
-path_annotation_conll = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\bronco\\conllIOBTags"
+path_text = r"bronco\textFiles"
+path_annotation_brat = "bronco\\bratFiles"
+path_annotation_conll = "bronco\\conllIOBTags"
 
 
 # TODO: unify anonymization (PATIENT, etc...) and labels / types

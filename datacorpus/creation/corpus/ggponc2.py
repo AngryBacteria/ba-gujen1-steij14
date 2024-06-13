@@ -11,8 +11,8 @@ from shared.logger import logger
 
 # DATA SOURCE: https://www.leitlinienprogramm-onkologie.de/projekte/ggponc-deutsch
 
-fine_annotations_folder = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\json\\fine"
-fine_annotations_ner_folder = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\ggponc2\\conll\\fine"
+fine_annotations_folder = "ggponc2\\json\\fine"
+fine_annotations_ner_folder = "ggponc2\\conll\\fine"
 
 
 # TODO: unify anonymization (PATIENT, etc...)

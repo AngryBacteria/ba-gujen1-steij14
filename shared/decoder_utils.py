@@ -78,7 +78,7 @@ class ModelPrecision(Enum):
 
 
 # TODO https://huggingface.co/docs/transformers/perf_infer_cpu
-CURRENT_DEFAULT_MODEL = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Modelle\Gemma-2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
+CURRENT_DEFAULT_MODEL = r"BachelorThesis/Gemma-2b_V03_BRONCO_CARDIO_SUMMARY_CATALOG"
 CURRENT_DEFAULT_TEMPLATE = ChatTemplate.ALPACA_GEMMA
 CURRENT_DEFAULT_PRECISION = ModelPrecision.SIXTEEN_BIT
 

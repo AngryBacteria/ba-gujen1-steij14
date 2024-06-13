@@ -8,11 +8,11 @@ from shared.decoder_utils import count_tokens
 from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # Paths to the various OPS classification files. Includes metadata and alphabet
-OPS_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\ops2024syst_kodes.txt"
-OPS_DREISTELLER_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\ops2024syst_dreisteller.txt"
-OPS_GROUPS_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\ops2024syst_gruppen.txt"
-OPS_CHAPTERS_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\ops2024syst_kapitel.txt"
-OPS_ALPHABET_CSV_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\ops\\ops2024alpha_edvtxt_20231103.txt"
+OPS_CSV_PATH = "ops2024syst_kodes.txt"
+OPS_DREISTELLER_CSV_PATH = "ops2024syst_dreisteller.txt"
+OPS_GROUPS_CSV_PATH = "ops2024syst_gruppen.txt"
+OPS_CHAPTERS_CSV_PATH = "ops2024syst_kapitel.txt"
+OPS_ALPHABET_CSV_PATH = "ops2024alpha_edvtxt_20231103.txt"
 
 
 def upload_ops_metadata(

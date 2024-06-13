@@ -12,8 +12,8 @@ from shared.mongodb import upload_data_to_mongodb, get_collection
 
 # Creation of data with synthetic methods such as the OpenAI API.
 
-LC2_DATA_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\synthetic\\lc2_dialogs"
-CLEF_PATH = "S:\\documents\\onedrive_bfh\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\clef ehealth\\docs-training"
+LC2_DATA_PATH = "synthetic\\lc2_dialogs"
+CLEF_PATH = "clef ehealth\\docs-training"
 
 SUMMARISE_TEXT_PROMPT = """Bitte fasse den folgenden medizinischen Text präzise zusammen. Gib mir nur die Zusammenfassung 
 und keinen weiteren Text. Achte darauf, alle wesentlichen medizinischen Informationen und 

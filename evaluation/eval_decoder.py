@@ -440,19 +440,19 @@ def aggregate_task_metrics(
 
 if __name__ == "__main__":
     aggregate_task_metrics(
-        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_Gemma-2b_V03.JSON",
+        r"validation_results_16bit_Gemma-2b_V03.JSON",
         write_to_csv=False,
         write_to_excel=True,
         excel_sheet_name="Gemma_V03",
     )
     aggregate_task_metrics(
-        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LLama-3-8b_V03.json",
+        r"validation_results_16bit_LLama-3-8b_V03.json",
         write_to_csv=False,
         write_to_excel=True,
         excel_sheet_name="LLama_V03",
     )
     aggregate_task_metrics(
-        r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Training\Resultate\model_outputs\validation_results_16bit_LeoMistral-7b_V06.json",
+        r"validation_results_16bit_LeoMistral-7b_V06.json",
         write_to_csv=False,
         write_to_excel=True,
         excel_sheet_name="LeoMistral_V06",

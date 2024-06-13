@@ -9,9 +9,9 @@ from shared.logger import logger
 
 # DATA SOURCE: https://heidata.uni-heidelberg.de/dataset.xhtml?persistentId=doi:10.11588/data/AFYQDY
 
-TSV_FOLDER_PATH = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Daten\corpus\cardiode\tsv"
-TXT_FOLDER_PATH = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Daten\corpus\cardiode\txt"
-TXT_HELDOUT_FOLDER_PATH = r"S:\documents\onedrive_bfh\OneDrive - Berner Fachhochschule\Dokumente\UNI\Bachelorarbeit\Daten\corpus\cardiode\txt_heldout"
+TSV_FOLDER_PATH = r"cardiode\tsv"
+TXT_FOLDER_PATH = r"cardiode\txt"
+TXT_HELDOUT_FOLDER_PATH = r"cardiode\txt_heldout"
 
 
 # TODO: unify anonymization (PATIENT, etc...)

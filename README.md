@@ -74,6 +74,8 @@ it is highly recommended to use a GPU which will significantly speed up the proc
 the usage of a NVIDIA GPU with CUDA version 12.4 installed. Theoretically other GPUs should work as well, but we didn't test this
 and cant guarantee that it will work. The [CUDA installation](https://docs.nvidia.com/cuda/) guide provides all the 
 information you need to install CUDA on your machine.
+- **NodeJS**: For the demo-application you will need to have nodeJS installed on your machine. You can download the installers
+from the [official website](https://nodejs.org/en/download/prebuilt-installer).
 
 ### Python installation
 All python packages that are required for this project are documented in the `requirements.txt` file. To install them
@@ -104,3 +106,22 @@ project:
 ```shell
 export PYTHONPATH=<path/to/root/directory>:$PYTHONPATH
 ```
+
+# Demo-Application usage
+To use the demo application, several steps need to be performed. It is important that the instructions from the previous chapters have also been followed. The MongoDB database is optional, however. The following steps are required:
+
+**Start FastAPI Backend**
+1. Open a terminal and navigate to the folder `demo/backend`. Then execute the following command in the terminal:
+   - `fastapi run api.py`
+2. Now, the model should automatically download. Once the download is complete, the following message should appear in the console. If this is the case, the backend has started successfully. Do not close the window!
+   - `INFO: Application startup complete.`
+
+**Start Web Application**
+1. Open a new terminal
+2. Navigate to the folder `demo/frontend`
+3. If you are opening the application for the first time, you need to install the node-packages. Execute the following command to load all packages, which may take a while:
+   - `npm install`
+4. Then you can start the application by executing the following command:
+   - `npm run dev`
+5. If everything has worked, the web application should be available at the following URL:
+   - `http://localhost:5173/`

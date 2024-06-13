@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 
 from shared.mongodb import upload_data_to_mongodb
 
-corpus_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\jsyncc\\corpus.xml"
+corpus_path = "jsyncc\\corpus.xml"
 
 # PAPER: https://aclanthology.org/L18-1201/
 # DATA SOURCE: https://github.com/JULIELab/jsyncc

@@ -64,6 +64,7 @@ class PipelineEntity(BaseModel):
     origin: str
     entity: str
     attributes: list[str]
+    output: str
     raw_output: str
     normalized_entity: Optional[str] = None
 
@@ -121,7 +122,8 @@ def execute_pipeline(config: PipelineConfig) -> PipelineResponse:
                                 origin=config.text,
                                 entity=key,
                                 attributes=value,
-                                raw_output=output,
+                                output=output,
+                                raw_output=raw_output,
                             )
                         )
             except Exception as e:

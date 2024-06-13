@@ -6,9 +6,9 @@ from shared.logger import logger
 # DATA SOURCE: https://clefehealth.imag.fr/?page_id=215
 
 # path of the file containing the id and annotations
-annotation_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\clef ehealth\\anns_train_dev.txt"
+annotation_path = "F:clef ehealth\\anns_train_dev.txt"
 # path of the folder containing the text files
-text_files_folder_path = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\corpus\\clef ehealth\\docs-training"
+text_files_folder_path = "F:clef ehealth\\docs-training"
 
 # Read the annotations. Split by id and codes
 with open(annotation_path, "r") as f:

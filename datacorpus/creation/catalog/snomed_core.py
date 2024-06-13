@@ -8,7 +8,7 @@ from shared.logger import logger
 
 # DATA SOURCE: https://www.nlm.nih.gov/research/umls/Snomed/core_subset.html
 
-CORE_PATH = "F:\\OneDrive - Berner Fachhochschule\\Dokumente\\UNI\\Bachelorarbeit\\datensets\\catalog\\snomed\\SNOMEDCT_CORE_SUBSET_202311.txt"
+CORE_PATH = "SNOMEDCT_CORE_SUBSET_202311.txt"
 snomed_classes = [
     "situation",
     "person",
