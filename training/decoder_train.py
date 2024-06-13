@@ -1,8 +1,6 @@
 import os
 
 import setproctitle
-
-from shared.gpu_utils import print_cuda_support
 from training.utils.config import parse_decoder_config
 
 config = parse_decoder_config()
@@ -10,6 +8,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = config.general.gpu
 setproctitle.setproctitle("gujen1 - bachelorthesis")
 
+from shared.gpu_utils import print_cuda_support
 import torch
 
 torch.backends.cuda.matmul.allow_tf32 = True

@@ -1,10 +1,9 @@
 import os
 
-from shared.prompt_utils import get_extraction_messages, AttributeFormat, EntityType
-
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
+from shared.prompt_utils import get_extraction_messages, AttributeFormat, EntityType
 import time
 from shared.gpu_utils import get_cuda_memory_usage
 from shared.logger import logger
@@ -315,7 +314,7 @@ def generate_output(
     messages: str | list[dict],
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
-    device=GenDevice.CUDA_0,
+    device=get_best_device(),
     max_new_tokens=2000,
 ) -> tuple[str, str]:
     start_time = time.perf_counter_ns()

@@ -1,16 +1,16 @@
 import os
-
 import setproctitle
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
-from transformers.trainer_utils import HubStrategy
-
-from datacorpus.aggregation.aggregate import get_all_classification_annotations
-from shared.gpu_utils import print_cuda_support
 
 GPU = 0
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{GPU}"
 setproctitle.setproctitle("gujen1 - bachelorthesis")
+
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
+from transformers.trainer_utils import HubStrategy
+
+from datacorpus.aggregation.aggregate import get_all_classification_annotations
+from shared.gpu_utils import print_cuda_support
 
 from training.utils.config import get_steps_per_epoch
 from training.utils.printing import (
