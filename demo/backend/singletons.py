@@ -41,7 +41,7 @@ class Cache:
         self._data = {}
 
 
-class ModelTokenizer:
+class ModelSingleton:
     """
     A singleton class that loads the model and tokenizer from the transformers library.
     """
@@ -51,10 +51,10 @@ class ModelTokenizer:
     tokenizer: PreTrainedTokenizerFast
 
     def __new__(cls, max_items=None):
-        if not ModelTokenizer.__instance:
-            ModelTokenizer.__instance = super(ModelTokenizer, cls).__new__(cls)
+        if not ModelSingleton.__instance:
+            ModelSingleton.__instance = super(ModelSingleton, cls).__new__(cls)
             tokenizer, model = load_model_and_tokenizer()
             cls.model = model
             cls.tokenizer = tokenizer
 
-        return ModelTokenizer.__instance
+        return ModelSingleton.__instance

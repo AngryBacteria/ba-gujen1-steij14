@@ -6,7 +6,7 @@ import PipelineOutputText from '@/components/PipelineOutputText.vue'
 
 <template>
   <main>
-    <h1>Textanalyse mit Gemma-2b</h1>
+    <h1>Medizinische Textanalyse mit Gemma-2b</h1>
 
     <section class="main-layout">
       <TaskSelection />

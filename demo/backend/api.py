@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 
-from demo.backend.singletons import Cache, ModelTokenizer
+from demo.backend.singletons import Cache, ModelSingleton
 from shared.decoder_utils import (
     generate_output,
     get_extractions_with_attributes_grouped,
@@ -30,7 +30,7 @@ app.add_middleware(
 )
 
 app_cache = Cache(max_items=100)
-app_models = ModelTokenizer()
+app_models = ModelSingleton()
 
 
 @app.get("/")

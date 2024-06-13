@@ -29,6 +29,6 @@ export enum EntityType {
 }
 
 export enum AttributeFormat {
-  BRONCOGRAM = 'bronco',
-  CARDIOGRAM = 'cardio'
+  BRONCO = 'bronco',
+  CARDIO = 'cardio'
 }

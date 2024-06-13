@@ -28,10 +28,9 @@ const summary = computed(() => {
   }
 })
 
-function get_attribute_info(tags: string[]) {
-  let filtered = tags.filter((tag) => tag !== 'POSITIV')
-
-  return filtered.map((tag) => {
+function get_attribute_info(entity: PipelineEntity) {
+  let filtered = entity.attributes.filter((tag) => tag !== 'POSITIV')
+  const output = filtered.map((tag) => {
     if (tag === 'NEGATIV') {
       return { color: 'danger', tag: tag }
     } else if (tag === 'ZUKÜNFTIG' || tag === 'SPEKULATIV') {
@@ -42,6 +41,20 @@ function get_attribute_info(tags: string[]) {
       return { color: 'success', tag: tag }
     }
   })
+
+  if (entity.normalized_entity) {
+    if (entity.entity_type == EntityType.DIAGNOSIS) {
+      output.push({ color: 'success', tag: `ICD10GM - ${entity.normalized_entity}` })
+    }
+    if (entity.entity_type == EntityType.TREATMENT) {
+      output.push({ color: 'success', tag: `OPS - ${entity.normalized_entity}` })
+    }
+    if (entity.entity_type == EntityType.MEDICATION) {
+      output.push({ color: 'success', tag: `ATC - ${entity.normalized_entity}` })
+    }
+  }
+
+  return output
 }
 </script>
 
@@ -58,10 +71,10 @@ function get_attribute_info(tags: string[]) {
     >
       <section v-for="(entity, index) in groupedExtractionResults[EntityType.DIAGNOSIS]">
         <p v-if="entity?.normalized_entity">
-          {{ entity.entity }} (ICD10GM: {{ entity.normalized_entity }})
+          {{ entity.entity }}
         </p>
         <p v-else>{{ entity.entity }}</p>
-        <span v-for="attribute in get_attribute_info(entity.attributes)">
+        <span v-for="attribute in get_attribute_info(entity)" class="attribute-tag">
           <Tag :severity="attribute.color" :value="attribute.tag"
         /></span>
         <Divider v-if="index + 1 !== groupedExtractionResults[EntityType.DIAGNOSIS].length" />
@@ -75,10 +88,10 @@ function get_attribute_info(tags: string[]) {
     >
       <section v-for="(entity, index) in groupedExtractionResults[EntityType.MEDICATION]">
         <p v-if="entity?.normalized_entity">
-          {{ entity.entity }} (ATC: {{ entity.normalized_entity }})
+          {{ entity.entity }}
         </p>
         <p v-else>{{ entity.entity }}</p>
-        <span v-for="attribute in get_attribute_info(entity.attributes)">
+        <span v-for="attribute in get_attribute_info(entity)" class="attribute-tag">
           <Tag :severity="attribute.color" :value="attribute.tag"
         /></span>
         <Divider v-if="index + 1 !== groupedExtractionResults[EntityType.MEDICATION].length" />
@@ -92,10 +105,10 @@ function get_attribute_info(tags: string[]) {
     >
       <section v-for="(entity, index) in groupedExtractionResults[EntityType.TREATMENT]">
         <p v-if="entity?.normalized_entity">
-          {{ entity.entity }} (OPS: {{ entity.normalized_entity }})
+          {{ entity.entity }}
         </p>
         <p v-else>{{ entity.entity }}</p>
-        <span v-for="attribute in get_attribute_info(entity.attributes)">
+        <span v-for="attribute in get_attribute_info(entity)" class="attribute-tag">
           <Tag :severity="attribute.color" :value="attribute.tag"
         /></span>
         <Divider v-if="index + 1 !== groupedExtractionResults[EntityType.TREATMENT].length" />
@@ -109,5 +122,10 @@ function get_attribute_info(tags: string[]) {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.attribute-tag {
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 </style>

@@ -1,13 +1,21 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { PipelineBody, PipelineResponse } from '@/model/model'
+import { AttributeFormat, EntityType } from '@/model/model'
 
 export const useUserStore = defineStore('user', () => {
   // task configs
   const tasks = ref(['extraction', 'normalization'])
   const inputText = ref('')
+  const attributeFormat = ref(AttributeFormat.BRONCO)
+  const entityTypes = computed(() => {
+    if (attributeFormat.value === AttributeFormat.BRONCO) {
+      return [EntityType.DIAGNOSIS, EntityType.TREATMENT, EntityType.MEDICATION]
+    }
+    return [EntityType.MEDICATION]
+  })
 
-  // Request data
+  // request data
   const ongoingRequest = ref(false)
   const pipelineData = ref<PipelineResponse | null>(null)
 
@@ -20,7 +28,9 @@ export const useUserStore = defineStore('user', () => {
         text: inputText.value,
         extraction: tasks.value.includes('extraction'),
         normalization: tasks.value.includes('normalization'),
-        summary: tasks.value.includes('summary')
+        summary: tasks.value.includes('summary'),
+        attribute_format: attributeFormat.value,
+        entity_types: entityTypes.value
       }
       const response = await fetch('http://127.0.0.1:8000/pipeline', {
         method: 'POST',
@@ -48,6 +58,7 @@ export const useUserStore = defineStore('user', () => {
     ongoingRequest,
     getAnalysis,
     pipelineData,
-    inputText
+    inputText,
+    attributeFormat
   }
 })

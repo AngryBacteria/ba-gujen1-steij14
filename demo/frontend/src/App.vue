@@ -23,5 +23,6 @@ import { RouterView } from 'vue-router'
 .page-wrapper {
   margin-right: 5%;
   margin-left: 5%;
+  margin-bottom: 5%;
 }
 </style>

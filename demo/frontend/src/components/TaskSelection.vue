@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 
@@ -15,6 +15,18 @@ watch(tasks, (newTasks, oldTasks) => {
     tasks.value = tasks.value.filter((task) => task !== 'normalization')
   }
 })
+
+// Modes
+const analysisModes = ref([
+  {
+    name: 'Alle Entitäten mit Attributen',
+    value: 'bronco'
+  },
+  {
+    name: 'Nur Medikation mit erweiterten Attributen',
+    value: 'cardio'
+  }
+])
 </script>
 
 <template>
@@ -49,6 +61,16 @@ watch(tasks, (newTasks, oldTasks) => {
       />
       <label for="summary"> Zusammenfassen </label>
     </div>
+
+    <Select
+      v-model="userStore.attributeFormat"
+      :options="analysisModes"
+      optionLabel="name"
+      optionValue="value"
+      placeholder="Modus auswählen"
+      :loading="userStore.ongoingRequest"
+      :disabled="userStore.ongoingRequest"
+    />
   </div>
 </template>
 
