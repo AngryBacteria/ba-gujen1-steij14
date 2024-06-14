@@ -52,7 +52,7 @@ The following is a brief description of each folder:
 large language model (LLM). This datacorpus consists of multiple medical sources. All the data is stored in a MongoDB
 database. The datacorpus folder contains the scripts to parse the data, store it in the databse and aggregate it
 into a format suitable for training a model.
-- **demo:** TODO: implement :) 
+- **demo:** Small VueJS Demo-Application and FastAPI Backend
 - **shared:** In here are mostly helper functions that encapsulate functionality that is used in multiple parts of the
 project. This is to avoid code duplication and to make the code more readable. 
 - **training:** This folder contains the scripts to train a large language model (LLM) on the datacorpus. The training
